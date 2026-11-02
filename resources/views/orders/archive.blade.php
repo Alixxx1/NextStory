@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>أرشيف الطلبات | NextStore SaaS</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -18,7 +19,6 @@
             --danger:       #dc3545;
             --profit-blue:  #0d6efd;
         }
-
         /* أرقام إنجليزية إجبارية */
         .en-digit, .numeric-input {
             font-family: Arial, Helvetica, sans-serif !important;
@@ -27,15 +27,15 @@
             font-variant-numeric: tabular-nums;
             font-weight: 800;
         }
-
         *, *::before, *::after { box-sizing: border-box; }
         html, body {
-            height: 100%; margin: 0; padding: 0;
+            height: 100%;
+            margin: 0;
+            padding: 0;
             overflow: hidden;
             background: var(--bg);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-
         /* الحاوية الرئيسية */
         .page-shell {
             display: flex;
@@ -44,10 +44,7 @@
             padding: 6px 8px;
             gap: 5px;
         }
-
-        /* ══════════════════════════════════════════
-           1. الشريط العلوي — مضغوط
-        ══════════════════════════════════════════ */
+        /* ══════════════════════════════════════════ 1. الشريط العلوي — مضغوط ══════════════════════════════════════════ */
         .top-bar {
             flex: 0 0 auto;
             background: #fff;
@@ -62,94 +59,154 @@
             box-shadow: 0 1px 4px rgba(0,0,0,.04);
         }
         .archive-title {
-            font-weight: 900; color: var(--dark);
-            font-size: 16px; margin: 0;
-            display: flex; align-items: center; gap: 7px;
+            font-weight: 900;
+            color: var(--dark);
+            font-size: 16px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 7px;
             white-space: nowrap;
         }
         .date-period-group {
-            display: flex; align-items: center;
-            gap: 7px; flex-wrap: wrap;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            flex-wrap: wrap;
         }
-        .date-period-group label { font-size: 12px; font-weight: 800; margin: 0; white-space: nowrap; }
-
+        .date-period-group label {
+            font-size: 12px;
+            font-weight: 800;
+            margin: 0;
+            white-space: nowrap;
+        }
         .date-stepper {
-            display: flex; align-items: center;
+            display: flex;
+            align-items: center;
             background: #f8f9fa;
             border: 1px solid #bdc9d6;
             border-radius: 6px;
-            padding: 2px 3px; gap: 3px;
+            padding: 2px 3px;
+            gap: 3px;
         }
         .step-arrow {
-            border: 1px solid #ced4da; background: #fff;
+            border: 1px solid #ced4da;
+            background: #fff;
             color: var(--dark);
-            width: 26px; height: 26px; border-radius: 4px;
-            display: inline-flex; align-items: center; justify-content: center;
-            cursor: pointer; font-size: 11px; transition: .15s;
+            width: 26px;
+            height: 26px;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 11px;
+            transition: .15s;
         }
         .step-arrow:hover { background: #e2e8f0; color: var(--dark); }
-
         .date-label-box {
-            min-width: 160px; text-align: center;
-            font-weight: 900; font-size: 13px;
-            color: var(--dark); padding: 0 8px;
+            min-width: 160px;
+            text-align: center;
+            font-weight: 900;
+            font-size: 13px;
+            color: var(--dark);
+            padding: 0 8px;
         }
         .top-bar-controls {
-            display: flex; align-items: center;
-            gap: 8px; flex-wrap: wrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
             margin-right: auto;
         }
         .profit-toggle-label {
-            color: var(--danger); font-weight: 900;
-            font-size: 12px; cursor: pointer;
-            user-select: none; white-space: nowrap;
+            color: var(--danger);
+            font-weight: 900;
+            font-size: 12px;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
         }
-        .top-bar .form-select,
-        .top-bar .form-control { height: 28px; padding: 2px 8px; font-size: 12px; font-weight: 700; }
+        .top-bar .form-select, .top-bar .form-control {
+            height: 28px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 700;
+        }
         .top-bar .form-check-input { width: 14px; height: 14px; }
-        .top-bar .btn             { padding: 3px 10px; font-size: 12px; font-weight: 700; }
-
-        /* ══════════════════════════════════════════
-           2. شريط الفلاتر — صف أفقي مضغوط
-        ══════════════════════════════════════════ */
+        .top-bar .btn              { padding: 3px 10px; font-size: 12px; font-weight: 700; }
+        /* ══════════════════════════════════════════ 2. شريط الفلاتر — صف أفقي مضغوط ══════════════════════════════════════════ */
         .filters-bar {
             flex: 0 0 auto;
             background: #f8fafb;
             border: 1px solid #e0e8ef;
             border-radius: 8px;
             padding: 5px 8px;
-            display: flex; align-items: center;
-            gap: 6px; flex-wrap: wrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
             box-shadow: 0 1px 3px rgba(0,0,0,.02);
         }
-        .filter-chip { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
-        .filter-chip label { font-size: 11.5px; font-weight: 800; color: #334155; margin: 0; }
-        .filter-chip .form-select,
-        .filter-chip .form-control { height: 28px; padding: 2px 7px; font-size: 12px; font-weight: 600; border-color: #cbd5e1; }
-        .filter-divider { width: 1px; height: 22px; background: #cbd5e1; flex-shrink: 0; }
-        .filter-item-search-wrap { position: relative; flex: 1 1 160px; min-width: 120px; }
+        .filter-chip {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+        }
+        .filter-chip label {
+            font-size: 11.5px;
+            font-weight: 800;
+            color: #334155;
+            margin: 0;
+        }
+        .filter-chip .form-select, .filter-chip .form-control {
+            height: 28px;
+            padding: 2px 7px;
+            font-size: 12px;
+            font-weight: 600;
+            border-color: #cbd5e1;
+        }
+        .filter-divider {
+            width: 1px;
+            height: 22px;
+            background: #cbd5e1;
+            flex-shrink: 0;
+        }
+        .filter-item-search-wrap {
+            position: relative;
+            flex: 1 1 160px;
+            min-width: 120px;
+        }
         .filter-item-search-wrap input {
-            width: 100%; height: 28px;
-            border: 1px solid #94a3b8; border-radius: 6px;
+            width: 100%;
+            height: 28px;
+            border: 1px solid #94a3b8;
+            border-radius: 6px;
             padding: 2px 28px 2px 8px;
-            font-size: 12px; font-weight: 600;
-            background: #fff; outline: none; transition: .2s;
+            font-size: 12px;
+            font-weight: 600;
+            background: #fff;
+            outline: none;
+            transition: .2s;
         }
         .filter-item-search-wrap input:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 2px rgba(17,151,68,.12);
         }
         .filter-item-search-wrap i {
-            position: absolute; left: 8px; top: 50%;
+            position: absolute;
+            left: 8px;
+            top: 50%;
             transform: translateY(-50%);
-            color: #64748b; font-size: 11px; pointer-events: none;
+            color: #64748b;
+            font-size: 11px;
+            pointer-events: none;
         }
-
-        /* ══════════════════════════════════════════
-           3. جدول الفواتير — يأخذ كل المساحة المتبقية
-        ══════════════════════════════════════════ */
+        /* ══════════════════════════════════════════ 3. جدول الفواتير — يأخذ كل المساحة المتبقية ══════════════════════════════════════════ */
         .table-panel {
-            flex: 1 1 0; min-height: 0;
+            flex: 1 1 0;
+            min-height: 0;
             background: #fff;
             border: 1px solid var(--border);
             border-radius: 8px;
@@ -157,21 +214,31 @@
             box-shadow: 0 2px 8px rgba(0,0,0,.04);
         }
         .archive-table {
-            width: 100%; margin: 0;
-            border-collapse: separate; border-spacing: 0;
+            width: 100%;
+            margin: 0;
+            border-collapse: separate;
+            border-spacing: 0;
             min-width: 1500px;
         }
         .archive-table th {
             background: linear-gradient(115deg, var(--dark) 0%, var(--dark-2) 100%);
-            color: #fff; position: sticky; top: 0; z-index: 10;
-            font-size: 12px; font-weight: 800;
-            padding: 9px 7px; text-align: center;
-            border-left: 1px solid #334e68; white-space: nowrap;
+            color: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            font-size: 12px;
+            font-weight: 800;
+            padding: 9px 7px;
+            text-align: center;
+            border-left: 1px solid #334e68;
+            white-space: nowrap;
         }
         .archive-table td {
-            padding: 7px 7px; text-align: center;
+            padding: 7px 7px;
+            text-align: center;
             vertical-align: middle;
-            font-size: 12.5px; font-weight: 700;
+            font-size: 12.5px;
+            font-weight: 700;
             color: #1e293b;
             border-bottom: 1px solid #e2e8f0;
             border-left: 1px solid #eef2f6;
@@ -182,29 +249,31 @@
         .archive-table tbody tr:hover > td { background-color: #eaf6ee; }
         .archive-table tbody tr.active-row > td {
             background-color: #c9f0d5 !important;
-            color: #14532d; font-weight: 900;
+            color: #14532d;
+            font-weight: 900;
             box-shadow: inset 0 1px #168343, inset 0 -1px #168343;
         }
         .archive-table tbody tr.deleted-row > td {
             background-color: #fff1f2 !important;
-            color: #9f1239; text-decoration: line-through;
+            color: #9f1239;
+            text-decoration: line-through;
         }
         .col-cost   { color: var(--danger)      !important; font-weight: 800 !important; }
         .col-profit { color: var(--profit-blue) !important; font-weight: 900 !important; }
-
         /* باجات نوع الطلب */
         .type-badge {
-            display: inline-flex; align-items: center; gap: 4px;
-            padding: 2px 8px; border-radius: 12px;
-            font-size: 11.5px; font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11.5px;
+            font-weight: 800;
         }
         .type-pickup   { background:#dbeafe; color:#1d4ed8; }
         .type-delivery { background:#fef9c3; color:#92400e; }
         .type-online   { background:#f3e8ff; color:#6d28d9; }
-
-        /* ══════════════════════════════════════════
-           4. الشريط السفلي — التصميم الأصلي (عمودين)
-        ══════════════════════════════════════════ */
+        /* ══════════════════════════════════════════ 4. الشريط السفلي — التصميم الأصلي (عمودين) ══════════════════════════════════════════ */
         .bottom-bar {
             flex: 0 0 auto;
             background: #f1f5f9;
@@ -217,7 +286,6 @@
             gap: 10px;
             box-shadow: 0 1px 4px rgba(0,0,0,.03);
         }
-
         /* العمود الأيمن: أزرار فوق بعض */
         .right-ops-col {
             display: flex;
@@ -226,37 +294,38 @@
             gap: 8px;
         }
         .ops-btn-group {
-            display: flex; align-items: center;
-            gap: 7px; flex-wrap: wrap;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            flex-wrap: wrap;
         }
         .btn-archive-op {
-            font-weight: 800; font-size: 13px;
-            padding: 6px 13px; border-radius: 6px;
-            display: inline-flex; align-items: center; gap: 6px;
+            font-weight: 800;
+            font-size: 13px;
+            padding: 6px 13px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             white-space: nowrap;
         }
-
-        /* ══ إصلاح hover الأزرار ══
-           نضمن ظهور النص دائماً بغض النظر عن لون الـ hover */
+        /* ══ إصلاح hover الأزرار ══ نضمن ظهور النص دائماً بغض النظر عن لون الـ hover */
         .btn-outline-secondary.bg-white            { color: #495057 !important; }
         .btn-outline-secondary.bg-white:hover      { background-color: #6c757d !important; border-color: #6c757d !important; color: #fff !important; }
-
         .btn-outline-danger.bg-white               { color: #dc3545 !important; }
         .btn-outline-danger.bg-white:hover         { background-color: #dc3545 !important; border-color: #dc3545 !important; color: #fff !important; }
-
         .btn-outline-primary.bg-white              { color: #0d6efd !important; }
         .btn-outline-primary.bg-white:hover        { background-color: #0d6efd !important; border-color: #0d6efd !important; color: #fff !important; }
-
         .btn-outline-success.bg-white              { color: #198754 !important; }
         .btn-outline-success.bg-white:hover        { background-color: #198754 !important; border-color: #198754 !important; color: #fff !important; }
-
         .btn-outline-dark.bg-white                 { color: #212529 !important; }
         .btn-outline-dark.bg-white:hover           { background-color: #343a40 !important; border-color: #343a40 !important; color: #fff !important; }
-
         /* العمود الأيسر: شبكة الإجماليات */
         .left-summary-col {
-            display: flex; flex-direction: column;
-            gap: 8px; margin-right: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-right: auto;
         }
         .summary-metrics-grid {
             display: grid;
@@ -265,21 +334,30 @@
             align-items: center;
         }
         .metric-line {
-            display: flex; align-items: center;
-            justify-content: flex-end; gap: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
         }
         .metric-line label {
-            font-size: 12.5px; font-weight: 900;
-            color: #1e293b; margin: 0;
-            min-width: 95px; text-align: right;
+            font-size: 12.5px;
+            font-weight: 900;
+            color: #1e293b;
+            margin: 0;
+            min-width: 95px;
+            text-align: right;
             white-space: nowrap;
         }
         .metric-box {
-            width: 118px; height: 27px;
+            width: 118px;
+            height: 27px;
             border: 1px solid #64748b;
             background: #f8fafc;
-            display: inline-flex; align-items: center; justify-content: center;
-            font-size: 14px; font-weight: 900;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 900;
             border-radius: 3px;
         }
         .m-total  { background: #52525b; color: #4ade80; border-color: #374151; }
@@ -288,12 +366,12 @@
         .m-net    { background: #a3e635; color: #0f172a; font-size: 15px; }
         .m-purple { color: #6d28d9; }
         .m-blue   { color: #1d4ed8; }
-
         .export-close-row {
-            display: flex; justify-content: flex-end;
-            align-items: center; gap: 7px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 7px;
         }
-
         /* طباعة */
         @media print {
             .top-bar, .filters-bar, .right-ops-col, .export-close-row, .modal { display: none !important; }
@@ -311,18 +389,12 @@
     </style>
 </head>
 <body>
-
 <div class="page-shell">
-
-    {{-- ══════════════════════════════════════════
-         1. الشريط العلوي
-    ══════════════════════════════════════════ --}}
+    {{-- ══════════════════════════════════════════ 1. الشريط العلوي ══════════════════════════════════════════ --}}
     <header class="top-bar">
         <h1 class="archive-title">
-            <i class="fas fa-boxes-packing text-success"></i>
-            أرشيف الطلبات
+            <i class="fas fa-boxes-packing text-success"></i> أرشيف الطلبات
         </h1>
-
         <div class="date-period-group">
             <label>فترة البحث:</label>
             <select class="form-select form-select-sm fw-bold w-auto" id="period-mode">
@@ -332,7 +404,6 @@
                 <option value="after">بعد تاريخ</option>
                 <option value="all">كل الفترات</option>
             </select>
-
             <div class="date-stepper" id="single-day-stepper">
                 <button type="button" class="step-arrow" id="btn-next-day" title="اليوم التالي">
                     <i class="fas fa-arrow-right"></i>
@@ -342,35 +413,30 @@
                     <i class="fas fa-arrow-left"></i>
                 </button>
             </div>
-
             <div class="d-none align-items-center gap-2" id="range-date-inputs">
                 <input type="date" class="form-control form-control-sm en-digit" id="date-from-input">
                 <span class="fw-bold small text-muted" id="date-to-separator">إلى</span>
                 <input type="date" class="form-control form-control-sm en-digit" id="date-to-input">
             </div>
         </div>
-
         <div class="top-bar-controls">
             <select class="form-select form-select-sm fw-bold w-auto" id="quick-shift-mode">
                 <option value="all">كل الورديات</option>
                 <option value="morning">صباحية</option>
                 <option value="evening">مسائية</option>
             </select>
-
             <div class="form-check d-flex align-items-center gap-1 mb-0">
                 <input class="form-check-input" type="checkbox" id="toggle-show-profits" checked>
                 <label class="form-check-label profit-toggle-label" for="toggle-show-profits">
                     <i class="fas fa-calculator"></i> أرباح الفواتير
                 </label>
             </div>
-
             <div class="form-check d-flex align-items-center gap-1 mb-0">
                 <input class="form-check-input" type="checkbox" id="toggle-deleted-orders">
                 <label class="form-check-label fw-bold small" for="toggle-deleted-orders" style="cursor:pointer;color:#555;">
                     <i class="fas fa-trash-can text-danger"></i> المحذوفات
                 </label>
             </div>
-
             <div class="dropdown">
                 <button class="btn btn-sm btn-outline-secondary fw-bold dropdown-toggle" type="button" data-bs-toggle="dropdown">
                     <i class="fas fa-sliders"></i> خيارات
@@ -380,46 +446,34 @@
                     <li><a class="dropdown-item fw-bold" href="#" id="opt-reset-filters"><i class="fas fa-rotate me-2 text-primary"></i>إعادة ضبط جميع الفلاتر</a></li>
                 </ul>
             </div>
-
             <button type="button" class="btn btn-sm btn-danger fw-bold px-3" id="btn-top-exit">
                 <i class="fas fa-sign-out-alt"></i> خروج (Esc)
             </button>
         </div>
     </header>
 
-    {{-- ══════════════════════════════════════════
-         2. شريط الفلاتر
-    ══════════════════════════════════════════ --}}
+    {{-- ══════════════════════════════════════════ 2. شريط الفلاتر ══════════════════════════════════════════ --}}
     <section class="filters-bar">
         <div class="filter-chip">
             <label>الوردية:</label>
             <select class="form-select form-select-sm" id="filter-shift" style="min-width:130px;">
                 <option value="all">الكل</option>
-                <option value="مدير الفرع">مدير الفرع</option>
-                <option value="كاشير 1">كاشير 1</option>
             </select>
         </div>
         <div class="filter-divider"></div>
-
         <div class="filter-chip">
             <label>إنشاء:</label>
             <select class="form-select form-select-sm" id="filter-created-by" style="min-width:115px;">
                 <option value="all">الكل</option>
-                <option value="مدير الفرع">مدير الفرع</option>
-                <option value="أحمد كاشير">أحمد كاشير</option>
             </select>
         </div>
-
         <div class="filter-chip">
             <label>إغلاق:</label>
             <select class="form-select form-select-sm" id="filter-closed-by" style="min-width:115px;">
                 <option value="all">الكل</option>
-                <option value="مدير الفرع">مدير الفرع</option>
-                <option value="أحمد كاشير">أحمد كاشير</option>
             </select>
         </div>
         <div class="filter-divider"></div>
-
         <div class="filter-chip">
             <label>النوع:</label>
             <select class="form-select form-select-sm" id="filter-order-type" style="min-width:120px;">
@@ -429,60 +483,41 @@
                 <option value="أونلاين">أونلاين</option>
             </select>
         </div>
-
         <div class="filter-chip">
             <label>المندوب:</label>
             <select class="form-select form-select-sm" id="filter-courier" style="min-width:120px;">
                 <option value="all">الكل</option>
-                <option value="كابتن محمد">كابتن محمد</option>
-                <option value="كابتن حسن">كابتن حسن</option>
             </select>
         </div>
         <div class="filter-divider"></div>
-
         <div class="filter-chip">
             <label>فاتورة:</label>
-            <input type="text" class="form-control form-control-sm numeric-input" id="filter-order-no"
-                   placeholder="رقم الفاتورة" style="width:95px;text-align:center;">
+            <input type="text" class="form-control form-control-sm numeric-input" id="filter-order-no" placeholder="رقم الفاتورة" style="width:95px;text-align:center;">
         </div>
-
         <div class="filter-chip">
             <label>العميل:</label>
-            <input type="text" class="form-control form-control-sm" id="filter-customer"
-                   placeholder="ابحث..." style="width:110px;">
+            <input type="text" class="form-control form-control-sm" id="filter-customer" placeholder="ابحث..." style="width:110px;">
         </div>
-
         <div class="filter-chip">
             <label>الخزينة:</label>
             <select class="form-select form-select-sm" id="filter-safe" style="min-width:115px;">
                 <option value="all">الكل</option>
-                <option value="الدرج">درج الكاشير</option>
-                <option value="الخزينة الرئيسية">الخزينة الرئيسية</option>
             </select>
         </div>
         <div class="filter-divider"></div>
-
         <div class="filter-chip">
             <label>التصنيف:</label>
             <select class="form-select form-select-sm" id="filter-category" style="min-width:135px;">
                 <option value="all">كل التصنيفات</option>
-                <option value="عناية وتجميل">عناية وتجميل</option>
-                <option value="توابل وعطارة">توابل وعطارة</option>
-                <option value="بقوليات">بقوليات</option>
-                <option value="زيوت وسمن">زيوت وسمن</option>
             </select>
         </div>
-
         <div class="filter-item-search-wrap">
-            <input type="search" id="filter-item-search"
-                   placeholder="بحث بالصنف أو الباركود (F3)" autocomplete="off">
+            <input type="search" id="filter-item-search" placeholder="بحث بالصنف أو الباركود (F3)" autocomplete="off">
             <i class="fas fa-search"></i>
         </div>
     </section>
 
-    {{-- ══════════════════════════════════════════
-         3. جدول الفواتير
-    ══════════════════════════════════════════ --}}
+    {{-- ══════════════════════════════════════════ 3. جدول الفواتير ══════════════════════════════════════════ --}}
     <main class="table-panel">
         <table class="archive-table" id="ordersArchiveTable">
             <thead>
@@ -513,11 +548,8 @@
         </table>
     </main>
 
-    {{-- ══════════════════════════════════════════
-         4. الشريط السفلي — عمودين (أزرار + إجماليات)
-    ══════════════════════════════════════════ --}}
+    {{-- ══════════════════════════════════════════ 4. الشريط السفلي — عمودين (أزرار + إجماليات) ══════════════════════════════════════════ --}}
     <footer class="bottom-bar">
-
         {{-- العمود الأيمن: مجموعتا أزرار فوق بعض --}}
         <div class="right-ops-col">
             {{-- المجموعة الأولى: العمليات --}}
@@ -535,7 +567,6 @@
                     <i class="fas fa-id-card"></i> حساب العميل
                 </button>
             </div>
-
             {{-- المجموعة الثانية: الطباعة والتصدير --}}
             <div class="ops-btn-group">
                 <button type="button" class="btn btn-outline-dark bg-white btn-archive-op" id="btn-print-summary">
@@ -570,7 +601,6 @@
                     <label>عدد الفواتير:</label>
                     <span class="metric-box m-purple en-digit" id="sum-invoices-count">0</span>
                 </div>
-
                 <div class="metric-line">
                     <label>المدفوع:</label>
                     <span class="metric-box m-paid en-digit" id="sum-paid-total">0</span>
@@ -579,7 +609,6 @@
                     <label>خصم فواتير:</label>
                     <span class="metric-box m-red en-digit" id="sum-invoice-discounts">0</span>
                 </div>
-
                 <div class="metric-line">
                     <label>المرتجعات:</label>
                     <span class="metric-box m-red en-digit" id="sum-returns-total">0</span>
@@ -588,17 +617,14 @@
                     <label>خصومات:</label>
                     <span class="metric-box m-red en-digit" id="sum-item-discounts">0</span>
                 </div>
-
                 <div class="metric-line">
                     <label>المصروفات:</label>
-                    <span class="metric-box m-red en-digit" id="sum-expenses-total"
-                          title="اضغط لتعديل مصروفات الوردية" style="cursor:pointer;">0</span>
+                    <span class="metric-box m-red en-digit" id="sum-expenses-total" title="اضغط لتعديل مصروفات الوردية" style="cursor:pointer;">0</span>
                 </div>
                 <div class="metric-line">
                     <label>خدمة:</label>
                     <span class="metric-box m-blue en-digit" id="sum-service-total">0</span>
                 </div>
-
                 <div class="metric-line">
                     <label>إجمالي صافي:</label>
                     <span class="metric-box m-net en-digit" id="sum-net-total">0</span>
@@ -608,16 +634,12 @@
                     <span class="metric-box m-blue en-digit" id="sum-profits-total">0</span>
                 </div>
             </div>
-
             <div class="export-close-row">
                 {{-- هنا ممكن تضيف أزرار إضافية مستقبلاً --}}
             </div>
         </div>
-
     </footer>
-
 </div>{{-- /page-shell --}}
-
 
 {{-- مودال تفاصيل الفاتورة --}}
 <div class="modal fade" id="orderDetailsModal" tabindex="-1" aria-hidden="true">
@@ -640,151 +662,24 @@
     </div>
 </div>
 
-
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
 <script>
 $(function () {
-
-    const STORAGE_KEY = 'nextstore.orders.archive.v1';
-    const EXPENSE_KEY = 'nextstore.shift.expenses.v1';
+    const API_BASE_URL = '/api/orders';
+    const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
     const detailsModal = bootstrap.Modal.getOrCreateInstance(
         document.getElementById('orderDetailsModal')
     );
 
-    /* ══════════════════════════════════════════
-       بيانات تجريبية (Seed Data)
-       ملاحظة: هذه بيانات وهمية للاختبار فقط.
-       عند ربط الـ Backend ستُستبدل بـ API call.
-    ══════════════════════════════════════════ */
-    const today = new Date().toISOString().slice(0, 10);
-
-    const SEED_ORDERS = [
-        {
-            id: 'ord-1', orderNo: 35460, orderType: 'استلام',
-            date: today, createdAt: today + ' 08:12AM', closedAt: today + ' 08:15AM',
-            customerName: 'عميل نقدي', customerId: 'cash',
-            snippet: 'لوريال صبغة شعر بني + أكسجين 20%',
-            qty: 2, grossTotal: 236, service: 0, invoiceDiscount: 0,
-            itemDiscount: 0, cost: 140, paid: 236, returnsValue: 0,
-            createdBy: 'مدير الفرع', createdDevice: 'DESKTOP-A1',
-            confirmedBy: 'مدير الفرع', confirmedDevice: 'DESKTOP-A1',
-            shift: 'مدير الفرع', courier: '', safe: 'الدرج',
-            category: 'عناية وتجميل', note: '', deleted: false,
-            items: [
-                { name: 'لوريال صبغة شعر بني غامق', barcode: '360052', qty: 1, price: 150, cost: 90 },
-                { name: 'أكسجين لوريال كريم 20%',   barcode: '360088', qty: 1, price: 86,  cost: 50 }
-            ]
-        },
-        {
-            id: 'ord-2', orderNo: 35461, orderType: 'توصيل',
-            date: today, createdAt: today + ' 09:05AM', closedAt: today + ' 09:40AM',
-            customerName: 'شركة النور للتجارة', customerId: 'c-002',
-            snippet: 'كمون + فلفل + كزبرة + حلبة',
-            qty: 8, grossTotal: 420, service: 25, invoiceDiscount: 15,
-            itemDiscount: 0, cost: 280, paid: 430, returnsValue: 0,
-            createdBy: 'أحمد كاشير', createdDevice: 'DESKTOP-B2',
-            confirmedBy: 'أحمد كاشير', confirmedDevice: 'DESKTOP-B2',
-            shift: 'كاشير 1', courier: 'كابتن محمد', safe: 'الدرج',
-            category: 'توابل وعطارة', note: 'توصيل أول ما يوصل', deleted: false,
-            items: [
-                { name: 'كمون مطحون 500g',  barcode: '5001', qty: 2, price: 60,  cost: 38 },
-                { name: 'فلفل أسود 250g',   barcode: '5002', qty: 3, price: 45,  cost: 28 },
-                { name: 'كزبرة مطحونة 1kg', barcode: '5003', qty: 2, price: 75,  cost: 50 },
-                { name: 'حلبة 500g',        barcode: '5004', qty: 1, price: 35,  cost: 22 }
-            ]
-        },
-        {
-            id: 'ord-3', orderNo: 35462, orderType: 'استلام',
-            date: today, createdAt: today + ' 10:22AM', closedAt: today + ' 10:25AM',
-            customerName: 'محمود حسن', customerId: 'c-003',
-            snippet: 'عدس أصفر 1kg × 2',
-            qty: 2, grossTotal: 70, service: 0, invoiceDiscount: 5,
-            itemDiscount: 0, cost: 44, paid: 65, returnsValue: 0,
-            createdBy: 'أحمد كاشير', createdDevice: 'DESKTOP-B2',
-            confirmedBy: 'أحمد كاشير', confirmedDevice: 'DESKTOP-B2',
-            shift: 'كاشير 1', courier: '', safe: 'الدرج',
-            category: 'بقوليات', note: '', deleted: false,
-            items: [
-                { name: 'عدس أصفر 1kg', barcode: '7001', qty: 2, price: 35, cost: 22 }
-            ]
-        },
-        {
-            id: 'ord-4', orderNo: 35463, orderType: 'توصيل',
-            date: today, createdAt: today + ' 11:08AM', closedAt: today + ' 12:00PM',
-            customerName: 'صيدلية الرحمة', customerId: 'c-004',
-            snippet: 'شامبو بانتين + كريم نيفيا + مزيل عرق',
-            qty: 6, grossTotal: 780, service: 30, invoiceDiscount: 30,
-            itemDiscount: 0, cost: 510, paid: 780, returnsValue: 0,
-            createdBy: 'مدير الفرع', createdDevice: 'DESKTOP-A1',
-            confirmedBy: 'مدير الفرع', confirmedDevice: 'DESKTOP-A1',
-            shift: 'مدير الفرع', courier: 'كابتن حسن', safe: 'الخزينة الرئيسية',
-            category: 'عناية وتجميل', note: 'دفع آجل — مسموح', deleted: false,
-            items: [
-                { name: 'شامبو بانتين 400ml',  barcode: '8001', qty: 3, price: 120, cost: 78 },
-                { name: 'كريم نيفيا بودي 400ml',barcode: '8002', qty: 2, price: 165, cost: 110 },
-                { name: 'مزيل عرق دوف 150ml',   barcode: '8003', qty: 1, price: 90,  cost: 56 }
-            ]
-        },
-        {
-            id: 'ord-5', orderNo: 35464, orderType: 'أونلاين',
-            date: today, createdAt: today + ' 12:30PM', closedAt: today + ' 01:15PM',
-            customerName: 'نورا العلي', customerId: 'c-005',
-            snippet: 'زيت زيتون بكر + سمن بلدي',
-            qty: 3, grossTotal: 410, service: 20, invoiceDiscount: 0,
-            itemDiscount: 0, cost: 265, paid: 430, returnsValue: 0,
-            createdBy: 'مدير الفرع', createdDevice: 'DESKTOP-A1',
-            confirmedBy: 'مدير الفرع', confirmedDevice: 'DESKTOP-A1',
-            shift: 'مدير الفرع', courier: 'كابتن محمد', safe: 'الدرج',
-            category: 'زيوت وسمن', note: 'طلب من الموقع', deleted: false,
-            items: [
-                { name: 'زيت زيتون بكر ممتاز 1L', barcode: '9001', qty: 2, price: 160, cost: 105 },
-                { name: 'سمن بلدي أصلي 500g',      barcode: '9002', qty: 1, price: 90,  cost: 55 }
-            ]
-        },
-        {
-            id: 'ord-6', orderNo: 35465, orderType: 'استلام',
-            date: today, createdAt: today + ' 02:10PM', closedAt: today + ' 02:12PM',
-            customerName: 'عميل نقدي', customerId: 'cash',
-            snippet: 'رز بسمتي 2kg',
-            qty: 1, grossTotal: 95, service: 0, invoiceDiscount: 0,
-            itemDiscount: 0, cost: 62, paid: 95, returnsValue: 0,
-            createdBy: 'أحمد كاشير', createdDevice: 'DESKTOP-B2',
-            confirmedBy: 'أحمد كاشير', confirmedDevice: 'DESKTOP-B2',
-            shift: 'كاشير 1', courier: '', safe: 'الدرج',
-            category: 'بقوليات', note: '', deleted: false,
-            items: [
-                { name: 'رز بسمتي ممتاز 2kg', barcode: '7050', qty: 1, price: 95, cost: 62 }
-            ]
-        },
-        {
-            id: 'ord-7', orderNo: 35466, orderType: 'استلام',
-            date: today, createdAt: today + ' 03:00PM', closedAt: '',
-            customerName: 'كريم محمود', customerId: 'c-007',
-            snippet: 'فاتورة معلقة — لم تُغلق بعد',
-            qty: 4, grossTotal: 320, service: 0, invoiceDiscount: 20,
-            itemDiscount: 0, cost: 0, paid: 300, returnsValue: 0,
-            createdBy: 'أحمد كاشير', createdDevice: 'DESKTOP-B2',
-            confirmedBy: '', confirmedDevice: '',
-            shift: 'كاشير 1', courier: '', safe: 'الدرج',
-            category: 'عناية وتجميل', note: 'معلق - ينتظر تأكيد', deleted: false,
-            items: [
-                { name: 'غسول وجه نيفيا 150ml', barcode: '8100', qty: 2, price: 85,  cost: 0 },
-                { name: 'كريم يدين نيفيا 75ml',  barcode: '8101', qty: 2, price: 75,  cost: 0 }
-            ]
-        }
-    ];
-
-    /* ══════════════════════════════════════════
-       الحالة
-    ══════════════════════════════════════════ */
+    /* ══════════════════════════════════════════ الحالة ══════════════════════════════════════════ */
     let orders = [];
     let shiftExpenses = 0;
     let selectedOrderId = null;
     let currentDate = new Date();
+    let isLoading = false;
 
     /* ══ دوال مساعدة ══ */
     function toEnglishDigits(str) {
@@ -792,35 +687,96 @@ $(function () {
             .replace(/[٠-٩۰-۹]/g, d => String('٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹'.indexOf(d) % 10))
             .replace(/\u066B/g, '.').replace(/\u066C/g, '');
     }
+
     function normalize(str) {
         return toEnglishDigits(str)
             .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
             .toLocaleLowerCase('ar').trim();
     }
-    function escapeHtml(str) { return $('<div>').text(String(str ?? '')).html(); }
+
+    function escapeHtml(str) {
+        return $('<div>').text(String(str ?? '')).html();
+    }
+
     function formatMoney(val) {
         const n = Number(val) || 0;
         return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.00$/, '');
     }
+
     function typeBadge(type) {
-        if (type === 'توصيل')  return `<span class="type-badge type-delivery"><i class="fas fa-motorcycle"></i> توصيل</span>`;
+        if (type === 'توصيل')   return `<span class="type-badge type-delivery"><i class="fas fa-motorcycle"></i> توصيل</span>`;
         if (type === 'أونلاين') return `<span class="type-badge type-online"><i class="fas fa-globe"></i> أونلاين</span>`;
         return `<span class="type-badge type-pickup"><i class="fas fa-store"></i> استلام</span>`;
     }
 
-    /* ══ تحميل البيانات ══ */
-    try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        orders = saved ? JSON.parse(saved) : [...SEED_ORDERS];
-        if (!Array.isArray(orders) || !orders.length) orders = [...SEED_ORDERS];
-        shiftExpenses = Number(localStorage.getItem(EXPENSE_KEY)) || 0;
-    } catch (e) { orders = [...SEED_ORDERS]; }
+    async function apiRequest(url, method = 'GET', payload = null) {
+        const options = {
+            method,
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': CSRF_TOKEN,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        };
+        if (payload !== null) {
+            options.body = JSON.stringify(payload);
+        }
+        const response = await fetch(url, options);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data.message || 'حدث خطأ أثناء الاتصال بقاعدة البيانات.');
+        }
+        return data;
+    }
 
-    function saveOrders() { localStorage.setItem(STORAGE_KEY, JSON.stringify(orders)); }
+    function populateFilterSelect($select, items, defaultLabel = 'الكل') {
+        const currentVal = $select.val() || 'all';
+        let html = `<option value="all">${escapeHtml(defaultLabel)}</option>`;
+        (items || []).forEach(val => {
+            html += `<option value="${escapeHtml(val)}">${escapeHtml(val)}</option>`;
+        });
+        $select.html(html);
+        if ((items || []).includes(currentVal)) {
+            $select.val(currentVal);
+        } else {
+            $select.val('all');
+        }
+    }
+
+    /* ══ تحميل الفواتير من قاعدة البيانات ══ */
+    async function loadOrdersFromServer() {
+        if (isLoading) return;
+        isLoading = true;
+
+        try {
+            const showDeleted = $('#toggle-deleted-orders').is(':checked') ? '1' : '0';
+            const data = await apiRequest(`${API_BASE_URL}/archive?deleted=${showDeleted}`, 'GET');
+
+            orders = Array.isArray(data.orders) ? data.orders : [];
+
+            if (data.filters) {
+                populateFilterSelect($('#filter-shift'), data.filters.shifts, 'الكل');
+                populateFilterSelect($('#filter-created-by'), data.filters.created_by, 'الكل');
+                populateFilterSelect($('#filter-closed-by'), data.filters.closed_by, 'الكل');
+                populateFilterSelect($('#filter-courier'), data.filters.couriers, 'الكل');
+                populateFilterSelect($('#filter-safe'), data.filters.safes, 'الكل');
+                populateFilterSelect($('#filter-category'), data.filters.categories, 'كل التصنيفات');
+            }
+
+            renderArchive();
+        } catch (error) {
+            Swal.fire('خطأ في التحميل', error.message || 'تعذر تحميل أرشيف الطلبات من الخادم.', 'error');
+            orders = [];
+            renderArchive();
+        } finally {
+            isLoading = false;
+        }
+    }
 
     /* ══ حساب مؤشرات الفاتورة ══ */
     function computeMetrics(ord) {
-        const gross   = Number(ord.grossTotal)     || 0;
+        const gross   = Number(ord.grossTotal)      || 0;
         const service = Number(ord.service)         || 0;
         const disc    = Number(ord.invoiceDiscount) || 0;
         const invVal  = gross + service - disc;
@@ -837,8 +793,16 @@ $(function () {
         $('#arabic-date-display').html(`${dayName} ${iso.replace(/-/g, '/')}`);
     }
 
-    $('#btn-prev-day').on('click', () => { currentDate.setDate(currentDate.getDate() - 1); updateDateLabel(); renderArchive(); });
-    $('#btn-next-day').on('click', () => { currentDate.setDate(currentDate.getDate() + 1); updateDateLabel(); renderArchive(); });
+    $('#btn-prev-day').on('click', () => {
+        currentDate.setDate(currentDate.getDate() - 1);
+        updateDateLabel();
+        renderArchive();
+    });
+    $('#btn-next-day').on('click', () => {
+        currentDate.setDate(currentDate.getDate() + 1);
+        updateDateLabel();
+        renderArchive();
+    });
 
     $('#period-mode').on('change', function () {
         const mode = $(this).val();
@@ -858,12 +822,13 @@ $(function () {
 
     /* ══ عرض الجدول ══ */
     function renderArchive() {
-        const showProfits = $('#toggle-show-profits').is(':checked');
-        const showDeleted = $('#toggle-deleted-orders').is(':checked');
-        const periodMode  = $('#period-mode').val();
-        const dayIso      = currentDate.toISOString().slice(0, 10);
-        const fromDate    = $('#date-from-input').val();
-        const toDate      = $('#date-to-input').val();
+        const showProfits    = $('#toggle-show-profits').is(':checked');
+        const showDeleted    = $('#toggle-deleted-orders').is(':checked');
+        const periodMode     = $('#period-mode').val();
+        const dayIso         = currentDate.toISOString().slice(0, 10);
+        const fromDate       = $('#date-from-input').val();
+        const toDate         = $('#date-to-input').val();
+        const quickShiftMode = $('#quick-shift-mode').val();
 
         const fShift    = $('#filter-shift').val();
         const fCreated  = $('#filter-created-by').val();
@@ -876,22 +841,30 @@ $(function () {
         const fCustomer = normalize($('#filter-customer').val());
         const fItem     = normalize($('#filter-item-search').val());
 
+        // تحديث نص زر الحذف/الاسترجاع حسب وضع المحذوفات
+        if (showDeleted) {
+            $('#btn-delete-order').html('<i class="fas fa-trash-arrow-up"></i> استرجاع (Del)');
+        } else {
+            $('#btn-delete-order').html('<i class="fas fa-times"></i> حذف (Del)');
+        }
+
         const filtered = orders.filter(ord => {
             if (Boolean(ord.deleted) !== showDeleted) return false;
-            if (periodMode === 'day'    && ord.date !== dayIso)                    return false;
-            if (periodMode === 'range'  && fromDate && ord.date < fromDate)        return false;
-            if (periodMode === 'range'  && toDate   && ord.date > toDate)          return false;
-            if (periodMode === 'before' && fromDate && !(ord.date < fromDate))     return false;
-            if (periodMode === 'after'  && fromDate && !(ord.date > fromDate))     return false;
-            if (fShift   !== 'all' && ord.shift       !== fShift)    return false;
-            if (fCreated !== 'all' && ord.createdBy   !== fCreated)  return false;
-            if (fClosed  !== 'all' && ord.confirmedBy !== fClosed)   return false;
-            if (fType    !== 'all' && ord.orderType   !== fType)     return false;
-            if (fCourier !== 'all' && ord.courier     !== fCourier)  return false;
-            if (fSafe    !== 'all' && ord.safe        !== fSafe)     return false;
-            if (fCat     !== 'all' && ord.category    !== fCat)      return false;
-            if (fOrderNo  && !normalize(String(ord.orderNo)).includes(fOrderNo))   return false;
-            if (fCustomer && !normalize(ord.customerName).includes(fCustomer))     return false;
+            if (periodMode === 'day'    && ord.date !== dayIso)                   return false;
+            if (periodMode === 'range'  && fromDate && ord.date < fromDate)       return false;
+            if (periodMode === 'range'  && toDate   && ord.date > toDate)         return false;
+            if (periodMode === 'before' && fromDate && !(ord.date < fromDate))    return false;
+            if (periodMode === 'after'  && fromDate && !(ord.date > fromDate))    return false;
+            if (quickShiftMode !== 'all' && ord.shiftPeriod && ord.shiftPeriod !== quickShiftMode) return false;
+            if (fShift   !== 'all' && ord.shift       !== fShift)   return false;
+            if (fCreated !== 'all' && ord.createdBy   !== fCreated) return false;
+            if (fClosed  !== 'all' && ord.confirmedBy !== fClosed)  return false;
+            if (fType    !== 'all' && ord.orderType   !== fType)    return false;
+            if (fCourier !== 'all' && ord.courier     !== fCourier) return false;
+            if (fSafe    !== 'all' && ord.safe        !== fSafe)    return false;
+            if (fCat     !== 'all' && ord.category    !== fCat)     return false;
+            if (fOrderNo  && !normalize(String(ord.orderNo)).includes(fOrderNo))  return false;
+            if (fCustomer && !normalize(ord.customerName).includes(fCustomer))    return false;
             if (fItem) {
                 const txt = (ord.items||[]).map(i=>`${i.name} ${i.barcode}`).join(' ') + ' ' + (ord.snippet||'');
                 if (!normalize(txt).includes(fItem)) return false;
@@ -912,10 +885,9 @@ $(function () {
                     ? `<span class="en-digit">${escapeHtml(ord.closedAt)}</span>`
                     : `<span class="text-warning fw-bold">معلق</span>`;
                 return `
-                <tr class="archive-row ${ord.id === selectedOrderId ? 'active-row' : ''} ${ord.deleted ? 'deleted-row' : ''}"
-                    data-id="${escapeHtml(ord.id)}">
+                <tr class="archive-row ${String(ord.id) === String(selectedOrderId) ? 'active-row' : ''} ${ord.deleted ? 'deleted-row' : ''}" data-id="${escapeHtml(ord.id)}">
                     <td class="en-digit text-muted">${idx + 1}</td>
-                    <td class="en-digit fw-bold" style="font-size:14px;">${ord.orderNo}</td>
+                    <td class="en-digit fw-bold" style="font-size:14px;">${escapeHtml(ord.orderNo)}</td>
                     <td>${typeBadge(ord.orderType)}</td>
                     <td class="en-digit" style="font-size:11.5px;">${escapeHtml(ord.createdAt)}</td>
                     <td style="font-size:11.5px;">${closedAt}</td>
@@ -970,7 +942,9 @@ $(function () {
         updateActionButtons();
     }
 
-    function getSelectedOrder() { return orders.find(o => o.id === selectedOrderId) || null; }
+    function getSelectedOrder() {
+        return orders.find(o => String(o.id) === String(selectedOrderId)) || null;
+    }
 
     function updateActionButtons() {
         const has = Boolean(getSelectedOrder());
@@ -978,7 +952,7 @@ $(function () {
     }
 
     /* ربط الفلاتر */
-    $('.filters-bar select, .filters-bar input, #toggle-show-profits, #toggle-deleted-orders, #date-from-input, #date-to-input')
+    $('.filters-bar select, .filters-bar input, #toggle-show-profits, #quick-shift-mode, #date-from-input, #date-to-input')
         .on('input change', function () {
             if ($(this).hasClass('numeric-input')) {
                 const c = toEnglishDigits(this.value);
@@ -986,6 +960,11 @@ $(function () {
             }
             renderArchive();
         });
+
+    $('#toggle-deleted-orders').on('change', function () {
+        selectedOrderId = null;
+        loadOrdersFromServer();
+    });
 
     /* اختيار صف */
     $('#archive-tbody').on('click', '.archive-row', function () {
@@ -1004,7 +983,7 @@ $(function () {
     function openOrderDetails(ord) {
         const m = computeMetrics(ord);
         $('#modal-order-title').html(
-            `تفاصيل الفاتورة رقم <span class="en-digit text-warning">#${ord.orderNo}</span> — ${escapeHtml(ord.customerName)}`
+            `تفاصيل الفاتورة رقم <span class="en-digit text-warning">#${escapeHtml(ord.orderNo)}</span> — ${escapeHtml(ord.customerName)}`
         );
         const rows = (ord.items || []).map((item, i) => `
             <tr>
@@ -1024,13 +1003,12 @@ $(function () {
                 <thead class="table-secondary">
                     <tr><th>م</th><th>الصنف</th><th>الكمية</th><th>سعر البيع</th><th>الإجمالي</th></tr>
                 </thead>
-                <tbody>${rows}</tbody>
+                <tbody>${rows || '<tr><td colspan="5" class="text-muted">لا توجد أصناف مسجلة</td></tr>'}</tbody>
             </table>
             <div class="row g-2 align-items-center bg-warning-subtle p-2 rounded border">
                 <div class="col-md-5 fw-bold">تكلفة الفاتورة (لحساب الربح):</div>
                 <div class="col-md-4">
-                    <input type="text" inputmode="decimal" class="form-control form-control-sm numeric-input text-center"
-                           id="modal-edit-cost" value="${m.cost}">
+                    <input type="text" inputmode="decimal" class="form-control form-control-sm numeric-input text-center" id="modal-edit-cost" value="${m.cost}">
                 </div>
                 <div class="col-md-3">
                     <button type="button" class="btn btn-sm btn-primary w-100 fw-bold" id="btn-save-order-cost">
@@ -1042,14 +1020,25 @@ $(function () {
         detailsModal.show();
     }
 
-    $(document).on('click', '#btn-save-order-cost', function () {
+    $(document).on('click', '#btn-save-order-cost', async function () {
         const ord = getSelectedOrder();
         if (!ord) return;
-        ord.cost = Math.max(0, Number(toEnglishDigits($('#modal-edit-cost').val())) || 0);
-        saveOrders();
-        renderArchive();
-        detailsModal.hide();
-        Swal.fire({ title: 'تم تحديث التكلفة والربح', icon: 'success', timer: 1100, showConfirmButton: false });
+        const newCost = Math.max(0, Number(toEnglishDigits($('#modal-edit-cost').val())) || 0);
+
+        try {
+            const res = await apiRequest(`${API_BASE_URL}/${encodeURIComponent(ord.id)}/cost`, 'PATCH', {
+                cost: newCost
+            });
+            const idx = orders.findIndex(o => String(o.id) === String(ord.id));
+            if (idx !== -1 && res.order) {
+                orders[idx] = res.order;
+            }
+            renderArchive();
+            detailsModal.hide();
+            Swal.fire({ title: 'تم تحديث التكلفة والربح', icon: 'success', timer: 1100, showConfirmButton: false });
+        } catch (error) {
+            Swal.fire('خطأ', error.message || 'تعذر تحديث التكلفة.', 'error');
+        }
     });
 
     /* مصروفات الوردية */
@@ -1066,7 +1055,6 @@ $(function () {
         }).then(res => {
             if (!res.isConfirmed) return;
             shiftExpenses = Math.max(0, Number(toEnglishDigits(res.value)) || 0);
-            localStorage.setItem(EXPENSE_KEY, String(shiftExpenses));
             renderArchive();
         });
     });
@@ -1075,26 +1063,64 @@ $(function () {
     $('#opt-reset-filters').on('click', function (e) {
         e.preventDefault();
         $('.filters-bar select').val('all');
+        $('#quick-shift-mode').val('all');
         $('.filters-bar input[type="text"], .filters-bar input[type="search"]').val('');
+        const wasDeletedChecked = $('#toggle-deleted-orders').is(':checked');
         $('#toggle-deleted-orders').prop('checked', false);
         $('#period-mode').val('day').trigger('change');
-        renderArchive();
+        if (wasDeletedChecked) {
+            loadOrdersFromServer();
+        } else {
+            renderArchive();
+        }
     });
 
     /* أزرار العمليات */
     $('#btn-create-order').on('click', () => window.location.href = '/pos/sales');
-
     $('#btn-return-order, #modal-btn-partial-return').on('click', function () {
         const ord = getSelectedOrder();
         if (!ord) return;
-        window.location.href = `/pos/returns/partial?invoice=${ord.orderNo}`;
+        window.location.href = `/pos/returns/partial?invoice=${encodeURIComponent(ord.orderNo)}`;
     });
-
-    $('#btn-customer-account').on('click', () => window.location.href = '/customers/show');
+    $('#btn-customer-account').on('click', function () {
+        const ord = getSelectedOrder();
+        if (ord && ord.customerId) {
+            window.location.href = `/customers/show?id=${encodeURIComponent(ord.customerId)}`;
+        } else {
+            window.location.href = '/customers';
+        }
+    });
 
     $('#btn-delete-order').on('click', function () {
         const ord = getSelectedOrder();
         if (!ord) return;
+
+        if (ord.deleted) {
+            // استرجاع الفاتورة من المحذوفات
+            Swal.fire({
+                title: 'استرجاع الفاتورة؟',
+                text: `هل تريد استرجاع الطلب رقم #${ord.orderNo} من المحذوفات؟`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#119744',
+                confirmButtonText: 'نعم، استرجع',
+                cancelButtonText: 'إلغاء'
+            }).then(async res => {
+                if (!res.isConfirmed) return;
+                try {
+                    await apiRequest(`${API_BASE_URL}/${encodeURIComponent(ord.id)}/restore`, 'POST');
+                    orders = orders.filter(o => String(o.id) !== String(ord.id));
+                    selectedOrderId = null;
+                    renderArchive();
+                    Swal.fire({ title: 'تم استرجاع الفاتورة', icon: 'success', timer: 1100, showConfirmButton: false });
+                } catch (error) {
+                    Swal.fire('خطأ', error.message || 'تعذر استرجاع الفاتورة.', 'error');
+                }
+            });
+            return;
+        }
+
+        // حذف ناعم (SoftDelete)
         Swal.fire({
             title: 'حذف الفاتورة؟',
             text: `هل تريد نقل الطلب رقم #${ord.orderNo} إلى المحذوفات؟`,
@@ -1103,12 +1129,17 @@ $(function () {
             confirmButtonColor: '#dc3545',
             confirmButtonText: 'نعم، احذف',
             cancelButtonText: 'إلغاء'
-        }).then(res => {
+        }).then(async res => {
             if (!res.isConfirmed) return;
-            ord.deleted = true;
-            saveOrders();
-            selectedOrderId = null;
-            renderArchive();
+            try {
+                await apiRequest(`${API_BASE_URL}/${encodeURIComponent(ord.id)}`, 'DELETE');
+                orders = orders.filter(o => String(o.id) !== String(ord.id));
+                selectedOrderId = null;
+                renderArchive();
+                Swal.fire({ title: 'تم نقل الفاتورة إلى المحذوفات', icon: 'success', timer: 1100, showConfirmButton: false });
+            } catch (error) {
+                Swal.fire('خطأ', error.message || 'تعذر حذف الفاتورة.', 'error');
+            }
         });
     });
 
@@ -1135,6 +1166,11 @@ $(function () {
     }
     $('#btn-top-exit, #btn-bottom-close').on('click', exitPage);
     $('#btn-print-summary').on('click', () => window.print());
+    $('#btn-print-selected-invoice').on('click', function (e) {
+        e.preventDefault();
+        const ord = getSelectedOrder();
+        if (ord) openOrderDetails(ord);
+    });
 
     /* اختصارات الكيبورد */
     $(document).on('keydown', function (e) {
@@ -1146,7 +1182,7 @@ $(function () {
             case 'F3':     e.preventDefault(); $('#filter-item-search').trigger('focus').trigger('select'); return;
         }
 
-        const $rows    = $('#archive-tbody .archive-row');
+        const $rows     = $('#archive-tbody .archive-row');
         if (!$rows.length) return;
         const activeIdx = $rows.index($rows.filter('.active-row'));
 
@@ -1180,7 +1216,7 @@ $(function () {
     /* تهيئة */
     currentDate = new Date();
     updateDateLabel();
-    renderArchive();
+    loadOrdersFromServer();
 });
 </script>
 </body>

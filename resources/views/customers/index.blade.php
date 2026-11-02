@@ -3,13 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>قائمة العملاء | NextStore SaaS</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
     <style>
         :root {
             --primary: #119744;
@@ -41,87 +44,287 @@
         }
 
         .customers-header {
-            background: #ffffff; border-radius: 10px; padding: 10px 20px;
-            display: flex; justify-content: space-between; align-items: center;
-            border: 1px solid var(--border-color); border-right: 5px solid var(--primary);
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border-color);
+            border-right: 5px solid var(--primary);
             box-shadow: 0 2px 6px rgba(0,0,0,0.03);
         }
-        .customers-title { font-weight: 900; color: var(--dark); margin: 0; font-size: 20px; display: flex; align-items: center; gap: 10px; }
+
+        .customers-title {
+            font-weight: 900;
+            color: var(--dark);
+            margin: 0;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         .exit-btn {
-            background-color: var(--danger); color: white; font-weight: bold;
-            padding: 7px 18px; border-radius: 6px; border: none; display: inline-flex; align-items: center; gap: 8px;
+            background-color: var(--danger);
+            color: white;
+            font-weight: bold;
+            padding: 7px 18px;
+            border-radius: 6px;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .customers-content {
-            background-color: #fff; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-            border: 1px solid var(--border-color); display: flex; flex-direction: column; flex-grow: 1; overflow: hidden;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            overflow: hidden;
         }
 
         .top-filters-bar {
-            background-color: #f8f9fa; padding: 12px 16px; border-bottom: 2px solid var(--primary);
-            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+            background-color: #f8f9fa;
+            padding: 12px 16px;
+            border-bottom: 2px solid var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
         }
-        .search-group {
-            display: flex; align-items: center; background: #fff; border: 2px solid #ced4da;
-            border-radius: 6px; padding: 3px 10px; flex: 1 1 340px;
-        }
-        .search-group:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(17,151,68,0.12); }
-        .search-group input { border: none; outline: none; width: 100%; font-weight: 700; font-size: 15px; padding: 5px; }
-        .search-shortcut { background: #e9ecef; color: #495057; font-size: 12px; font-weight: 800; padding: 2px 7px; border-radius: 4px; border: 1px solid #ccc; }
-        .filter-select { font-weight: 700; font-size: 14px; min-width: 145px; width: auto; border: 1px solid #ced4da; border-radius: 6px; padding: 7px 30px 7px 12px; }
-        .btn-refresh { width: 38px; height: 38px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--info-accent); color: #fff; border: none; }
 
-        .table-container { flex-grow: 1; overflow: auto; }
-        .customers-table { width: 100%; margin: 0; border-collapse: separate; border-spacing: 0; min-width: 1250px; }
+        .search-group {
+            display: flex;
+            align-items: center;
+            background: #fff;
+            border: 2px solid #ced4da;
+            border-radius: 6px;
+            padding: 3px 10px;
+            flex: 1 1 340px;
+        }
+
+        .search-group:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(17,151,68,0.12);
+        }
+
+        .search-group input {
+            border: none;
+            outline: none;
+            width: 100%;
+            font-weight: 700;
+            font-size: 15px;
+            padding: 5px;
+        }
+
+        .search-shortcut {
+            background: #e9ecef;
+            color: #495057;
+            font-size: 12px;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+        .filter-select {
+            font-weight: 700;
+            font-size: 14px;
+            min-width: 145px;
+            width: auto;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            padding: 7px 30px 7px 12px;
+        }
+
+        .btn-refresh {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--info-accent);
+            color: #fff;
+            border: none;
+        }
+
+        .table-container {
+            flex-grow: 1;
+            overflow: auto;
+        }
+
+        .customers-table {
+            width: 100%;
+            margin: 0;
+            border-collapse: separate;
+            border-spacing: 0;
+            min-width: 1250px;
+        }
+
         .customers-table th {
-            background: var(--dark); color: white; position: sticky; top: 0;
-            font-size: 13px; font-weight: 800; padding: 11px 10px; text-align: center;
-            border-left: 1px solid #334e68; z-index: 10; white-space: nowrap;
+            background: var(--dark);
+            color: white;
+            position: sticky;
+            top: 0;
+            font-size: 13px;
+            font-weight: 800;
+            padding: 11px 10px;
+            text-align: center;
+            border-left: 1px solid #334e68;
+            z-index: 10;
+            white-space: nowrap;
         }
+
         .customers-table td {
-            vertical-align: middle; text-align: center; padding: 9px 10px;
-            font-size: 14px; font-weight: 700; border-bottom: 1px solid #e9ecef; border-left: 1px solid #e9ecef; color: #2c3e50;
+            vertical-align: middle;
+            text-align: center;
+            padding: 9px 10px;
+            font-size: 14px;
+            font-weight: 700;
+            border-bottom: 1px solid #e9ecef;
+            border-left: 1px solid #e9ecef;
+            color: #2c3e50;
         }
-        .customers-table tbody tr:nth-child(even) > td { background-color: #f8fafb; }
-        .customers-table tbody tr { cursor: pointer; }
+
+        .customers-table tbody tr:nth-child(even) > td {
+            background-color: #f8fafb;
+        }
+
+        .customers-table tbody tr {
+            cursor: pointer;
+        }
+
         .customers-table tbody tr.active-row > td {
-            background-color: #c9f0d5 !important; color: #14532d; font-weight: 900;
+            background-color: #c9f0d5 !important;
+            color: #14532d;
+            font-weight: 900;
             box-shadow: inset 0 1px #168343, inset 0 -1px #168343;
         }
-        .area-badge { display: inline-block; padding: 2px 8px; border-radius: 5px; background: #e2e8f0; color: #1e293b; font-weight: 800; font-size: 12px; }
+
+        .area-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 5px;
+            background: #e2e8f0;
+            color: #1e293b;
+            font-weight: 800;
+            font-size: 12px;
+        }
+
         .text-debt { color: #dc3545; font-weight: 900; }
         .text-credit { color: #119744; font-weight: 900; }
 
         .bottom-master-bar {
-            background: #f1f5f9; border-top: 2px solid #cbd5e1; padding: 12px 16px;
-            display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap;
+            background: #f1f5f9;
+            border-top: 2px solid #cbd5e1;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 16px;
+            flex-wrap: wrap;
         }
-        .right-actions-stack, .left-actions-stack { display: flex; flex-direction: column; gap: 8px; }
-        .action-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .btn-bottom-action { font-weight: 700; font-size: 13.5px; padding: 7px 14px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; }
-        .summary-counters { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-        .summary-pill { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; color: #334155; }
-        .summary-pill .pill-val { background: #334155; color: #fff; padding: 4px 16px; border-radius: 5px; min-width: 95px; text-align: center; font-size: 15px; }
+
+        .right-actions-stack, .left-actions-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .action-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-bottom-action {
+            font-weight: 700;
+            font-size: 13.5px;
+            padding: 7px 14px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .summary-counters {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .summary-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 800;
+            color: #334155;
+        }
+
+        .summary-pill .pill-val {
+            background: #334155;
+            color: #fff;
+            padding: 4px 16px;
+            border-radius: 5px;
+            min-width: 95px;
+            text-align: center;
+            font-size: 15px;
+        }
+
         .summary-pill .pill-val.val-debit { background: #dc3545; }
         .summary-pill .pill-val.val-credit { background: #119744; }
 
         /* شريط التبويبات الثلاثي للعناوين */
         .address-tabs-strip {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
-            background: #e2e8f0; padding: 6px; border-radius: 9px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            background: #e2e8f0;
+            padding: 6px;
+            border-radius: 9px;
         }
+
         .cust-addr-tab {
-            border: none; background: transparent; padding: 9px 12px;
-            border-radius: 7px; font-weight: 800; font-size: 14px; color: #334155;
-            display: flex; align-items: center; justify-content: center; gap: 7px; transition: 0.15s;
+            border: none;
+            background: transparent;
+            padding: 9px 12px;
+            border-radius: 7px;
+            font-weight: 800;
+            font-size: 14px;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            transition: 0.15s;
         }
+
         .cust-addr-tab.active {
-            background: var(--dark); color: #ffffff; box-shadow: 0 3px 8px rgba(0,0,0,0.18);
+            background: var(--dark);
+            color: #ffffff;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.18);
         }
+
         .cust-addr-tab .dot-filled {
-            width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: none;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+            display: none;
         }
-        .cust-addr-tab.has-content .dot-filled { display: inline-block; }
+
+        .cust-addr-tab.has-content .dot-filled {
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -164,7 +367,7 @@
                 </label>
             </div>
 
-            <button type="button" class="btn-refresh ms-auto" id="btn-refresh-list" title="تحديث">
+            <button type="button" class="btn-refresh ms-auto" id="btn-refresh-list" title="تحديث البيانات من قاعدة البيانات">
                 <i class="fas fa-sync-alt"></i>
             </button>
         </div>
@@ -199,7 +402,7 @@
                         <i class="fas fa-pen-to-square"></i> تعديل بيانات (Enter)
                     </button>
                     <button type="button" class="btn btn-danger btn-bottom-action" id="btn-delete-customer" disabled>
-                        <i class="fas fa-trash"></i> حذف (Del)
+                        <i class="fas fa-trash"></i> <span id="lbl-delete-btn">حذف (Del)</span>
                     </button>
                     <a class="btn btn-outline-info bg-white btn-bottom-action text-decoration-none" href="/customers/delivery-areas">
                         <i class="fas fa-map-location-dot"></i> مناطق التوصيل وأسعارها
@@ -332,7 +535,7 @@
                 </div>
                 <div class="modal-footer justify-content-between bg-light">
                     <button type="button" class="btn btn-outline-secondary fw-bold" data-bs-dismiss="modal">إلغاء (Esc)</button>
-                    <button type="submit" class="btn btn-success fw-bold px-4">
+                    <button type="submit" class="btn btn-success fw-bold px-4" id="btn-submit-customer">
                         <i class="fas fa-save me-1"></i> حفظ بيانات العميل (Enter)
                     </button>
                 </div>
@@ -351,7 +554,7 @@
                 <div class="modal-body p-3">
                     <div class="mb-2">
                         <label class="form-label fw-bold small">اسم المنطقة <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control fw-bold" id="new-zone-name-input" required placeholder="مثال: (ص) أو حدائق أكتوبر">
+                        <input type="text" class="form-control fw-bold" id="new-zone-name-input" required placeholder="اكتب اسم المنطقة...">
                     </div>
                     <div class="mb-2">
                         <label class="form-label fw-bold small">سعر التوصيل (ج.م) <span class="text-danger">*</span></label>
@@ -366,23 +569,19 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
     <script>
         $(document).ready(function() {
+            'use strict';
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+            // مفاتيح المزامنة الاختيارية مع شاشة البيع (الكاشير)
             const storageKey = 'nextstore_customers_list_v1';
             const posCustomerStorageKey = 'nexstore-pos-customers';
             const deliveryZonesStorageKey = 'nextstore.delivery-zones.v1';
 
             const customerModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('customerFormModal'));
             const quickZoneModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('quickAddZoneModal'));
-
-            const defaultZones = [
-                { id: 'zone-s', name: '(ص)', fee: 15 },
-                { id: 'zone-a', name: '(ع)', fee: 15 },
-                { id: 'zone-n', name: '(ن)', fee: 20 },
-                { id: 'zone-b', name: '(ب)', fee: 20 },
-                { id: 'zone-october', name: 'حدائق اكتوبر', fee: 25 }
-            ];
 
             let deliveryZones = [];
             let customers = [];
@@ -416,17 +615,53 @@
                 if (this.value !== clean) this.value = clean;
             });
 
-            function loadZones() {
+            // مزامنة الكاش الثانوي في المتصفح حتى تقرأه شاشة البيع (POS) فوراً إن كانت مفتوحة
+            function syncSecondaryCacheForPOS() {
                 try {
-                    const raw = localStorage.getItem(deliveryZonesStorageKey);
-                    deliveryZones = raw ? JSON.parse(raw) : [...defaultZones];
-                    if (!Array.isArray(deliveryZones) || !deliveryZones.length) deliveryZones = [...defaultZones];
-                } catch (e) {
-                    deliveryZones = [...defaultZones];
+                    localStorage.setItem(deliveryZonesStorageKey, JSON.stringify(deliveryZones));
+                    localStorage.setItem(storageKey, JSON.stringify(customers));
+                    const posFormatted = customers.filter(c => !c.deleted).map(c => ({
+                        id: c.id,
+                        name: c.name,
+                        phone: c.phone1,
+                        phone2: c.phone2,
+                        address: c.addresses[0]?.fullAddress || '',
+                        alternateAddress: c.addresses[1]?.fullAddress || '',
+                        deliveryArea: c.addresses[0]?.zoneName || '',
+                        deliveryZoneId: c.addresses[0]?.zoneId || '',
+                        deliveryFee: Number(c.addresses[0]?.fee) || 0
+                    }));
+                    localStorage.setItem(posCustomerStorageKey, JSON.stringify(posFormatted));
+                } catch (e) {}
+            }
+
+            // جلب العملاء ومناطق التوصيل من قاعدة البيانات الحقيقية
+            async function fetchInitDataFromDB() {
+                try {
+                    const res = await fetch('/api/customers/init-data', {
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    if (!res.ok) throw new Error('تعذر جلب بيانات العملاء من قاعدة البيانات');
+                    const data = await res.json();
+
+                    deliveryZones = Array.isArray(data.zones) ? data.zones : [];
+                    customers = Array.isArray(data.customers) ? data.customers : [];
+
+                    renderZoneSelectOptions();
+                    renderAreaFilter();
+                    syncSecondaryCacheForPOS();
+                    renderCustomersTable();
+                } catch (err) {
+                    console.error(err);
+                    Swal.fire({
+                        toast: true,
+                        position: 'bottom-start',
+                        icon: 'error',
+                        title: 'تعذر الاتصال بقاعدة البيانات لتحميل العملاء',
+                        showConfirmButton: false,
+                        timer: 2500
+                    });
                 }
-                localStorage.setItem(deliveryZonesStorageKey, JSON.stringify(deliveryZones));
-                renderZoneSelectOptions();
-                renderAreaFilter();
             }
 
             function renderZoneSelectOptions(selectedId = '') {
@@ -434,7 +669,7 @@
                 $sel.html('<option value="">بدون منطقة توصيل</option>' + deliveryZones.map(z =>
                     `<option value="${escapeHtml(z.id)}">${escapeHtml(z.name)} — ${Number(z.fee).toFixed(2)} ج.م</option>`
                 ).join(''));
-                $sel.val(selectedId || '');
+                $sel.val(selectedId ? String(selectedId) : '');
                 updateZoneFeePreview();
             }
 
@@ -447,7 +682,8 @@
             }
 
             function updateZoneFeePreview() {
-                const z = deliveryZones.find(item => item.id === $('#addr-field-zone').val());
+                const selectedVal = String($('#addr-field-zone').val() || '');
+                const z = deliveryZones.find(item => String(item.id) === selectedVal);
                 $('#addr-zone-fee-preview').text((z ? Number(z.fee) : 0).toFixed(2));
             }
 
@@ -456,86 +692,17 @@
                 saveCurrentAddressTabToDraft();
             });
 
-            function normalizeCustomerRecord(c, idx = 0) {
-                const zObj = deliveryZones.find(z => z.id === c.deliveryZoneId || z.name === c.area || z.name === c.deliveryZone) || null;
-                const defZoneId = zObj ? zObj.id : '';
-                const defZoneName = zObj ? zObj.name : (c.area && c.area !== '-' ? c.area : '');
-                const defFee = zObj ? Number(zObj.fee) : (Number(c.deliveryFee) || 0);
-
-                let addresses = Array.isArray(c.addresses) && c.addresses.length === 3 ? c.addresses : [
-                    { label: 'العنوان الرئيسي', fullAddress: c.addr1 || '', location: '', deliveryNote: '', zoneId: defZoneId, zoneName: defZoneName, fee: defFee },
-                    { label: 'عنوان بديل', fullAddress: c.addr2 || '', location: '', deliveryNote: '', zoneId: defZoneId, zoneName: defZoneName, fee: defFee },
-                    { label: 'عنوان بديل 2', fullAddress: c.addr3 || '', location: '', deliveryNote: '', zoneId: defZoneId, zoneName: defZoneName, fee: defFee }
-                ];
-
-                return {
-                    id: String(c.id || `c-${idx + 1}`),
-                    code: String(c.code || String(idx + 1).padStart(3, '0')),
-                    name: c.name || '',
-                    phone1: toEnglishDigits(c.phone1 || ''),
-                    phone2: toEnglishDigits(c.phone2 || ''),
-                    contactNote: c.contactNote || c.note || '',
-                    invoiceNote: c.invoiceNote || '',
-                    addresses: addresses,
-                    area: addresses[0].zoneName || '-',
-                    deliveryZoneId: addresses[0].zoneId || '',
-                    deliveryZone: addresses[0].zoneName || '',
-                    deliveryFee: Number(addresses[0].fee) || 0,
-                    addr1: addresses[0].fullAddress || '',
-                    addr2: addresses[1].fullAddress || '',
-                    addr3: addresses[2].fullAddress || '',
-                    note: c.invoiceNote || c.contactNote || c.note || '',
-                    balance: Number(c.balance) || 0,
-                    balanceType: c.balanceType || 'debit',
-                    deleted: Boolean(c.deleted)
-                };
-            }
-
-            const defaultCustomers = [
-                { id: 'c-1', code: '001', name: 'محمد خليل', phone1: '01144418168', phone2: '', area: '(ص)', addr1: '102 ص د 5 ش 25', addr2: '', addr3: '', note: '', balance: 0, balanceType: 'debit', deleted: false },
-                { id: 'c-2', code: '002', name: 'ام حسن', phone1: '01093292373', phone2: '', area: 'حدائق اكتوبر', addr1: 'حدائق اكتوبر', addr2: '', addr3: '', note: '', balance: 0, balanceType: 'debit', deleted: false },
-                { id: 'c-3', code: '003', name: 'مصطفي', phone1: '015568448047', phone2: '', area: '(ع)', addr1: '152 ع د 5 ش شمال الاسانسير', addr2: '', addr3: '', note: '', balance: 0, balanceType: 'debit', deleted: false },
-                { id: 'c-11', code: '011', name: 'هيثم', phone1: '0114083473', phone2: '', area: '(ع)', addr1: '43 ع د 1 ش 11', addr2: '2ع الحضانه', addr3: '', note: '', balance: 0, balanceType: 'debit', deleted: false }
-            ];
-
-            loadZones();
-            try {
-                const saved = localStorage.getItem(storageKey);
-                const parsed = saved ? JSON.parse(saved) : defaultCustomers;
-                customers = (Array.isArray(parsed) ? parsed : defaultCustomers).map((c, i) => normalizeCustomerRecord(c, i));
-            } catch (e) {
-                customers = defaultCustomers.map((c, i) => normalizeCustomerRecord(c, i));
-            }
-
-            function saveAllCustomers() {
-                localStorage.setItem(storageKey, JSON.stringify(customers));
-                // مزامنة فورية مع شاشة البيع
-                const posFormatted = customers.filter(c => !c.deleted).map(c => ({
-                    id: c.id,
-                    name: c.name,
-                    phone: c.phone1,
-                    phone2: c.phone2,
-                    address: c.addresses[0]?.fullAddress || '',
-                    alternateAddress: c.addresses[1]?.fullAddress || '',
-                    deliveryArea: c.addresses[0]?.zoneName || '',
-                    deliveryZoneId: c.addresses[0]?.zoneId || '',
-                    deliveryFee: Number(c.addresses[0]?.fee) || 0
-                }));
-                localStorage.setItem(posCustomerStorageKey, JSON.stringify(posFormatted));
-            }
-            saveAllCustomers();
-
             // إدارة التبويبات الـ 3 للعناوين داخل المودال
             function saveCurrentAddressTabToDraft() {
                 if (!formAddressesDraft[activeAddressTabIndex]) return;
-                const zId = $('#addr-field-zone').val();
-                const zObj = deliveryZones.find(z => z.id === zId);
+                const zId = String($('#addr-field-zone').val() || '');
+                const zObj = deliveryZones.find(z => String(z.id) === zId);
                 formAddressesDraft[activeAddressTabIndex] = {
                     ...formAddressesDraft[activeAddressTabIndex],
                     fullAddress: $('#addr-field-full').val().trim(),
                     location: $('#addr-field-location').val().trim(),
                     deliveryNote: $('#addr-field-delivery-note').val().trim(),
-                    zoneId: zObj ? zObj.id : '',
+                    zoneId: zObj ? String(zObj.id) : '',
                     zoneName: zObj ? zObj.name : '',
                     fee: zObj ? Number(zObj.fee) : 0
                 };
@@ -557,7 +724,7 @@
             function refreshAddressTabsDots() {
                 $('.cust-addr-tab').each(function() {
                     const idx = Number($(this).attr('data-tab-index'));
-                    const filled = Boolean(formAddressesDraft[idx] && formAddressesDraft[idx].fullAddress.trim());
+                    const filled = Boolean(formAddressesDraft[idx] && String(formAddressesDraft[idx].fullAddress || '').trim());
                     $(this).toggleClass('has-content', filled);
                 });
             }
@@ -570,26 +737,42 @@
 
             $('#addr-field-full, #addr-field-location, #addr-field-delivery-note').on('input', saveCurrentAddressTabToDraft);
 
-            // زر (+) لإضافة منطقة توصيل جديدة فوراً
+            // زر (+) لإضافة منطقة توصيل جديدة فوراً في قاعدة البيانات
             $('#btn-open-quick-zone').on('click', function() {
                 $('#quick-add-zone-form')[0].reset();
                 quickZoneModal.show();
                 setTimeout(() => $('#new-zone-name-input').trigger('focus'), 200);
             });
 
-            $('#quick-add-zone-form').on('submit', function(e) {
+            $('#quick-add-zone-form').on('submit', async function(e) {
                 e.preventDefault();
                 const name = $('#new-zone-name-input').val().trim();
                 const fee = parseFloat(toEnglishDigits($('#new-zone-fee-input').val())) || 0;
                 if (!name) return;
 
-                const newZone = { id: `zone-${Date.now()}`, name, fee };
-                deliveryZones.push(newZone);
-                localStorage.setItem(deliveryZonesStorageKey, JSON.stringify(deliveryZones));
-                renderAreaFilter();
-                renderZoneSelectOptions(newZone.id);
-                saveCurrentAddressTabToDraft();
-                quickZoneModal.hide();
+                try {
+                    const res = await fetch('/api/customers/zones/quick', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({ name, fee })
+                    });
+                    if (!res.ok) throw new Error('تعذر حفظ منطقة التوصيل');
+                    const out = await res.json();
+                    const newZone = out.zone;
+
+                    deliveryZones.push(newZone);
+                    renderAreaFilter();
+                    renderZoneSelectOptions(newZone.id);
+                    saveCurrentAddressTabToDraft();
+                    syncSecondaryCacheForPOS();
+                    quickZoneModal.hide();
+                } catch (err) {
+                    Swal.fire('خطأ', err.message, 'error');
+                }
             });
 
             function renderCustomersTable() {
@@ -597,6 +780,8 @@
                 const accFilter = $('#filter-account-type').val();
                 const areaFilter = $('#filter-area').val();
                 const showDeleted = $('#toggle-deleted').is(':checked');
+
+                $('#lbl-delete-btn').text(showDeleted ? 'استرجاع (Del)' : 'حذف (Del)');
 
                 const filtered = customers.filter(c => {
                     if (Boolean(c.deleted) !== showDeleted) return false;
@@ -618,16 +803,22 @@
                 if (!filtered.length) {
                     $tbody.html('<tr><td colspan="10" class="py-5 text-muted">لا يوجد عملاء مطابقون.</td></tr>');
                 } else {
+                    if (!selectedCustomerId || !filtered.some(c => String(c.id) === String(selectedCustomerId))) {
+                        selectedCustomerId = String(filtered[0].id);
+                    }
+
                     $tbody.html(filtered.map((c, idx) => {
                         const phones = [c.phone1, c.phone2].filter(Boolean).join(' - ') || '•';
-                        const a0 = c.addresses[0] || {};
-                        const a1 = c.addresses[1] || {};
-                        const a2 = c.addresses[2] || {};
+                        const a0 = (c.addresses && c.addresses[0]) || {};
+                        const a1 = (c.addresses && c.addresses[1]) || {};
+                        const a2 = (c.addresses && c.addresses[2]) || {};
                         const bal = Number(c.balance) || 0;
-                        const balHtml = bal <= 0 ? '•' : (c.balanceType === 'debit' ? `<span class="text-debt en-digit">مدين / ${bal.toFixed(2)}</span>` : `<span class="text-credit en-digit">دائن / ${bal.toFixed(2)}</span>`);
+                        const balHtml = bal <= 0 ? '•' : (c.balanceType === 'debit'
+                            ? `<span class="text-debt en-digit">مدين / ${bal.toFixed(2)}</span>`
+                            : `<span class="text-credit en-digit">دائن / ${bal.toFixed(2)}</span>`);
 
                         return `
-                            <tr class="customer-row ${c.id === selectedCustomerId ? 'active-row' : ''}" data-id="${escapeHtml(c.id)}">
+                            <tr class="customer-row ${String(c.id) === String(selectedCustomerId) ? 'active-row' : ''}" data-id="${escapeHtml(c.id)}">
                                 <td class="en-digit text-muted">${idx + 1}</td>
                                 <td class="en-digit text-primary">${escapeHtml(c.code)}</td>
                                 <td class="fw-bold text-dark text-start">${escapeHtml(c.name)}</td>
@@ -648,7 +839,7 @@
                 $('#stat-total-debit').text(activeList.filter(c => c.balanceType === 'debit').reduce((s, c) => s + (Number(c.balance) || 0), 0).toFixed(2));
                 $('#stat-total-credit').text(activeList.filter(c => c.balanceType === 'credit').reduce((s, c) => s + (Number(c.balance) || 0), 0).toFixed(2));
 
-                const hasSel = Boolean(customers.find(c => c.id === selectedCustomerId));
+                const hasSel = Boolean(filtered.find(c => String(c.id) === String(selectedCustomerId)));
                 $('#btn-edit-customer, #btn-delete-customer').prop('disabled', !hasSel);
             }
 
@@ -674,7 +865,7 @@
                 $('#form-cust-balance').val(customer ? customer.balance : 0);
                 $('#form-cust-balance-type').val(customer ? customer.balanceType : 'debit');
 
-                formAddressesDraft = customer && Array.isArray(customer.addresses)
+                formAddressesDraft = customer && Array.isArray(customer.addresses) && customer.addresses.length === 3
                     ? JSON.parse(JSON.stringify(customer.addresses))
                     : [
                         { label: 'العنوان الرئيسي', fullAddress: '', location: '', deliveryNote: '', zoneId: '', zoneName: '', fee: 0 },
@@ -687,7 +878,8 @@
                 setTimeout(() => $('#form-cust-name').trigger('focus'), 200);
             }
 
-            $('#customer-form').on('submit', function(e) {
+            // حفظ العميل (إضافة / تعديل) في قاعدة البيانات
+            $('#customer-form').on('submit', async function(e) {
                 e.preventDefault();
                 saveCurrentAddressTabToDraft();
 
@@ -695,38 +887,110 @@
                 const phone1 = toEnglishDigits($('#form-cust-phone1').val().trim());
                 if (!name || !phone1) return;
 
-                const record = normalizeCustomerRecord({
-                    id: editingCustomerId || `c-${Date.now()}`,
+                const payload = {
+                    id: editingCustomerId,
                     code: $('#form-cust-code').val().trim(),
-                    name,
-                    phone1,
+                    name: name,
+                    phone1: phone1,
                     phone2: toEnglishDigits($('#form-cust-phone2').val().trim()),
                     contactNote: $('#form-cust-contact-note').val().trim(),
                     invoiceNote: $('#form-cust-invoice-note').val().trim(),
                     addresses: formAddressesDraft,
                     balance: Math.max(0, parseFloat(toEnglishDigits($('#form-cust-balance').val())) || 0),
-                    balanceType: $('#form-cust-balance-type').val(),
-                    deleted: false
+                    balanceType: $('#form-cust-balance-type').val()
+                };
+
+                const $submitBtn = $('#btn-submit-customer');
+                $submitBtn.prop('disabled', true);
+
+                try {
+                    const res = await fetch('/api/customers/save', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!res.ok) throw new Error('تعذر حفظ بيانات العميل في قاعدة البيانات');
+                    const out = await res.json();
+                    const savedCustomer = out.customer;
+
+                    if (editingCustomerId) {
+                        customers = customers.map(c => String(c.id) === String(editingCustomerId) ? savedCustomer : c);
+                    } else {
+                        customers.push(savedCustomer);
+                    }
+
+                    syncSecondaryCacheForPOS();
+                    selectedCustomerId = String(savedCustomer.id);
+                    renderCustomersTable();
+                    customerModal.hide();
+
+                    Swal.fire({ title: 'تم الحفظ بنجاح', icon: 'success', timer: 1100, showConfirmButton: false });
+                } catch (err) {
+                    Swal.fire('خطأ', err.message, 'error');
+                } finally {
+                    $submitBtn.prop('disabled', false);
+                }
+            });
+
+            // حذف (Soft Delete) أو استرجاع العميل المحدد
+            async function handleDeleteOrRestoreSelected() {
+                const c = customers.find(item => String(item.id) === String(selectedCustomerId));
+                if (!c) return;
+
+                const isRestoring = Boolean(c.deleted);
+                const confirmRes = await Swal.fire({
+                    title: isRestoring ? `استرجاع العميل "${c.name}"؟` : `حذف العميل "${c.name}"؟`,
+                    text: isRestoring ? 'سيتم إعادة العميل إلى قائمة العملاء النشطة.' : 'سيتم نقل العميل إلى سلة المحذوفات.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: isRestoring ? '#119744' : '#dc3545',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: isRestoring ? 'نعم، استرجاع' : 'نعم، حذف',
+                    cancelButtonText: 'إلغاء'
                 });
 
-                if (editingCustomerId) {
-                    customers = customers.map(c => c.id === editingCustomerId ? record : c);
-                } else {
-                    customers.push(record);
-                }
+                if (!confirmRes.isConfirmed) return;
 
-                saveAllCustomers();
-                selectedCustomerId = record.id;
-                renderCustomersTable();
-                customerModal.hide();
-                Swal.fire({ title: 'تم الحفظ بنجاح', icon: 'success', timer: 1100, showConfirmButton: false });
-            });
+                try {
+                    const res = await fetch(`/api/customers/${encodeURIComponent(c.id)}/toggle-delete`, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        }
+                    });
+                    if (!res.ok) throw new Error('تعذر تنفيذ العملية');
+                    const out = await res.json();
+
+                    customers = customers.map(item => String(item.id) === String(c.id) ? out.customer : item);
+                    syncSecondaryCacheForPOS();
+                    renderCustomersTable();
+
+                    Swal.fire({
+                        toast: true,
+                        position: 'bottom-start',
+                        icon: 'success',
+                        title: isRestoring ? 'تم استرجاع العميل بنجاح' : 'تم نقل العميل إلى المحذوفات',
+                        showConfirmButton: false,
+                        timer: 1800
+                    });
+                } catch (err) {
+                    Swal.fire('خطأ', err.message, 'error');
+                }
+            }
 
             $('#btn-new-customer').on('click', () => openCustomerModal(null));
             $('#btn-edit-customer').on('click', () => {
-                const c = customers.find(item => item.id === selectedCustomerId);
+                const c = customers.find(item => String(item.id) === String(selectedCustomerId));
                 if (c) openCustomerModal(c);
             });
+            $('#btn-delete-customer').on('click', handleDeleteOrRestoreSelected);
+            $('#btn-refresh-list').on('click', fetchInitDataFromDB);
 
             $('#customers-tbody').on('click', '.customer-row', function() {
                 selectedCustomerId = $(this).attr('data-id');
@@ -735,11 +999,12 @@
                 $('#btn-edit-customer, #btn-delete-customer').prop('disabled', false);
             }).on('dblclick', '.customer-row', function() {
                 selectedCustomerId = $(this).attr('data-id');
-                const c = customers.find(item => item.id === selectedCustomerId);
+                const c = customers.find(item => String(item.id) === String(selectedCustomerId));
                 if (c) openCustomerModal(c);
             });
 
             $('#customer-search, #filter-account-type, #filter-area, #toggle-deleted').on('input change', renderCustomersTable);
+
             $('#btn-exit').on('click', () => window.history.length > 1 ? window.history.back() : window.location.href = '/');
 
             $(document).on('keydown', function(e) {
@@ -757,19 +1022,27 @@
                     const next = idx < 0 ? 0 : Math.min(idx + 1, $rows.length - 1);
                     selectedCustomerId = $rows.eq(next).attr('data-id');
                     renderCustomersTable();
+                    const activeEl = $('#customers-tbody .customer-row.active-row')[0];
+                    if (activeEl) activeEl.scrollIntoView({ block: 'nearest' });
                 } else if (e.key === 'ArrowUp') {
                     e.preventDefault();
                     const prev = Math.max(0, idx - 1);
                     selectedCustomerId = $rows.eq(prev).attr('data-id');
                     renderCustomersTable();
+                    const activeEl = $('#customers-tbody .customer-row.active-row')[0];
+                    if (activeEl) activeEl.scrollIntoView({ block: 'nearest' });
                 } else if (e.key === 'Enter' && idx >= 0 && !$(e.target).is('input')) {
                     e.preventDefault();
-                    const c = customers.find(item => item.id === selectedCustomerId);
+                    const c = customers.find(item => String(item.id) === String(selectedCustomerId));
                     if (c) openCustomerModal(c);
+                } else if (e.key === 'Delete' && idx >= 0 && !$(e.target).is('input')) {
+                    e.preventDefault();
+                    handleDeleteOrRestoreSelected();
                 }
             });
 
-            renderCustomersTable();
+            // التحميل الأولي من قاعدة البيانات
+            fetchInitDataFromDB();
         });
     </script>
 </body>
