@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>وحدات القياس | NextStore</title>
-
-    <!-- Bootstrap 5 RTL & FontAwesome & Cairo Font -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -19,7 +18,6 @@
             --ns-green-hover: #0e7d38;
         }
 
-        /* التزام بمعيار الشاشة الكاملة بدون Scroll للـ Body */
         html, body {
             height: 100vh !important;
             width: 100vw !important;
@@ -31,7 +29,6 @@
             user-select: none;
         }
 
-        /* فرض الأرقام الإنجليزية */
         .en-digit {
             font-family: 'Segoe UI', Roboto, Arial, sans-serif !important;
             font-variant-numeric: tabular-nums;
@@ -39,7 +36,6 @@
             display: inline-block;
         }
 
-        /* الحاوية الرئيسية للشاشة الكاملة 100vh بدون ناف بار */
         .ns-fullscreen-wrapper {
             height: 100vh;
             width: 100%;
@@ -50,7 +46,6 @@
             box-sizing: border-box;
         }
 
-        /* الشريط العلوي الموحد */
         .ns-topbar {
             background: #ffffff;
             border-radius: 10px;
@@ -81,7 +76,6 @@
             font-size: 18px;
         }
 
-        /* مساحة العمل الرئيسية */
         .ns-workspace {
             flex: 1;
             display: flex;
@@ -89,7 +83,6 @@
             overflow: hidden;
         }
 
-        /* اللوحة الجانبية للإجراءات والملخص */
         .ns-sidebar-card {
             width: 280px;
             background: #ffffff;
@@ -103,7 +96,6 @@
             flex-shrink: 0;
         }
 
-        /* كارت الجدول الرئيسي */
         .ns-table-card {
             flex: 1;
             background: #ffffff;
@@ -115,7 +107,6 @@
             overflow: hidden;
         }
 
-        /* شريط البحث والفلترة داخل كارت الجدول */
         .ns-table-toolbar {
             padding: 12px 16px;
             border-bottom: 1px solid #edf0f2;
@@ -127,28 +118,17 @@
             flex-shrink: 0;
         }
 
-        /* حاوية الجدول القابلة للـ Scroll فقط */
         .ns-table-scroll {
             flex: 1;
             overflow-y: auto;
             overflow-x: hidden;
         }
 
-        .ns-table-scroll::-webkit-scrollbar {
-            width: 7px;
-        }
-        .ns-table-scroll::-webkit-scrollbar-track {
-            background: #f1f5f9;
-        }
-        .ns-table-scroll::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-        .ns-table-scroll::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
+        .ns-table-scroll::-webkit-scrollbar { width: 7px; }
+        .ns-table-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+        .ns-table-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .ns-table-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* تصميم الجدول بهوية NextStore */
         .ns-table {
             width: 100%;
             border-collapse: collapse;
@@ -174,10 +154,7 @@
             cursor: pointer;
         }
 
-        .ns-table tbody tr:hover {
-            background-color: #f8fafc;
-        }
-
+        .ns-table tbody tr:hover { background-color: #f8fafc; }
         .ns-table tbody td {
             padding: 11px 16px;
             font-size: 14.5px;
@@ -185,7 +162,6 @@
             vertical-align: middle;
         }
 
-        /* تظليل الصف النشط (.active-row) */
         .ns-table tbody tr.active-row {
             background-color: #e8f5e9 !important;
             box-shadow: inset -4px 0 0 var(--ns-green);
@@ -196,7 +172,6 @@
             color: var(--ns-navy-start);
         }
 
-        /* أزرار الهوية البصرية */
         .btn-ns-primary {
             background: linear-gradient(135deg, var(--ns-green), #0d8038);
             color: #ffffff;
@@ -206,6 +181,7 @@
             padding: 10px 16px;
             transition: all 0.15s ease;
         }
+
         .btn-ns-primary:hover, .btn-ns-primary:focus {
             background: linear-gradient(135deg, var(--ns-green-hover), #0a682d);
             color: #ffffff;
@@ -222,6 +198,7 @@
             padding: 10px 16px;
             transition: all 0.15s ease;
         }
+
         .btn-ns-navy:hover, .btn-ns-navy:focus {
             opacity: 0.94;
             color: #ffffff;
@@ -236,12 +213,12 @@
             padding: 10px 16px;
             transition: all 0.15s ease;
         }
+
         .btn-ns-outline-danger:hover {
             background: #dc3545;
             color: #fff;
         }
 
-        /* شريط الاختصارات السفلي */
         .ns-footer-bar {
             padding: 8px 16px;
             background: #f8fafc;
@@ -278,6 +255,7 @@
 <body>
 
 <div class="ns-fullscreen-wrapper">
+
     <!-- 1. الهيدر العلوي الموحد -->
     <div class="ns-topbar">
         <div class="ns-page-title">
@@ -299,6 +277,7 @@
 
     <!-- 2. منطقة العمل الرئيسية -->
     <div class="ns-workspace">
+
         <!-- اللوحة الجانبية (الأزرار والملخص) -->
         <div class="ns-sidebar-card">
             <div>
@@ -352,7 +331,6 @@
 
         <!-- كارت الجدول والبحث -->
         <div class="ns-table-card">
-            <!-- شريط أدوات البحث -->
             <div class="ns-table-toolbar">
                 <div class="position-relative" style="width: 380px;">
                     <input type="text" id="searchInput" class="form-control en-digit pe-4" placeholder="بحث سريع باسم الوحدة... (اضغط F3)" autocomplete="off">
@@ -367,7 +345,6 @@
                 </div>
             </div>
 
-            <!-- الجدول القابل للتمرير -->
             <div class="ns-table-scroll" id="tableScrollContainer">
                 <table class="ns-table" id="unitsTable">
                     <thead>
@@ -378,13 +355,10 @@
                             <th style="width: 160px;" class="text-center">الإجراءات</th>
                         </tr>
                     </thead>
-                    <tbody id="unitsTableBody">
-                        <!-- يتم التوليد ديناميكياً عبر Vanilla JS -->
-                    </tbody>
+                    <tbody id="unitsTableBody"></tbody>
                 </table>
             </div>
 
-            <!-- شريط الاختصارات السفلي -->
             <div class="ns-footer-bar">
                 <div>
                     <span><kbd class="kbd-key en-digit">F2</kbd> إضافة وحدة</span>
@@ -404,6 +378,7 @@
                 </div>
             </div>
         </div>
+
     </div>
 </div>
 
@@ -425,7 +400,7 @@
                         <label for="unitNameInput" class="form-label fw-bold text-dark">
                             اسم الوحدة <span class="text-danger">*</span>
                         </label>
-                        <input type="text" class="form-control form-control-lg en-digit" id="unitNameInput" placeholder="مثال: قطعة، كيلو، كرتونة، ك * 25" required autocomplete="off">
+                        <input type="text" class="form-control form-control-lg en-digit" id="unitNameInput" placeholder="مثال: قطعة، كيلو، كرتونة..." required autocomplete="off">
                         <div class="invalid-feedback fw-bold" id="unitNameError">يرجى إدخال اسم الوحدة.</div>
                     </div>
 
@@ -433,12 +408,12 @@
                         <label for="unitItemsCountInput" class="form-label fw-bold text-dark">
                             عدد الأصناف المرتبطة
                         </label>
-                        <input type="text" class="form-control en-digit numeric-input" id="unitItemsCountInput" value="0" autocomplete="off">
-                        <small class="text-muted">يتم تحديث هذا الرقم تلقائياً عند ربط الأصناف بهذه الوحدة.</small>
+                        <input type="text" class="form-control en-digit numeric-input" id="unitItemsCountInput" value="0" autocomplete="off" readonly>
+                        <small class="text-muted">يتم احتساب هذا الرقم تلقائياً من الأصناف المسجلة بهذه الوحدة في المخزن.</small>
                     </div>
                 </div>
                 <div class="modal-footer bg-light py-2 d-flex justify-content-between">
-                    <button type="submit" class="btn btn-ns-primary px-4">
+                    <button type="submit" class="btn btn-ns-primary px-4" id="btnSaveUnitSubmit">
                         <i class="fas fa-check me-1"></i> حفظ البيانات (<span class="en-digit">Enter</span>)
                     </button>
                     <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">
@@ -476,34 +451,18 @@
     </div>
 </div>
 
-<!-- Bootstrap 5 Bundle JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // 1. إعدادات التخزين المحلي (LocalStorage Key)
+    'use strict';
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     const STORAGE_KEY = 'nextstore.inventory.units.v1';
 
-    // البيانات الافتراضية الشاملة[cite: 1, 2]
-    const defaultUnits = [
-        { id: 1, name: 'طبق', items_count: 3 },
-        { id: 2, name: 'علبة', items_count: 1 },
-        { id: 3, name: 'قطعة', items_count: 9 },
-        { id: 4, name: 'ك * 12', items_count: 3 },
-        { id: 5, name: 'ك * 25', items_count: 1 },
-        { id: 6, name: 'ك * 8', items_count: 1 },
-        { id: 7, name: 'كرتونة', items_count: 11 },
-        { id: 8, name: 'كيلو', items_count: 6 },
-        { id: 9, name: 'لتر', items_count: 4 },
-        { id: 10, name: 'باكيت', items_count: 5 },
-        { id: 11, name: 'جرام', items_count: 2 }
-    ];
-
-    let units = [];
+    let units = @json($initialUnits ?? []);
     let filteredUnits = [];
     let activeIndex = 0;
 
-    // 2. عناصر DOM
     const tableBody = document.getElementById('unitsTableBody');
     const tableScrollContainer = document.getElementById('tableScrollContainer');
     const searchInput = document.getElementById('searchInput');
@@ -511,12 +470,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const filteredCountBadge = document.getElementById('filteredCountBadge');
     const rowPositionIndicator = document.getElementById('rowPositionIndicator');
 
-    // عناصر الإحصائيات
     const statTotalUnits = document.getElementById('statTotalUnits');
     const statTotalItems = document.getElementById('statTotalItems');
     const statActiveUnitName = document.getElementById('statActiveUnitName');
 
-    // عناصر المودالات
     const unitFormModalEl = document.getElementById('unitFormModal');
     const unitFormModal = new bootstrap.Modal(unitFormModalEl);
     const deleteUnitModalEl = document.getElementById('deleteUnitModal');
@@ -549,7 +506,6 @@ document.addEventListener('DOMContentLoaded', function () {
         isDeleteModalOpen = false;
     });
 
-    // 3. تحويل الأرقام الهندية/الفارسية إلى إنجليزية لحظياً
     function toEnglishDigits(value) {
         if (value === null || value === undefined) return '';
         return String(value)
@@ -569,28 +525,30 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // 4. إدارة البيانات في LocalStorage
-    function loadUnitsData() {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-            try {
-                const parsed = JSON.parse(raw);
-                units = Array.isArray(parsed) && parsed.length > 0 ? parsed : [...defaultUnits];
-            } catch (e) {
-                units = [...defaultUnits];
+    function syncSecondaryCache() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(units));
+        } catch (e) {}
+    }
+
+    async function fetchUnitsFromDB() {
+        try {
+            const res = await fetch('/api/inventory/units/list', {
+                headers: { 'Accept': 'application/json' }
+            });
+            if (res.ok) {
+                const out = await res.json();
+                if (Array.isArray(out.units)) {
+                    units = out.units;
+                    syncSecondaryCache();
+                    filterAndRender();
+                }
             }
-        } else {
-            units = [...defaultUnits];
-            saveUnitsData();
+        } catch (err) {
+            console.error('تعذر جلب وحدات القياس:', err);
         }
-        filterAndRender();
     }
 
-    function saveUnitsData() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(units));
-    }
-
-    // 5. الفلترة وبناء الجدول
     function filterAndRender() {
         const query = toEnglishDigits(searchInput.value.trim().toLowerCase());
         btnClearSearch.classList.toggle('d-none', query.length === 0);
@@ -724,7 +682,6 @@ document.addEventListener('DOMContentLoaded', function () {
         statTotalItems.textContent = totalItems;
     }
 
-    // 6. عمليات الإضافة والتعديل والحذف
     function openAddModal() {
         document.getElementById('unitModalTitle').innerHTML = '<i class="fas fa-plus-circle me-2"></i> إضافة وحدة قياس جديدة';
         unitIdInput.value = '';
@@ -737,7 +694,6 @@ document.addEventListener('DOMContentLoaded', function () {
     function openEditModal() {
         if (filteredUnits.length === 0 || activeIndex < 0) return;
         const target = filteredUnits[activeIndex];
-
         document.getElementById('unitModalTitle').innerHTML = '<i class="fas fa-edit me-2"></i> تحرير وحدة القياس';
         unitIdInput.value = target.id;
         unitNameInput.value = toEnglishDigits(target.name);
@@ -746,7 +702,7 @@ document.addEventListener('DOMContentLoaded', function () {
         unitFormModal.show();
     }
 
-    unitForm.addEventListener('submit', function (e) {
+    unitForm.addEventListener('submit', async function (e) {
         e.preventDefault();
 
         const editId = unitIdInput.value ? parseInt(unitIdInput.value, 10) : null;
@@ -760,72 +716,100 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const duplicate = units.some(u =>
-            toEnglishDigits(u.name).trim().toLowerCase() === rawName.toLowerCase() && u.id !== editId
-        );
-
-        if (duplicate) {
-            unitNameInput.classList.add('is-invalid');
-            unitNameError.textContent = 'اسم الوحدة مسجل مسبقاً! يرجى كتابة اسم مختلف.';
-            unitNameInput.focus();
-            return;
-        }
-
-        if (editId) {
-            const idx = units.findIndex(u => u.id === editId);
-            if (idx !== -1) {
-                units[idx].name = rawName;
-                units[idx].items_count = itemsCount;
-            }
-        } else {
-            const nextId = units.length > 0 ? Math.max(...units.map(u => u.id)) + 1 : 1;
-            units.push({
-                id: nextId,
-                name: rawName,
-                items_count: itemsCount
+        try {
+            document.getElementById('btnSaveUnitSubmit').disabled = true;
+            const res = await fetch('/api/inventory/units/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({
+                    id: editId,
+                    name: rawName,
+                    items_count: itemsCount
+                })
             });
-            searchInput.value = '';
-            activeIndex = units.length - 1;
-        }
 
-        saveUnitsData();
-        filterAndRender();
-        unitFormModal.hide();
+            const out = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                unitNameInput.classList.add('is-invalid');
+                unitNameError.textContent = out.message || 'تعذر حفظ الوحدة في قاعدة البيانات.';
+                unitNameInput.focus();
+                return;
+            }
+
+            if (Array.isArray(out.units)) {
+                units = out.units;
+                syncSecondaryCache();
+            }
+
+            if (!editId) {
+                searchInput.value = '';
+                activeIndex = units.length - 1;
+            }
+
+            filterAndRender();
+            unitFormModal.hide();
+        } catch (err) {
+            unitNameInput.classList.add('is-invalid');
+            unitNameError.textContent = 'حدث خطأ في الاتصال بقاعدة البيانات.';
+        } finally {
+            document.getElementById('btnSaveUnitSubmit').disabled = false;
+        }
     });
 
     function openDeleteModal() {
         if (filteredUnits.length === 0 || activeIndex < 0) return;
         const target = filteredUnits[activeIndex];
-
-        document.getElementById('deleteConfirmText').textContent =
-            `هل أنت متأكد من حذف الوحدة "${toEnglishDigits(target.name)}"؟`;
-
+        document.getElementById('deleteConfirmText').textContent = `هل أنت متأكد من حذف الوحدة "${toEnglishDigits(target.name)}"؟`;
         const warningEl = document.getElementById('deleteWarningBadge');
         if (target.items_count > 0) {
             warningEl.innerHTML = `<span class="badge bg-warning text-dark px-3 py-2"><i class="fas fa-info-circle me-1"></i> مرتبطة بـ <b class="en-digit">${target.items_count}</b> أصناف في المخزن</span>`;
         } else {
             warningEl.innerHTML = `<span class="text-muted">لا توجد أصناف مرتبطة بهذه الوحدة حالياً.</span>`;
         }
-
         deleteUnitModal.show();
     }
 
-    document.getElementById('btnConfirmDelete').addEventListener('click', function () {
+    document.getElementById('btnConfirmDelete').addEventListener('click', async function () {
         if (filteredUnits.length === 0 || activeIndex < 0) return;
         const target = filteredUnits[activeIndex];
+        try {
+            const res = await fetch(`/api/inventory/units/${encodeURIComponent(target.id)}`, {
+                method: 'DELETE',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                }
+            });
+            const out = await res.json().catch(() => ({}));
+            if (res.ok && Array.isArray(out.units)) {
+                units = out.units;
+                syncSecondaryCache();
+            }
+        } catch (err) {}
 
-        units = units.filter(u => u.id !== target.id);
-        saveUnitsData();
         deleteUnitModal.hide();
         filterAndRender();
     });
 
-    document.getElementById('btnResetDefaults').addEventListener('click', function () {
-        units = [...defaultUnits];
-        activeIndex = 0;
-        searchInput.value = '';
-        saveUnitsData();
-        filterAndRender();
+    document.getElementById('btnResetDefaults').addEventListener('click', async function () {
+        try {
+            const res = await fetch('/api/inventory/units/reset-defaults', {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken }
+            });
+            const out = await res.json().catch(() => ({}));
+            if (res.ok && Array.isArray(out.units)) {
+                units = out.units;
+                activeIndex = 0;
+                searchInput.value = '';
+                syncSecondaryCache();
+                filterAndRender();
+            }
+        } catch (err) {}
     });
 
     function handleExitScreen() {
@@ -836,7 +820,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // 7. ربط أزرار الواجهة
     document.getElementById('btnAddUnit').addEventListener('click', openAddModal);
     document.getElementById('btnEditUnit').addEventListener('click', openEditModal);
     document.getElementById('btnDeleteUnit').addEventListener('click', openDeleteModal);
@@ -854,7 +837,6 @@ document.addEventListener('DOMContentLoaded', function () {
         searchInput.focus();
     });
 
-    // 8. اختصارات الكيبورد القياسية الصارمة
     document.addEventListener('keydown', function (e) {
         if (isFormModalOpen) {
             if (e.key === 'Escape') {
@@ -863,7 +845,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             return;
         }
-
         if (isDeleteModalOpen) {
             if (e.key === 'Escape') {
                 e.preventDefault();
@@ -921,10 +902,10 @@ document.addEventListener('DOMContentLoaded', function () {
             .replace(/"/g, '&quot;');
     }
 
-    // تشغيل أولي
-    loadUnitsData();
+    syncSecondaryCache();
+    filterAndRender();
+    fetchUnitsFromDB();
 });
 </script>
-
 </body>
 </html>

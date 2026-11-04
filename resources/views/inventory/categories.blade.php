@@ -3,17 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>المخزن | تحرير قائمة التصنيفات - NextStore SaaS</title>
-
-    <!-- خط Cairo المعتمد -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-
-    <!-- أيقونات FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-    <!-- مكتبة SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
@@ -273,7 +268,7 @@
             font-size: 12px;
         }
 
-        /* ================= منطقة الوسط (الجدول + أزرار التحكم الجانبية) ================= */
+        /* ================= منطقة الوسط ================= */
         .workspace-middle {
             flex: 1;
             display: grid;
@@ -312,20 +307,13 @@
             transition: background 0.1s ease;
         }
 
-        .ns-table tbody tr:nth-child(even) {
-            background-color: #f8fafc;
-        }
-
-        .ns-table tbody tr:hover {
-            background-color: #e0f2fe;
-        }
-
+        .ns-table tbody tr:nth-child(even) { background-color: #f8fafc; }
+        .ns-table tbody tr:hover { background-color: #e0f2fe; }
         .ns-table tbody tr.selected-row {
             background-color: #dcfce7 !important;
             outline: 2px solid var(--ns-green);
             outline-offset: -2px;
         }
-
         .ns-table tbody tr.deleted-row {
             background-color: #fef2f2;
             color: var(--ns-danger);
@@ -391,7 +379,6 @@
             color: var(--ns-muted);
         }
 
-        /* الشريط الجانبي للأزرار */
         .side-actions-panel {
             background: #f8fafc;
             padding: 16px 14px;
@@ -443,18 +430,9 @@
             box-shadow: 0 4px 10px rgba(17, 151, 68, 0.25);
         }
 
-        .side-btn.btn-add:hover {
-            background: var(--ns-green-hover);
-        }
-
-        .side-btn.btn-edit i {
-            color: var(--ns-warning);
-        }
-
-        .side-btn.btn-delete i {
-            color: var(--ns-danger);
-        }
-
+        .side-btn.btn-add:hover { background: var(--ns-green-hover); }
+        .side-btn.btn-edit i { color: var(--ns-warning); }
+        .side-btn.btn-delete i { color: var(--ns-danger); }
         .side-btn.btn-delete:hover:not(:disabled) {
             background: #fef2f2;
             border-color: var(--ns-danger);
@@ -541,7 +519,6 @@
 </head>
 <body>
 
-    <!-- ==================== الهيدر العلوي ==================== -->
     <header class="ns-header">
         <div class="ns-header-title">
             <div class="ns-icon-box">
@@ -567,10 +544,8 @@
         </button>
     </header>
 
-    <!-- ==================== الحاوية الرئيسية ==================== -->
     <main class="categories-container">
 
-        <!-- ==================== شريط الفلاتر والبحث العلوي ==================== -->
         <section class="top-filter-bar">
             <div class="checkbox-filters-group">
                 <label class="ns-checkbox-label deleted-filter" id="lblDeletedFilter">
@@ -588,17 +563,14 @@
 
             <div class="search-box-wrapper">
                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                <input type="text" id="categorySearchInput" class="ns-search-input"
-                       placeholder="ابحث باسم التصنيف أو الكود (F3)..." autocomplete="off">
+                <input type="text" id="categorySearchInput" class="ns-search-input" placeholder="ابحث باسم التصنيف أو الكود (F3)..." autocomplete="off">
                 <button type="button" class="btn-clear-search" id="btnClearSearch" title="مسح البحث">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
         </section>
 
-        <!-- ==================== منطقة الوسط: الجدول + الأزرار الجانبية ==================== -->
         <section class="workspace-middle">
-
             <div class="table-area">
                 <table class="ns-table" id="categoriesTable">
                     <thead>
@@ -641,10 +613,8 @@
                     </div>
                 </div>
             </aside>
-
         </section>
 
-        <!-- ==================== الشريط السفلي ==================== -->
         <footer class="bottom-action-bar">
             <div class="bottom-right-btns">
                 <button type="button" class="ns-bottom-btn" id="btnExportExcel">
@@ -666,548 +636,518 @@
 
     </main>
 
-    <!-- ==================== الكود البرمجي الكامل (JavaScript) ==================== -->
     <script>
-        (function () {
-            'use strict';
+    (function () {
+        'use strict';
 
-            // مفاتيح التخزين الموحدة لفولدر المخزون (inventory)
-            const CATEGORIES_STORAGE_KEY = 'nextstore_inventory_categories_v1';
-            const PRODUCTS_STORAGE_KEY = 'nextstore_inventory_products_v1';
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        const CATEGORIES_STORAGE_KEY = 'nextstore_inventory_categories_v1';
 
-            let categories = [];
-            let filteredCategories = [];
-            let selectedRowIndex = -1;
+        let categories = @json($initialCategories ?? []);
+        let filteredCategories = [];
+        let selectedRowIndex = -1;
 
-            function toEnglishDigits(str) {
-                if (str === null || str === undefined) return '';
-                return String(str)
-                    .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
-                    .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
-            }
+        function toEnglishDigits(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+                .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+        }
 
-            function padCategoryCode(num) {
-                return String(num).padStart(3, '0');
-            }
+        function padCategoryCode(num) {
+            return String(num).padStart(3, '0');
+        }
 
-            function loadCategoriesFromStorage() {
-                try {
-                    const raw = localStorage.getItem(CATEGORIES_STORAGE_KEY);
-                    categories = raw ? JSON.parse(raw) : [];
-                } catch (e) {
-                    categories = [];
-                }
-
-                if (!Array.isArray(categories) || categories.length === 0) {
-                    categories = [
-                        { id: 'CAT-054', code: '054', name: 'مصنعات دجاج مجمده', parentId: null, itemsCount: 47, isDeleted: false },
-                        { id: 'CAT-097', code: '097', name: 'ايس كريم مجمد علب واستيك', parentId: null, itemsCount: 19, isDeleted: false },
-                        { id: 'CAT-012', code: '012', name: 'ألبان وجبن وثلاجة', parentId: null, itemsCount: 34, isDeleted: false },
-                        { id: 'CAT-025', code: '025', name: 'مشروبات غازية وعصائر', parentId: null, itemsCount: 28, isDeleted: false },
-                        { id: 'CAT-031', code: '031', name: 'بقالة جافة وزيوت', parentId: null, itemsCount: 62, isDeleted: false },
-                        { id: 'CAT-099', code: '099', name: 'تصنيف موسمي جديد (فارغ)', parentId: null, itemsCount: 0, isDeleted: false }
-                    ];
-                    saveCategoriesToStorage();
-                }
-
-                syncProductCountsIfAvailable();
-            }
-
-            function syncProductCountsIfAvailable() {
-                try {
-                    const rawProducts = localStorage.getItem(PRODUCTS_STORAGE_KEY);
-                    if (!rawProducts) return;
-                    const products = JSON.parse(rawProducts);
-                    if (!Array.isArray(products) || products.length === 0) return;
-
-                    const countsMap = {};
-                    products.forEach(p => {
-                        if (!p.isDeleted && p.categoryId) {
-                            countsMap[p.categoryId] = (countsMap[p.categoryId] || 0) + 1;
-                        }
-                    });
-
-                    categories.forEach(cat => {
-                        if (countsMap[cat.id] !== undefined) {
-                            cat.itemsCount = countsMap[cat.id];
-                        }
-                    });
-                } catch (e) {}
-            }
-
-            function saveCategoriesToStorage() {
+        function syncSecondaryCache() {
+            try {
                 localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(categories));
-            }
+            } catch (e) {}
+        }
 
-            function generateNextCode() {
-                let maxNum = 0;
-                categories.forEach(c => {
-                    const num = parseInt(toEnglishDigits(c.code), 10);
-                    if (!isNaN(num) && num > maxNum) {
-                        maxNum = num;
+        async function fetchCategoriesFromDatabase(showToast = false) {
+            try {
+                const res = await fetch('/api/inventory/categories/list', {
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (res.ok) {
+                    const out = await res.json();
+                    if (Array.isArray(out.categories)) {
+                        categories = out.categories;
+                        syncSecondaryCache();
+                        applyFiltersAndRender();
+                        if (showToast) {
+                            Swal.fire({ toast: true, position: 'bottom-start', icon: 'info', title: 'تم تحديث تصنيفات المخزن من قاعدة البيانات', showConfirmButton: false, timer: 1600 });
+                        }
                     }
-                });
-                return padCategoryCode(maxNum + 1);
-            }
-
-            function getParentName(parentId) {
-                if (!parentId) return '<بدون>';
-                const parent = categories.find(c => String(c.id) === String(parentId));
-                return parent ? parent.name : '<بدون>';
-            }
-
-            function applyFiltersAndRender() {
-                const showDeleted = document.getElementById('chkShowDeleted').checked;
-                const onlyWithoutItems = document.getElementById('chkWithoutItems').checked;
-                const searchQuery = toEnglishDigits(document.getElementById('categorySearchInput').value).trim().toLowerCase();
-
-                document.getElementById('lblDeletedFilter').classList.toggle('active-filter', showDeleted);
-                document.getElementById('lblWithoutItemsFilter').classList.toggle('active-filter', onlyWithoutItems);
-
-                const deleteBtnText = document.getElementById('deleteBtnText');
-                const deleteBtnIcon = document.getElementById('deleteBtnIcon');
-                if (showDeleted) {
-                    deleteBtnText.textContent = 'استعادة';
-                    deleteBtnIcon.className = 'fa-solid fa-trash-arrow-up';
-                } else {
-                    deleteBtnText.textContent = 'حذف';
-                    deleteBtnIcon.className = 'fa-solid fa-folder-minus';
                 }
-
-                filteredCategories = categories.filter(cat => {
-                    if (showDeleted ? !cat.isDeleted : cat.isDeleted) return false;
-
-                    const count = parseInt(cat.itemsCount, 10) || 0;
-                    if (onlyWithoutItems && count > 0) return false;
-
-                    if (searchQuery) {
-                        const matchName = (cat.name || '').toLowerCase().includes(searchQuery);
-                        const matchCode = String(cat.code || '').toLowerCase().includes(searchQuery);
-                        const parentName = getParentName(cat.parentId).toLowerCase();
-                        const matchParent = parentName.includes(searchQuery);
-                        if (!matchName && !matchCode && !matchParent) return false;
-                    }
-
-                    return true;
-                });
-
-                renderTable();
+            } catch (err) {
+                console.error('تعذر جلب التصنيفات:', err);
             }
+        }
 
-            function renderTable() {
-                const tbody = document.getElementById('categoriesTableBody');
-                let totalItemsSum = 0;
-
-                if (filteredCategories.length === 0) {
-                    tbody.innerHTML = `
-                        <tr>
-                            <td colspan="5">
-                                <div class="empty-state-box">
-                                    <i class="fa-solid fa-folder-open"></i>
-                                    <p style="font-size: 15px; font-weight: 800;">لا توجد تصنيفات مطابقة للبحث الحالي</p>
-                                    <small>يمكنك إضافة تصنيف جديد بالضغط على زر "إضافة تصنيف" أو (F2)</small>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                    selectedRowIndex = -1;
-                    document.getElementById('lblTotalCategoriesCount').textContent = '0';
-                    document.getElementById('lblTotalItemsCount').textContent = '0';
-                    updateSideButtonsState();
-                    return;
+        function generateNextCode() {
+            let maxNum = 0;
+            categories.forEach(c => {
+                const num = parseInt(toEnglishDigits(c.code), 10);
+                if (!isNaN(num) && num > maxNum) {
+                    maxNum = num;
                 }
+            });
+            return padCategoryCode(maxNum + 1);
+        }
 
-                if (selectedRowIndex < 0 || selectedRowIndex >= filteredCategories.length) {
-                    selectedRowIndex = 0;
+        function getParentName(parentId) {
+            if (!parentId) return '<بدون>';
+            const parent = categories.find(c => String(c.id) === String(parentId));
+            return parent ? parent.name : '<بدون>';
+        }
+
+        function applyFiltersAndRender() {
+            const showDeleted = document.getElementById('chkShowDeleted').checked;
+            const onlyWithoutItems = document.getElementById('chkWithoutItems').checked;
+            const searchQuery = toEnglishDigits(document.getElementById('categorySearchInput').value).trim().toLowerCase();
+
+            document.getElementById('lblDeletedFilter').classList.toggle('active-filter', showDeleted);
+            document.getElementById('lblWithoutItemsFilter').classList.toggle('active-filter', onlyWithoutItems);
+
+            const deleteBtnText = document.getElementById('deleteBtnText');
+            const deleteBtnIcon = document.getElementById('deleteBtnIcon');
+            if (showDeleted) {
+                deleteBtnText.textContent = 'استعادة';
+                deleteBtnIcon.className = 'fa-solid fa-trash-arrow-up';
+            } else {
+                deleteBtnText.textContent = 'حذف';
+                deleteBtnIcon.className = 'fa-solid fa-folder-minus';
+            }
+
+            filteredCategories = categories.filter(cat => {
+                if (showDeleted ? !cat.isDeleted : cat.isDeleted) return false;
+                const count = parseInt(cat.itemsCount, 10) || 0;
+                if (onlyWithoutItems && count > 0) return false;
+
+                if (searchQuery) {
+                    const matchName = (cat.name || '').toLowerCase().includes(searchQuery);
+                    const matchCode = String(cat.code || '').toLowerCase().includes(searchQuery);
+                    const parentName = getParentName(cat.parentId).toLowerCase();
+                    const matchParent = parentName.includes(searchQuery);
+                    if (!matchName && !matchCode && !matchParent) return false;
                 }
+                return true;
+            });
 
-                tbody.innerHTML = filteredCategories.map((cat, idx) => {
-                    const count = parseInt(cat.itemsCount, 10) || 0;
-                    totalItemsSum += count;
-                    const parentTitle = getParentName(cat.parentId);
-                    const hasParent = Boolean(cat.parentId && parentTitle !== '<بدون>');
-                    const isSelected = idx === selectedRowIndex;
+            renderTable();
+        }
 
-                    return `
-                        <tr data-index="${idx}" class="${isSelected ? 'selected-row' : ''} ${cat.isDeleted ? 'deleted-row' : ''}">
-                            <td class="row-index-cell">${idx + 1}</td>
-                            <td><span class="code-badge">${cat.code}</span></td>
-                            <td style="font-weight: 800; color: var(--ns-navy);">${cat.name}</td>
-                            <td>
-                                <span class="parent-badge ${hasParent ? 'has-parent' : ''}">
-                                    ${parentTitle.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
-                                </span>
-                            </td>
-                            <td style="text-align: center;">
-                                <span class="items-count-badge ${count === 0 ? 'zero-items' : ''}">${count}</span>
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
+        function renderTable() {
+            const tbody = document.getElementById('categoriesTableBody');
+            let totalItemsSum = 0;
 
-                document.getElementById('lblTotalCategoriesCount').textContent = filteredCategories.length;
-                document.getElementById('lblTotalItemsCount').textContent = totalItemsSum;
-
-                tbody.querySelectorAll('tr[data-index]').forEach(row => {
-                    row.addEventListener('click', function () {
-                        selectedRowIndex = parseInt(this.getAttribute('data-index'), 10);
-                        highlightSelectedRow();
-                    });
-
-                    row.addEventListener('dblclick', function () {
-                        selectedRowIndex = parseInt(this.getAttribute('data-index'), 10);
-                        highlightSelectedRow();
-                        openCategoryModal(filteredCategories[selectedRowIndex]);
-                    });
-                });
-
-                updateSideButtonsState();
-            }
-
-            function highlightSelectedRow() {
-                const rows = document.querySelectorAll('#categoriesTableBody tr[data-index]');
-                rows.forEach((row, idx) => {
-                    if (idx === selectedRowIndex) {
-                        row.classList.add('selected-row');
-                        row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-                    } else {
-                        row.classList.remove('selected-row');
-                    }
-                });
-                updateSideButtonsState();
-            }
-
-            function updateSideButtonsState() {
-                const hasSelection = selectedRowIndex >= 0 && selectedRowIndex < filteredCategories.length;
-                document.getElementById('btnEditCategory').disabled = !hasSelection;
-                document.getElementById('btnDeleteCategory').disabled = !hasSelection;
-            }
-
-            function openCategoryModal(editingCategory = null) {
-                const isEdit = Boolean(editingCategory);
-                const defaultCode = isEdit ? editingCategory.code : generateNextCode();
-
-                const parentOptionsHtml = [
-                    `<option value="">&lt;بدون&gt; (تصنيف رئيسي)</option>`,
-                    ...categories
-                        .filter(c => !c.isDeleted && (!isEdit || c.id !== editingCategory.id))
-                        .map(c => `<option value="${c.id}" ${isEdit && String(editingCategory.parentId) === String(c.id) ? 'selected' : ''}>${c.name} (${c.code})</option>`)
-                ].join('');
-
-                Swal.fire({
-                    title: isEdit ? `تحرير التصنيف (${editingCategory.name})` : 'إضافة تصنيف مخزني جديد',
-                    width: '500px',
-                    html: `
-                        <div style="text-align: right; display: flex; flex-direction: column; gap: 12px; font-size: 14px; margin-top: 8px;">
-                            <div style="display: grid; grid-template-columns: 140px 1fr; gap: 10px;">
-                                <div>
-                                    <label style="font-weight: 800; color: #17283d; display: block; margin-bottom: 4px;">كود التصنيف *</label>
-                                    <input type="text" id="swalCatCode" value="${defaultCode}"
-                                           style="width: 100%; height: 40px; padding: 0 10px; border: 1.5px solid #cbd5e1; border-radius: 7px; font-weight: 900; text-align: center; font-size: 15px;">
-                                </div>
-                                <div>
-                                    <label style="font-weight: 800; color: #17283d; display: block; margin-bottom: 4px;">اسم التصنيف *</label>
-                                    <input type="text" id="swalCatName" value="${isEdit ? editingCategory.name : ''}" placeholder="مثال: مصنعات دجاج مجمدة..."
-                                           style="width: 100%; height: 40px; padding: 0 12px; border: 1.5px solid #cbd5e1; border-radius: 7px; font-weight: 700; font-size: 14px;">
-                                </div>
+            if (filteredCategories.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5">
+                            <div class="empty-state-box">
+                                <i class="fa-solid fa-folder-open"></i>
+                                <p style="font-size: 15px; font-weight: 800;">لا توجد تصنيفات مطابقة للبحث الحالي</p>
+                                <small>يمكنك إضافة تصنيف جديد بالضغط على زر "إضافة تصنيف" أو (F2)</small>
                             </div>
+                        </td>
+                    </tr>
+                `;
+                selectedRowIndex = -1;
+                document.getElementById('lblTotalCategoriesCount').textContent = '0';
+                document.getElementById('lblTotalItemsCount').textContent = '0';
+                updateSideButtonsState();
+                return;
+            }
 
+            if (selectedRowIndex < 0 || selectedRowIndex >= filteredCategories.length) {
+                selectedRowIndex = 0;
+            }
+
+            tbody.innerHTML = filteredCategories.map((cat, idx) => {
+                const count = parseInt(cat.itemsCount, 10) || 0;
+                totalItemsSum += count;
+                const parentTitle = getParentName(cat.parentId);
+                const hasParent = Boolean(cat.parentId && parentTitle !== '<بدون>');
+                const isSelected = idx === selectedRowIndex;
+
+                return `
+                    <tr data-index="${idx}" class="${isSelected ? 'selected-row' : ''} ${cat.isDeleted ? 'deleted-row' : ''}">
+                        <td class="row-index-cell">${idx + 1}</td>
+                        <td><span class="code-badge">${cat.code}</span></td>
+                        <td style="font-weight: 800; color: var(--ns-navy);">${cat.name}</td>
+                        <td>
+                            <span class="parent-badge ${hasParent ? 'has-parent' : ''}">
+                                ${parentTitle.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+                            </span>
+                        </td>
+                        <td style="text-align: center;">
+                            <span class="items-count-badge ${count === 0 ? 'zero-items' : ''}">${count}</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('lblTotalCategoriesCount').textContent = filteredCategories.length;
+            document.getElementById('lblTotalItemsCount').textContent = totalItemsSum;
+
+            tbody.querySelectorAll('tr[data-index]').forEach(row => {
+                row.addEventListener('click', function () {
+                    selectedRowIndex = parseInt(this.getAttribute('data-index'), 10);
+                    highlightSelectedRow();
+                });
+                row.addEventListener('dblclick', function () {
+                    selectedRowIndex = parseInt(this.getAttribute('data-index'), 10);
+                    highlightSelectedRow();
+                    openCategoryModal(filteredCategories[selectedRowIndex]);
+                });
+            });
+
+            updateSideButtonsState();
+        }
+
+        function highlightSelectedRow() {
+            const rows = document.querySelectorAll('#categoriesTableBody tr[data-index]');
+            rows.forEach((row, idx) => {
+                if (idx === selectedRowIndex) {
+                    row.classList.add('selected-row');
+                    row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                } else {
+                    row.classList.remove('selected-row');
+                }
+            });
+            updateSideButtonsState();
+        }
+
+        function updateSideButtonsState() {
+            const hasSelection = selectedRowIndex >= 0 && selectedRowIndex < filteredCategories.length;
+            document.getElementById('btnEditCategory').disabled = !hasSelection;
+            document.getElementById('btnDeleteCategory').disabled = !hasSelection;
+        }
+
+        function openCategoryModal(editingCategory = null) {
+            const isEdit = Boolean(editingCategory);
+            const defaultCode = isEdit ? editingCategory.code : generateNextCode();
+
+            const parentOptionsHtml = [
+                `<option value="">&lt;بدون&gt; (تصنيف رئيسي)</option>`,
+                ...categories
+                    .filter(c => !c.isDeleted && (!isEdit || String(c.id) !== String(editingCategory.id)))
+                    .map(c => `<option value="${c.id}" ${isEdit && String(editingCategory.parentId) === String(c.id) ? 'selected' : ''}>${c.name} (${c.code})</option>`)
+            ].join('');
+
+            Swal.fire({
+                title: isEdit ? `تحرير التصنيف (${editingCategory.name})` : 'إضافة تصنيف مخزني جديد',
+                width: '500px',
+                html: `
+                    <div style="text-align: right; display: flex; flex-direction: column; gap: 12px; font-size: 14px; margin-top: 8px;">
+                        <div style="display: grid; grid-template-columns: 140px 1fr; gap: 10px;">
                             <div>
-                                <label style="font-weight: 800; color: #17283d; display: block; margin-bottom: 4px;">التصنيف الرئيسي (الأب)</label>
-                                <select id="swalCatParent" style="width: 100%; height: 40px; padding: 0 10px; border: 1.5px solid #cbd5e1; border-radius: 7px; font-weight: 700; font-size: 13.5px;">
-                                    ${parentOptionsHtml}
-                                </select>
+                                <label style="font-weight: 800; color: #17283d; display: block; margin-bottom: 4px;">كود التصنيف *</label>
+                                <input type="text" id="swalCatCode" value="${defaultCode}" style="width: 100%; height: 40px; padding: 0 10px; border: 1.5px solid #cbd5e1; border-radius: 7px; font-weight: 900; text-align: center; font-size: 15px;">
+                            </div>
+                            <div>
+                                <label style="font-weight: 800; color: #17283d; display: block; margin-bottom: 4px;">اسم التصنيف *</label>
+                                <input type="text" id="swalCatName" value="${isEdit ? editingCategory.name : ''}" placeholder="اكتب اسم التصنيف..." style="width: 100%; height: 40px; padding: 0 12px; border: 1.5px solid #cbd5e1; border-radius: 7px; font-weight: 700; font-size: 14px;">
                             </div>
                         </div>
-                    `,
-                    showCancelButton: true,
-                    confirmButtonColor: '#119744',
-                    cancelButtonColor: '#64748b',
-                    confirmButtonText: isEdit ? 'حفظ التعديلات' : 'إضافة التصنيف',
-                    cancelButtonText: 'إلغاء',
-                    didOpen: () => {
-                        const nameInput = document.getElementById('swalCatName');
-                        const codeInput = document.getElementById('swalCatCode');
-                        nameInput.focus();
-                        nameInput.select();
+                        <div>
+                            <label style="font-weight: 800; color: #17283d; display: block; margin-bottom: 4px;">التصنيف الرئيسي (الأب)</label>
+                            <select id="swalCatParent" style="width: 100%; height: 40px; padding: 0 10px; border: 1.5px solid #cbd5e1; border-radius: 7px; font-weight: 700; font-size: 13.5px;">
+                                ${parentOptionsHtml}
+                            </select>
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonColor: '#119744',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: isEdit ? 'حفظ التعديلات' : 'إضافة التصنيف',
+                cancelButtonText: 'إلغاء',
+                didOpen: () => {
+                    const nameInput = document.getElementById('swalCatName');
+                    const codeInput = document.getElementById('swalCatCode');
+                    nameInput.focus();
+                    nameInput.select();
+                    codeInput.addEventListener('input', function () {
+                        this.value = toEnglishDigits(this.value);
+                    });
+                    nameInput.addEventListener('input', function () {
+                        this.value = toEnglishDigits(this.value);
+                    });
+                },
+                preConfirm: async () => {
+                    const code = toEnglishDigits(document.getElementById('swalCatCode').value).trim();
+                    const name = toEnglishDigits(document.getElementById('swalCatName').value).trim();
+                    const parentId = document.getElementById('swalCatParent').value || null;
 
-                        codeInput.addEventListener('input', function () {
-                            this.value = toEnglishDigits(this.value);
-                        });
-                        nameInput.addEventListener('input', function () {
-                            this.value = toEnglishDigits(this.value);
-                        });
-                    },
-                    preConfirm: () => {
-                        const code = toEnglishDigits(document.getElementById('swalCatCode').value).trim();
-                        const name = toEnglishDigits(document.getElementById('swalCatName').value).trim();
-                        const parentId = document.getElementById('swalCatParent').value || null;
-
-                        if (!code) {
-                            Swal.showValidationMessage('يرجى إدخال كود التصنيف');
-                            return false;
-                        }
-                        if (!name) {
-                            Swal.showValidationMessage('يرجى إدخال اسم التصنيف');
-                            return false;
-                        }
-
-                        const duplicateCode = categories.find(c =>
-                            c.code === code && (!isEdit || c.id !== editingCategory.id)
-                        );
-                        if (duplicateCode) {
-                            Swal.showValidationMessage(`كود التصنيف (${code}) مستخدم بالفعل لتصنيف "${duplicateCode.name}"`);
-                            return false;
-                        }
-
-                        const duplicateName = categories.find(c =>
-                            c.name.trim() === name && (!isEdit || c.id !== editingCategory.id)
-                        );
-                        if (duplicateName) {
-                            Swal.showValidationMessage(`اسم التصنيف "${name}" موجود بالفعل!`);
-                            return false;
-                        }
-
-                        return { code, name, parentId };
+                    if (!code) {
+                        Swal.showValidationMessage('يرجى إدخال كود التصنيف');
+                        return false;
                     }
-                }).then(result => {
-                    if (!result.isConfirmed || !result.value) return;
-                    const { code, name, parentId } = result.value;
-
-                    if (isEdit) {
-                        const idx = categories.findIndex(c => c.id === editingCategory.id);
-                        if (idx !== -1) {
-                            categories[idx].code = code;
-                            categories[idx].name = name;
-                            categories[idx].parentId = parentId;
-                        }
-                        Swal.fire({ toast: true, position: 'bottom-start', icon: 'success', title: 'تم تحديث بيانات التصنيف بنجاح', showConfirmButton: false, timer: 2000 });
-                    } else {
-                        const newCat = {
-                            id: 'CAT-' + Date.now(),
-                            code: code,
-                            name: name,
-                            parentId: parentId,
-                            itemsCount: 0,
-                            isDeleted: false
-                        };
-                        categories.push(newCat);
-                        Swal.fire({ toast: true, position: 'bottom-start', icon: 'success', title: `تم إضافة التصنيف "${name}" بنجاح`, showConfirmButton: false, timer: 2000 });
+                    if (!name) {
+                        Swal.showValidationMessage('يرجى إدخال اسم التصنيف');
+                        return false;
                     }
 
-                    saveCategoriesToStorage();
-                    applyFiltersAndRender();
-                });
-            }
-
-            function handleDeleteOrRestoreCategory() {
-                if (selectedRowIndex < 0 || selectedRowIndex >= filteredCategories.length) return;
-                const targetCat = filteredCategories[selectedRowIndex];
-
-                if (targetCat.isDeleted) {
-                    targetCat.isDeleted = false;
-                    saveCategoriesToStorage();
-                    applyFiltersAndRender();
-                    Swal.fire({
-                        toast: true,
-                        position: 'bottom-start',
-                        icon: 'success',
-                        title: `تم استعادة التصنيف "${targetCat.name}" بنجاح`,
-                        showConfirmButton: false,
-                        timer: 2200
-                    });
-                    return;
+                    try {
+                        const res = await fetch('/api/inventory/categories/save', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken
+                            },
+                            body: JSON.stringify({
+                                id: isEdit ? editingCategory.id : null,
+                                code: code,
+                                name: name,
+                                parentId: parentId
+                            })
+                        });
+                        const out = await res.json().catch(() => ({}));
+                        if (!res.ok) {
+                            Swal.showValidationMessage(out.message || 'تعذر حفظ التصنيف في قاعدة البيانات');
+                            return false;
+                        }
+                        return out;
+                    } catch (err) {
+                        Swal.showValidationMessage('حدث خطأ في الاتصال بقاعدة البيانات');
+                        return false;
+                    }
                 }
-
-                const hasSubCategories = categories.some(c => !c.isDeleted && String(c.parentId) === String(targetCat.id));
-                if (hasSubCategories) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'لا يمكن حذف التصنيف',
-                        text: `التصنيف "${targetCat.name}" يندرج تحته تصنيفات فرعية، يرجى تعديلها أو حذفها أولاً.`,
-                        confirmButtonColor: '#17283d'
-                    });
-                    return;
+            }).then(result => {
+                if (!result.isConfirmed || !result.value) return;
+                const out = result.value;
+                if (Array.isArray(out.categories)) {
+                    categories = out.categories;
+                    syncSecondaryCache();
                 }
+                applyFiltersAndRender();
 
                 Swal.fire({
-                    title: 'تأكيد حذف التصنيف',
-                    html: `هل أنت متأكد من حذف التصنيف <b>"${targetCat.name}"</b> (كود: <b>${targetCat.code}</b>)؟<br>
-                           ${targetCat.itemsCount > 0 ? `<small style="color:#dc2626; font-weight:700;">تنبيه: هذا التصنيف مرتبط بـ (${targetCat.itemsCount}) صنف حالياً!</small>` : '<small style="color:#64748b;">سيتم نقله إلى قائمة التصنيفات المحذوفة ويمكنك استعادته لاحقاً.</small>'}`,
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#dc2626',
-                    cancelButtonColor: '#64748b',
-                    confirmButtonText: 'نعم، احذف التصنيف',
-                    cancelButtonText: 'إلغاء'
-                }).then(res => {
-                    if (res.isConfirmed) {
-                        const idx = categories.findIndex(c => c.id === targetCat.id);
-                        if (idx !== -1) {
-                            categories[idx].isDeleted = true;
-                            saveCategoriesToStorage();
-                            applyFiltersAndRender();
-                            Swal.fire({
-                                toast: true,
-                                position: 'bottom-start',
-                                icon: 'success',
-                                title: 'تم نقل التصنيف إلى التصنيفات المحذوفة',
-                                showConfirmButton: false,
-                                timer: 2200
-                            });
-                        }
-                    }
+                    toast: true,
+                    position: 'bottom-start',
+                    icon: 'success',
+                    title: isEdit ? 'تم تحديث بيانات التصنيف بنجاح' : 'تمت إضافة التصنيف في قاعدة البيانات بنجاح',
+                    showConfirmButton: false,
+                    timer: 2000
                 });
-            }
+            });
+        }
 
-            function exportCategoriesToExcel() {
-                if (filteredCategories.length === 0) {
-                    Swal.fire({ icon: 'info', title: 'تنبيه', text: 'لا توجد تصنيفات معروضة لتصديرها', confirmButtonColor: '#119744' });
-                    return;
+        async function handleDeleteOrRestoreCategory() {
+            if (selectedRowIndex < 0 || selectedRowIndex >= filteredCategories.length) return;
+            const targetCat = filteredCategories[selectedRowIndex];
+
+            if (targetCat.isDeleted) {
+                try {
+                    const res = await fetch(`/api/inventory/categories/${encodeURIComponent(targetCat.id)}/toggle-delete`, {
+                        method: 'POST',
+                        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken }
+                    });
+                    const out = await res.json().catch(() => ({}));
+                    if (!res.ok) throw new Error(out.message || 'تعذر استعادة التصنيف');
+
+                    categories = out.categories || categories;
+                    syncSecondaryCache();
+                    applyFiltersAndRender();
+                    Swal.fire({ toast: true, position: 'bottom-start', icon: 'success', title: `تمت استعادة التصنيف "${targetCat.name}" بنجاح`, showConfirmButton: false, timer: 2200 });
+                } catch (err) {
+                    Swal.fire('خطأ', err.message, 'error');
                 }
-
-                const headers = ['م', 'كود التصنيف', 'اسم التصنيف', 'التصنيف الرئيسي', 'عدد الأصناف'];
-                const rows = filteredCategories.map((cat, index) => [
-                    index + 1,
-                    `"${cat.code}"`,
-                    `"${(cat.name || '').replace(/"/g, '""')}"`,
-                    `"${getParentName(cat.parentId).replace(/"/g, '""')}"`,
-                    cat.itemsCount || 0
-                ].join(','));
-
-                const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\n');
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `تصنيفات_المخزون_NextStore.csv`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+                return;
             }
 
-            const searchInput = document.getElementById('categorySearchInput');
-            const btnClearSearch = document.getElementById('btnClearSearch');
+            const hasSubCategories = categories.some(c => !c.isDeleted && String(c.parentId) === String(targetCat.id));
+            if (hasSubCategories) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'لا يمكن حذف التصنيف',
+                    text: `التصنيف "${targetCat.name}" يندرج تحته تصنيفات فرعية، يرجى تعديلها أو حذفها أولاً.`,
+                    confirmButtonColor: '#17283d'
+                });
+                return;
+            }
 
-            searchInput.addEventListener('input', function () {
-                this.value = toEnglishDigits(this.value);
-                btnClearSearch.style.display = this.value.length > 0 ? 'flex' : 'none';
-                selectedRowIndex = 0;
-                applyFiltersAndRender();
+            Swal.fire({
+                title: 'تأكيد حذف التصنيف',
+                html: `هل أنت متأكد من حذف التصنيف <b>"${targetCat.name}"</b> (كود: <b>${targetCat.code}</b>)؟<br>
+                       ${targetCat.itemsCount > 0 ? `<small style="color:#dc2626; font-weight:700;">تنبيه: هذا التصنيف مرتبط بـ (${targetCat.itemsCount}) صنف حالياً!</small>` : '<small style="color:#64748b;">سيتم نقله إلى قائمة التصنيفات المحذوفة ويمكنك استعادته لاحقاً.</small>'}`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'نعم، احذف التصنيف',
+                cancelButtonText: 'إلغاء'
+            }).then(async res => {
+                if (!res.isConfirmed) return;
+                try {
+                    const r = await fetch(`/api/inventory/categories/${encodeURIComponent(targetCat.id)}/toggle-delete`, {
+                        method: 'POST',
+                        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken }
+                    });
+                    const out = await r.json().catch(() => ({}));
+                    if (!r.ok) throw new Error(out.message || 'تعذر حذف التصنيف');
+
+                    categories = out.categories || categories;
+                    syncSecondaryCache();
+                    applyFiltersAndRender();
+                    Swal.fire({ toast: true, position: 'bottom-start', icon: 'success', title: 'تم نقل التصنيف إلى التصنيفات المحذوفة', showConfirmButton: false, timer: 2200 });
+                } catch (err) {
+                    Swal.fire('خطأ', err.message, 'error');
+                }
             });
+        }
 
-            btnClearSearch.addEventListener('click', () => {
-                searchInput.value = '';
-                btnClearSearch.style.display = 'none';
-                selectedRowIndex = 0;
-                applyFiltersAndRender();
+        function exportCategoriesToExcel() {
+            if (filteredCategories.length === 0) {
+                Swal.fire({ icon: 'info', title: 'تنبيه', text: 'لا توجد تصنيفات معروضة لتصديرها', confirmButtonColor: '#119744' });
+                return;
+            }
+
+            const headers = ['م', 'كود التصنيف', 'اسم التصنيف', 'التصنيف الرئيسي', 'عدد الأصناف'];
+            const rows = filteredCategories.map((cat, index) => [
+                index + 1,
+                `"${cat.code}"`,
+                `"${(cat.name || '').replace(/"/g, '""')}"`,
+                `"${getParentName(cat.parentId).replace(/"/g, '""')}"`,
+                cat.itemsCount || 0
+            ].join(','));
+
+            const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `تصنيفات_المخزون_NextStore.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        const searchInput = document.getElementById('categorySearchInput');
+        const btnClearSearch = document.getElementById('btnClearSearch');
+
+        searchInput.addEventListener('input', function () {
+            this.value = toEnglishDigits(this.value);
+            btnClearSearch.style.display = this.value.length > 0 ? 'flex' : 'none';
+            selectedRowIndex = 0;
+            applyFiltersAndRender();
+        });
+
+        btnClearSearch.addEventListener('click', () => {
+            searchInput.value = '';
+            btnClearSearch.style.display = 'none';
+            selectedRowIndex = 0;
+            applyFiltersAndRender();
+            searchInput.focus();
+        });
+
+        document.getElementById('chkShowDeleted').addEventListener('change', () => {
+            selectedRowIndex = 0;
+            applyFiltersAndRender();
+        });
+
+        document.getElementById('chkWithoutItems').addEventListener('change', () => {
+            selectedRowIndex = 0;
+            applyFiltersAndRender();
+        });
+
+        document.getElementById('btnAddCategory').addEventListener('click', () => openCategoryModal(null));
+        document.getElementById('btnEditCategory').addEventListener('click', () => {
+            if (selectedRowIndex >= 0 && filteredCategories[selectedRowIndex]) {
+                openCategoryModal(filteredCategories[selectedRowIndex]);
+            }
+        });
+        document.getElementById('btnDeleteCategory').addEventListener('click', handleDeleteOrRestoreCategory);
+        document.getElementById('btnExportExcel').addEventListener('click', exportCategoriesToExcel);
+
+        document.getElementById('btnReloadCategories').addEventListener('click', () => {
+            searchInput.value = '';
+            btnClearSearch.style.display = 'none';
+            document.getElementById('chkShowDeleted').checked = false;
+            document.getElementById('chkWithoutItems').checked = false;
+            selectedRowIndex = 0;
+            fetchCategoriesFromDatabase(true);
+        });
+
+        function exitPage() {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = '/';
+            }
+        }
+
+        document.getElementById('btnTopExit').addEventListener('click', exitPage);
+        document.getElementById('btnBottomClose').addEventListener('click', exitPage);
+
+        document.addEventListener('keydown', (e) => {
+            if (Swal.isVisible()) return;
+
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                exitPage();
+                return;
+            }
+
+            if (e.key === 'F3') {
+                e.preventDefault();
                 searchInput.focus();
-            });
+                searchInput.select();
+                return;
+            }
 
-            document.getElementById('chkShowDeleted').addEventListener('change', () => {
-                selectedRowIndex = 0;
-                applyFiltersAndRender();
-            });
+            if (e.key === 'F2' || e.key === 'Insert') {
+                e.preventDefault();
+                openCategoryModal(null);
+                return;
+            }
 
-            document.getElementById('chkWithoutItems').addEventListener('change', () => {
-                selectedRowIndex = 0;
-                applyFiltersAndRender();
-            });
+            if (e.key === 'ArrowDown') {
+                if (filteredCategories.length === 0) return;
+                e.preventDefault();
+                selectedRowIndex = Math.min(filteredCategories.length - 1, selectedRowIndex + 1);
+                highlightSelectedRow();
+                return;
+            }
 
-            document.getElementById('btnAddCategory').addEventListener('click', () => openCategoryModal(null));
-            document.getElementById('btnEditCategory').addEventListener('click', () => {
+            if (e.key === 'ArrowUp') {
+                if (filteredCategories.length === 0) return;
+                e.preventDefault();
+                selectedRowIndex = Math.max(0, selectedRowIndex - 1);
+                highlightSelectedRow();
+                return;
+            }
+
+            if (e.key === 'Enter' && document.activeElement !== searchInput) {
                 if (selectedRowIndex >= 0 && filteredCategories[selectedRowIndex]) {
+                    e.preventDefault();
                     openCategoryModal(filteredCategories[selectedRowIndex]);
                 }
-            });
-            document.getElementById('btnDeleteCategory').addEventListener('click', handleDeleteOrRestoreCategory);
-            document.getElementById('btnExportExcel').addEventListener('click', exportCategoriesToExcel);
-
-            document.getElementById('btnReloadCategories').addEventListener('click', () => {
-                loadCategoriesFromStorage();
-                searchInput.value = '';
-                btnClearSearch.style.display = 'none';
-                document.getElementById('chkShowDeleted').checked = false;
-                document.getElementById('chkWithoutItems').checked = false;
-                selectedRowIndex = 0;
-                applyFiltersAndRender();
-                Swal.fire({ toast: true, position: 'bottom-start', icon: 'info', title: 'تم إعادة تحميل تصنيفات المخزن', showConfirmButton: false, timer: 1600 });
-            });
-
-            function exitPage() {
-                if (window.history.length > 1) {
-                    window.history.back();
-                } else {
-                    window.location.href = '/';
-                }
+                return;
             }
 
-            document.getElementById('btnTopExit').addEventListener('click', exitPage);
-            document.getElementById('btnBottomClose').addEventListener('click', exitPage);
-
-            document.addEventListener('keydown', (e) => {
-                if (Swal.isVisible()) return;
-
-                if (e.key === 'Escape') {
+            if (e.key === 'Delete' && document.activeElement !== searchInput) {
+                if (selectedRowIndex >= 0 && filteredCategories[selectedRowIndex]) {
                     e.preventDefault();
-                    exitPage();
-                    return;
+                    handleDeleteOrRestoreCategory();
                 }
-
-                if (e.key === 'F3') {
-                    e.preventDefault();
-                    searchInput.focus();
-                    searchInput.select();
-                    return;
-                }
-
-                if (e.key === 'F2' || e.key === 'Insert') {
-                    e.preventDefault();
-                    openCategoryModal(null);
-                    return;
-                }
-
-                if (e.key === 'ArrowDown') {
-                    if (filteredCategories.length === 0) return;
-                    e.preventDefault();
-                    selectedRowIndex = Math.min(filteredCategories.length - 1, selectedRowIndex + 1);
-                    highlightSelectedRow();
-                    return;
-                }
-
-                if (e.key === 'ArrowUp') {
-                    if (filteredCategories.length === 0) return;
-                    e.preventDefault();
-                    selectedRowIndex = Math.max(0, selectedRowIndex - 1);
-                    highlightSelectedRow();
-                    return;
-                }
-
-                if (e.key === 'Enter' && document.activeElement !== searchInput) {
-                    if (selectedRowIndex >= 0 && filteredCategories[selectedRowIndex]) {
-                        e.preventDefault();
-                        openCategoryModal(filteredCategories[selectedRowIndex]);
-                    }
-                    return;
-                }
-
-                if (e.key === 'Delete' && document.activeElement !== searchInput) {
-                    if (selectedRowIndex >= 0 && filteredCategories[selectedRowIndex]) {
-                        e.preventDefault();
-                        handleDeleteOrRestoreCategory();
-                    }
-                }
-            });
-
-            function init() {
-                loadCategoriesFromStorage();
-                selectedRowIndex = 0;
-                applyFiltersAndRender();
-                searchInput.focus();
             }
+        });
 
-            init();
-        })();
+        function init() {
+            syncSecondaryCache();
+            selectedRowIndex = 0;
+            applyFiltersAndRender();
+            searchInput.focus();
+            fetchCategoriesFromDatabase(false);
+        }
+
+        init();
+    })();
     </script>
 </body>
 </html>

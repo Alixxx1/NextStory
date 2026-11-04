@@ -3,17 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>المخزن | عملية ضبط رصيد (تسوية أرصدة) - NextStore SaaS</title>
-
-    <!-- خط Cairo المعتمد -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-
-    <!-- أيقونات FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-    <!-- مكتبة SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
@@ -172,7 +167,6 @@
             flex-shrink: 0;
         }
 
-        /* الشريط التركوازي/الأخضر العلوي (التاريخ + نمط التسوية + البيان) مطابق للصورة */
         .header-meta-ribbon {
             background: linear-gradient(135deg, #3b8678 0%, #529e8e 100%);
             padding: 7px 14px;
@@ -233,8 +227,7 @@
             color: #fff;
         }
 
-        .ns-select,
-        .ns-input {
+        .ns-select, .ns-input {
             height: 33px;
             padding: 0 10px;
             border: 1.5px solid var(--ns-border);
@@ -252,7 +245,6 @@
             font-weight: 800;
         }
 
-        /* صف البحث الأصفر العريض + زر الأصناف */
         .yellow-search-row {
             display: flex;
             align-items: center;
@@ -260,7 +252,7 @@
             position: relative;
         }
 
-        . search-yellow-wrapper {
+        .search-yellow-wrapper {
             flex: 1;
             position: relative;
         }
@@ -291,7 +283,6 @@
             box-shadow: 0 0 0 3px rgba(23, 40, 61, 0.15);
         }
 
-        /* القائمة المنسدلة لنتائج البحث الأصفر (مطابقة للصورة 1) */
         .search-results-dropdown {
             position: absolute;
             top: calc(100% + 3px);
@@ -355,7 +346,7 @@
             gap: 7px;
         }
 
-        /* ================= 3. جدول ضبط أرصدة الأصناف الرئيسي الواسع ================= */
+        /* ================= 3. جدول ضبط أرصدة الأصناف الرئيسي ================= */
         .main-table-section {
             flex: 1;
             margin: 6px 14px;
@@ -392,14 +383,8 @@
             transition: background 0.08s;
         }
 
-        .ns-adj-table tbody tr:nth-child(even) {
-            background: #f8fafc;
-        }
-
-        .ns-adj-table tbody tr:hover {
-            background: #e0f2fe;
-        }
-
+        .ns-adj-table tbody tr:nth-child(even) { background: #f8fafc; }
+        .ns-adj-table tbody tr:hover { background: #e0f2fe; }
         .ns-adj-table tbody tr.selected-row {
             background: #fef9c3 !important;
             outline: 2px solid var(--ns-green);
@@ -455,7 +440,7 @@
             background: #fff;
         }
 
-        /* ================= 4. المنطقة السفلية (أزرار التحكم + جدول الملخص الثلاثي + الحفظ) ================= */
+        /* ================= 4. المنطقة السفلية ================= */
         .bottom-control-dock {
             background: #e2e8f0;
             border-top: 2px solid var(--ns-border);
@@ -466,7 +451,6 @@
             flex-shrink: 0;
         }
 
-        /* شريط أزرار الجدول (إدراج أصناف / باقي الأصناف / حركة الصنف / إزالة / بحث داخل الجدول) */
         .mid-tools-strip {
             display: flex;
             align-items: center;
@@ -527,17 +511,13 @@
             padding: 0 10px;
         }
 
-        .in-table-search-input::placeholder {
-            color: #f1f5f9;
-        }
-
+        .in-table-search-input::placeholder { color: #f1f5f9; }
         .in-table-search-input:focus {
             outline: none;
             background: #fff;
             color: var(--ns-navy);
         }
 
-        /* الصف الأخير: جدول إجمالي الزيادة والعجز والصافي + أزرار الحفظ والتصدير */
         .footer-summary-and-save {
             display: flex;
             align-items: flex-end;
@@ -546,7 +526,6 @@
             gap: 12px;
         }
 
-        /* جدول الملخص المالي الثلاثي (مطابق للصورة 3) */
         .summary-matrix-table {
             border-collapse: collapse;
             background: #f8fafc;
@@ -611,11 +590,9 @@
             box-shadow: 0 3px 10px rgba(17, 151, 68, 0.3);
         }
 
-        .btn-save-doc:hover {
-            background: var(--ns-green-hover);
-        }
+        .btn-save-doc:hover { background: var(--ns-green-hover); }
 
-        /* ================= 5. نافذة "تحديث الرصيد" المنبثقة (مطابقة للصورة 7) ================= */
+        /* ================= 5. نافذة "تحديث الرصيد" المنبثقة ================= */
         .ns-modal-backdrop {
             position: fixed;
             inset: 0;
@@ -626,9 +603,7 @@
             justify-content: center;
         }
 
-        .ns-modal-backdrop.open {
-            display: flex;
-        }
+        .ns-modal-backdrop.open { display: flex; }
 
         .qty-update-window {
             background: #eef2f5;
@@ -665,7 +640,6 @@
             color: var(--ns-navy);
         }
 
-        /* جدول معلومات الصنف داخل نافذة تحديث الرصيد */
         .info-mini-table {
             width: 240px;
             border-collapse: collapse;
@@ -687,7 +661,6 @@
             width: 95px;
         }
 
-        /* مربع إدخال الرصيد الجديد مع أسهم الزيادة والنقصان */
         .qty-spinner-box {
             width: 100%;
             display: flex;
@@ -785,7 +758,6 @@
 </head>
 <body>
 
-    <!-- ==================== 1. الهيدر العلوي ==================== -->
     <header class="ns-header">
         <div class="ns-header-right">
             <div class="ns-logo-icon">
@@ -795,7 +767,6 @@
                 <span class="module-pill">المخزن</span>
                 <span>عملية ضبط رصيد (تسوية أرصدة الأصناف)</span>
             </h1>
-
             <div class="top-nav-links">
                 <a href="/inventory/adjustments-log" class="btn-top-link">
                     <i class="fa-solid fa-table-list"></i> سجل تسوية الأرصدة
@@ -823,11 +794,9 @@
         </button>
     </header>
 
-    <!-- ==================== 2. شريط بيانات العملية والشريط الأصفر للبحث ==================== -->
     <section class="adjustment-top-panel">
         <input type="hidden" id="editingAdjustmentId" value="">
 
-        <!-- الشريط التركوازي (التاريخ + نمط التسوية + بيان/عنوان العملية) -->
         <div class="header-meta-ribbon">
             <div class="meta-group">
                 <span class="meta-label">التاريخ:</span>
@@ -835,7 +804,7 @@
                     <button type="button" class="btn-date-arrow" id="btnPrevDay" title="اليوم السابق">
                         <i class="fa-solid fa-arrow-right"></i>
                     </button>
-                    <span class="date-stepper-text" id="lblCurrentDateArabic">الخميس ٢٠٢٦/١٠/٢٢</span>
+                    <span class="date-stepper-text" id="lblCurrentDateArabic"></span>
                     <button type="button" class="btn-date-arrow" id="btnNextDay" title="اليوم التالي">
                         <i class="fa-solid fa-arrow-left"></i>
                     </button>
@@ -852,18 +821,14 @@
 
             <div class="meta-group" style="flex: 1;">
                 <span class="meta-label">بيان:</span>
-                <input type="text" id="adjStatementInput" class="ns-input statement-title-input"
-                       placeholder="بيان / عنوان العملية (مثال: جرد قسم العطارة والبقالة)...">
+                <input type="text" id="adjStatementInput" class="ns-input statement-title-input" placeholder="بيان / عنوان العملية...">
             </div>
         </div>
 
-        <!-- الشريط الأصفر للبحث عن الصنف + زر الأصناف -->
         <div class="yellow-search-row">
             <div class="search-yellow-wrapper" style="flex:1; position:relative;">
-                <input type="text" id="yellowItemSearchInput" class="yellow-search-input"
-                       placeholder="بحث بالصنف (اكتب أول حرف من الاسم أو الكود أو الباركود - F3)" autocomplete="off">
+                <input type="text" id="yellowItemSearchInput" class="yellow-search-input" placeholder="بحث بالصنف (اكتب أول حرف من الاسم أو الكود أو الباركود - F3)" autocomplete="off">
 
-                <!-- القائمة المنسدلة لنتائج البحث كما في الصورة 1 -->
                 <div class="search-results-dropdown" id="searchResultsDropdown">
                     <table class="dropdown-table">
                         <thead>
@@ -890,7 +855,6 @@
         </div>
     </section>
 
-    <!-- ==================== 3. جدول ضبط أرصدة الأصناف الرئيسي ==================== -->
     <main class="main-table-section">
         <div style="padding: 5px 12px; background: #f8fafc; border-bottom: 1px solid var(--ns-border); font-weight: 800; color: var(--ns-navy); font-size: 12px;">
             ضبط أرصدة الأصناف :
@@ -914,56 +878,43 @@
                         <th>سعر البيع</th>
                     </tr>
                 </thead>
-                <tbody id="adjustmentTableBody">
-                    <!-- يملأ ديناميكياً عبر JavaScript -->
-                </tbody>
+                <tbody id="adjustmentTableBody"></tbody>
             </table>
         </div>
     </main>
 
-    <!-- ==================== 4. الشريط السفلي (أدوات الجدول + جدول الملخص الثلاثي + حفظ) ==================== -->
     <footer class="bottom-control-dock">
-
-        <!-- صف أدوات الجدول -->
         <div class="mid-tools-strip">
             <div class="tools-cluster">
                 <button type="button" class="ns-btn" id="btnInsertByCategory" title="إدراج أصناف تصنيف معين للجرد">
                     <i class="fa-solid fa-plus" style="color: var(--ns-green);"></i>
                     <span>إدراج أصناف</span>
                 </button>
-
                 <button type="button" class="ns-btn" id="btnInsertRemainingItems" title="إدراج باقي أصناف المخزن غير المضافة بالجدول">
                     <i class="fa-solid fa-circle-plus" style="color: var(--ns-info);"></i>
                     <span>باقي الأصناف</span>
                 </button>
-
                 <button type="button" class="ns-btn" id="btnShowSelectedMovement" disabled>
                     <i class="fa-solid fa-arrows-spin" style="color: var(--ns-navy);"></i>
                     <span>حركة الصنف</span>
                 </button>
-
                 <button type="button" class="ns-btn" id="btnRemoveSelectedRow" disabled>
                     <i class="fa-solid fa-xmark" style="color: var(--ns-danger);"></i>
                     <span>إزالة صنف</span>
                 </button>
-
                 <button type="button" class="ns-btn" id="btnRemoveAllRows" disabled>
                     <i class="fa-solid fa-broom" style="color: var(--ns-warning);"></i>
                     <span>إزالة الكل</span>
                 </button>
             </div>
 
-            <!-- البحث الداخلي في سطور الجدول -->
             <div class="in-table-search-box">
                 <input type="text" id="inTableSearchInput" class="in-table-search-input" placeholder="بحث عن صنف بالجدول...">
                 <i class="fa-solid fa-magnifying-glass" style="color: var(--ns-navy);"></i>
             </div>
         </div>
 
-        <!-- الصف السفلي: جدول الملخص المالي الثلاثي + أزرار الحفظ والتصدير -->
         <div class="footer-summary-and-save">
-
-            <!-- جدول إجمالي الزيادة / إجمالي العجز / إجمالي صافي (مطابق للصورة 3) -->
             <table class="summary-matrix-table">
                 <thead>
                     <tr>
@@ -995,41 +946,33 @@
                 </tbody>
             </table>
 
-            <!-- أزرار التصدير والاستيراد والطباعة والحفظ -->
             <div class="final-buttons-group">
                 <input type="file" id="excelFileInput" accept=".csv" style="display:none;">
-
                 <button type="button" class="ns-btn" id="btnExportExcel">
                     <i class="fa-solid fa-file-excel" style="color: var(--ns-green);"></i>
                     <span>تصدير لـ Excel</span>
                 </button>
-
                 <button type="button" class="ns-btn" id="btnPrintDoc">
                     <i class="fa-solid fa-print"></i>
                     <span>طباعة</span>
                 </button>
-
                 <button type="button" class="ns-btn" id="btnImportExcel">
                     <i class="fa-solid fa-file-import" style="color: var(--ns-info);"></i>
                     <span>استيراد من Excel</span>
                 </button>
-
                 <button type="button" class="btn-save-doc" id="btnSaveAdjustment">
                     <i class="fa-solid fa-floppy-disk"></i>
                     <span>حفظ (F2)</span>
                 </button>
-
                 <button type="button" class="ns-btn" id="btnBottomClose">
                     <i class="fa-solid fa-circle-xmark" style="color: var(--ns-danger);"></i>
                     <span>إغلاق</span>
                 </button>
             </div>
-
         </div>
-
     </footer>
 
-    <!-- ==================== 5. نافذة "تحديث الرصيد" المنبثقة (مطابقة للصورة 7) ==================== -->
+    <!-- نافذة "تحديث الرصيد" المنبثقة -->
     <div class="ns-modal-backdrop" id="updateStockModal">
         <div class="qty-update-window">
             <div class="qty-update-header">
@@ -1038,30 +981,29 @@
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
-
             <div class="qty-update-body">
                 <div class="qty-update-title">الرصيد الحالي</div>
 
                 <table class="info-mini-table">
                     <tbody>
                         <tr>
-                            <td id="modalItemCategory">سايب</td>
+                            <td id="modalItemCategory">-</td>
                             <td class="lbl-col">التصنيف</td>
                         </tr>
                         <tr>
-                            <td id="modalItemName">فلفل</td>
+                            <td id="modalItemName">-</td>
                             <td class="lbl-col">الصنف</td>
                         </tr>
                         <tr>
-                            <td id="modalItemUnit">كيلو</td>
+                            <td id="modalItemUnit">-</td>
                             <td class="lbl-col">وحدة القياس</td>
                         </tr>
                         <tr>
-                            <td id="modalItemBarcode" style="font-family:monospace;">000001</td>
+                            <td id="modalItemBarcode" style="font-family:monospace;">-</td>
                             <td class="lbl-col">باركود</td>
                         </tr>
                         <tr>
-                            <td id="modalItemCurrentQty" style="color:var(--ns-green-hover); font-weight:900; direction:ltr;">20.714</td>
+                            <td id="modalItemCurrentQty" style="color:var(--ns-green-hover); font-weight:900; direction:ltr;">0</td>
                             <td class="lbl-col">رصيد حالي</td>
                         </tr>
                     </tbody>
@@ -1089,553 +1031,429 @@
         </div>
     </div>
 
-    <!-- ==================== 6. الكود البرمجي الكامل (JavaScript) ==================== -->
     <script>
-        (function () {
-            'use strict';
+    (function () {
+        'use strict';
 
-            // مفاتيح التخزين المشتركة (المخزن + حركة الأصناف + سجل تسويات الأرصدة)
-            const CATEGORIES_KEY = 'nextstore_inventory_categories_v1';
-            const PRODUCTS_KEY = 'nextstore_inventory_products_v1';
-            const MOVEMENTS_KEY = 'nextstore_inventory_movements_v1';
-            const ADJUSTMENTS_LOG_KEY = 'nextstore_inventory_adjustments_v1';
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
-            let categories = [];
-            let products = [];
-            let movementsSummary = [];
-            let adjustmentsArchive = [];
+        let categories = @json($initialCategories ?? []);
+        let products = @json($initialProducts ?? []);
+        let adjustmentsArchive = @json($initialAdjustments ?? []);
 
-            // سطور عملية ضبط الرصيد الحالية
-            let adjustmentRows = [];
-            let selectedRowIndex = -1;
-            let currentDocDate = new Date('2026-10-22T00:00:00');
+        let adjustmentRows = [];
+        let selectedRowIndex = -1;
+        let currentDocDate = new Date();
 
-            // متغيرات البحث الأصفر ونافذة تحديث الرصيد
-            let dropdownMatches = [];
-            let dropdownActiveIndex = -1;
-            let pendingProductForModal = null;
+        let dropdownMatches = [];
+        let dropdownActiveIndex = -1;
+        let pendingProductForModal = null;
 
-            // ==================== 1. دوال مساعدة ====================
-            function toEnglishDigits(str) {
-                if (str === null || str === undefined) return '';
-                return String(str)
-                    .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
-                    .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
-            }
+        function toEnglishDigits(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+                .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+        }
 
-            function toArabicDigits(str) {
-                const ar = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
-                return String(str).replace(/[0-9]/g, d => ar[Number(d)]);
-            }
+        function toArabicDigits(str) {
+            const ar = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+            return String(str).replace(/[0-9]/g, d => ar[Number(d)]);
+        }
 
-            function formatSmartNumber(val) {
-                const n = parseFloat(val) || 0;
-                if (n === 0) return '0';
-                return Number(n.toFixed(3)).toString();
-            }
+        function formatSmartNumber(val) {
+            const n = parseFloat(val) || 0;
+            if (n === 0) return '0';
+            return Number(n.toFixed(3)).toString();
+        }
 
-            function formatArabicDateLabel(dateObj) {
-                const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-                const y = dateObj.getFullYear();
-                const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-                const d = String(dateObj.getDate()).padStart(2, '0');
-                return `${days[dateObj.getDay()]} ${toArabicDigits(`${y}/${m}/${d}`)}`;
-            }
+        function formatArabicDateLabel(dateObj) {
+            const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${days[dateObj.getDay()]} ${toArabicDigits(`${y}/${m}/${d}`)}`;
+        }
 
-            function toISODate(dateObj) {
-                const y = dateObj.getFullYear();
-                const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-                const d = String(dateObj.getDate()).padStart(2, '0');
-                return `${y}-${m}-${d}`;
-            }
+        function toISODate(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
 
-            // ==================== 2. تحميل البيانات وتجهيز أصناف الصور للتجربة الفورية ====================
-            function loadAllData() {
-                try { categories = JSON.parse(localStorage.getItem(CATEGORIES_KEY)) || []; } catch (e) { categories = []; }
-                if (!categories.some(c => c.name === 'سايب')) {
-                    categories.unshift({ id: 'CAT-SAYEB', code: '005', name: 'سايب', parentId: null, itemsCount: 6, isDeleted: false });
-                    localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
-                }
+        const yellowSearchInput = document.getElementById('yellowItemSearchInput');
+        const searchDropdown = document.getElementById('searchResultsDropdown');
+        const searchDropdownBody = document.getElementById('searchDropdownBody');
 
-                try { products = JSON.parse(localStorage.getItem(PRODUCTS_KEY)) || []; } catch (e) { products = []; }
-
-                // إضافة الأصناف الظاهرة في صور تسوية الأرصدة (فلفل، فلفل حصى، فلفل أبيض، كمون، كزبرة حصى، كزبرة)
-                const demoSayebItems = [
-                    { id: 'PRD-ADJ-1', name: 'فلفل', barcode: '000001', unit: 'كيلو', qty: 20.714, lastBuyPrice: 350, retailPrice: 450 },
-                    { id: 'PRD-ADJ-2', name: 'فلفل حصى', barcode: '000075', unit: 'كيلو', qty: 0, lastBuyPrice: 408, retailPrice: 520 },
-                    { id: 'PRD-ADJ-3', name: 'فلفل ابيض', barcode: '000154', unit: 'كيلو', qty: 1.336, lastBuyPrice: 400, retailPrice: 670 },
-                    { id: 'PRD-ADJ-4', name: 'كمون', barcode: '000002', unit: 'كيلو', qty: 14.743, lastBuyPrice: 230, currentBuyPrice: 260, retailPrice: 330 },
-                    { id: 'PRD-ADJ-5', name: 'كزبره حصى', barcode: '000077', unit: 'كيلو', qty: 14.067, lastBuyPrice: 80, currentBuyPrice: 80, retailPrice: 120 },
-                    { id: 'PRD-ADJ-6', name: 'كزبره', barcode: '000003', unit: 'كيلو', qty: 31.807, lastBuyPrice: 70, currentBuyPrice: 95, retailPrice: 140 }
-                ];
-
-                let prodChanged = false;
-                demoSayebItems.forEach(item => {
-                    if (!products.some(p => p.barcode === item.barcode || p.name === item.name)) {
-                        products.unshift({
-                            id: item.id,
-                            itemType: 'صنف مخزني',
-                            categoryId: 'CAT-SAYEB',
-                            categoryName: 'سايب',
-                            name: item.name,
-                            description: '',
-                            barcode: item.barcode,
-                            unit: item.unit,
-                            qty: item.qty,
-                            supplier: 'مورد العطارة',
-                            lastBuyPrice: item.currentBuyPrice || item.lastBuyPrice,
-                            avgCost: item.lastBuyPrice,
-                            lastBuyDate: '2026/10/22',
-                            retailPrice: item.retailPrice,
-                            minStock: 1,
-                            maxStock: 100,
-                            isPinned: false,
-                            isDisabled: false,
-                            isDeleted: false
-                        });
-                        prodChanged = true;
-                    }
-                });
-
-                if (prodChanged) {
-                    localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
-                }
-
-                try { movementsSummary = JSON.parse(localStorage.getItem(MOVEMENTS_KEY)) || []; } catch (e) { movementsSummary = []; }
-                try { adjustmentsArchive = JSON.parse(localStorage.getItem(ADJUSTMENTS_LOG_KEY)) || []; } catch (e) { adjustmentsArchive = []; }
-            }
-
-            // ==================== 3. البحث في الشريط الأصفر (يبدأ بعد كتابة أول حرف فقط) ====================
-            const yellowSearchInput = document.getElementById('yellowItemSearchInput');
-            const searchDropdown = document.getElementById('searchResultsDropdown');
-            const searchDropdownBody = document.getElementById('searchDropdownBody');
-
-            function renderYellowSearchDropdown(query = '') {
-                const cleanQ = toEnglishDigits(query).trim().toLowerCase();
-
-                // لا يظهر أي شيء إلا بعد كتابة أول حرف أو رقم
-                if (!cleanQ) {
-                    dropdownMatches = [];
-                    searchDropdown.style.display = 'none';
-                    return;
-                }
-
-                dropdownMatches = products.filter(p => !p.isDeleted && !p.isDisabled).filter(p => {
-                    return (p.name || '').toLowerCase().includes(cleanQ) ||
-                           String(p.barcode || '').toLowerCase().includes(cleanQ) ||
-                           (p.categoryName || '').toLowerCase().includes(cleanQ);
-                });
-
-                if (dropdownMatches.length === 0) {
-                    searchDropdownBody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:12px; color:var(--ns-muted);">لا توجد أصناف مطابقة للبحث</td></tr>`;
-                    searchDropdown.style.display = 'block';
-                    return;
-                }
-
-                if (dropdownActiveIndex < 0 || dropdownActiveIndex >= dropdownMatches.length) {
-                    dropdownActiveIndex = 0;
-                }
-
-                searchDropdownBody.innerHTML = dropdownMatches.map((item, idx) => `
-                    <tr data-index="${idx}" class="${idx === dropdownActiveIndex ? 'active-drop-row' : ''}">
-                        <td>${idx + 1}</td>
-                        <td>${item.categoryName || 'سايب'}</td>
-                        <td>${item.name}</td>
-                        <td style="font-family:monospace; direction:ltr;">${item.barcode || ''}</td>
-                        <td style="direction:ltr;">${formatSmartNumber(item.qty)}</td>
-                        <td>${formatSmartNumber(item.lastBuyPrice)}</td>
-                        <td>${formatSmartNumber(item.retailPrice)}</td>
-                    </tr>
-                `).join('');
-
-                searchDropdown.style.display = 'block';
-
-                searchDropdownBody.querySelectorAll('tr[data-index]').forEach(tr => {
-                    tr.addEventListener('mousedown', function (e) {
-                        e.preventDefault();
-                        const idx = parseInt(this.getAttribute('data-index'), 10);
-                        openStockUpdateModal(dropdownMatches[idx]);
-                    });
-                });
-            }
-
-            // ==================== 4. نافذة "تحديث الرصيد" المنبثقة (الصورة 7) ====================
-            const updateStockModal = document.getElementById('updateStockModal');
-            const modalNewQtyInput = document.getElementById('modalNewQtyInput');
-
-            function openStockUpdateModal(product) {
-                if (!product) return;
-                pendingProductForModal = product;
+        function renderYellowSearchDropdown(query = '') {
+            const cleanQ = toEnglishDigits(query).trim().toLowerCase();
+            if (!cleanQ) {
+                dropdownMatches = [];
                 searchDropdown.style.display = 'none';
-                yellowSearchInput.value = '';
-
-                const existingRow = adjustmentRows.find(r => r.productId === product.id);
-                const currentQtyVal = parseFloat(product.qty) || 0;
-                const defaultInputVal = existingRow ? existingRow.newBalance : currentQtyVal;
-
-                document.getElementById('modalItemCategory').textContent = product.categoryName || 'سايب';
-                document.getElementById('modalItemName').textContent = product.name;
-                document.getElementById('modalItemUnit').textContent = product.unit || 'كيلو';
-                document.getElementById('modalItemBarcode').textContent = product.barcode || '-';
-                document.getElementById('modalItemCurrentQty').textContent = formatSmartNumber(currentQtyVal);
-
-                modalNewQtyInput.value = defaultInputVal;
-                updateStockModal.classList.add('open');
-
-                setTimeout(() => {
-                    modalNewQtyInput.focus();
-                    modalNewQtyInput.select();
-                }, 50);
+                return;
             }
 
-            function confirmStockUpdateFromModal() {
-                if (!pendingProductForModal) return;
+            dropdownMatches = products.filter(p => !p.isDeleted && !p.isDisabled).filter(p => {
+                return (p.name || '').toLowerCase().includes(cleanQ) ||
+                       String(p.barcode || '').toLowerCase().includes(cleanQ) ||
+                       (p.categoryName || '').toLowerCase().includes(cleanQ);
+            });
 
-                const rawVal = toEnglishDigits(modalNewQtyInput.value).trim();
-                const enteredVal = parseFloat(rawVal);
-                if (isNaN(enteredVal)) {
-                    modalNewQtyInput.focus();
-                    return;
-                }
-
-                const mode = document.getElementById('adjModeSelect').value;
-                const oldQty = parseFloat(pendingProductForModal.qty) || 0;
-
-                // إذا كان نمط التسوية "فعلي" فالرقم المدخل هو الرصيد الفعلي الجديد، وإذا كان "تراكمي" فالرقم هو الفرق
-                const newBalance = mode === 'فعلي' ? Number(enteredVal.toFixed(3)) : Number((oldQty + enteredVal).toFixed(3));
-                const qtyDiff = Number((newBalance - oldQty).toFixed(3));
-
-                const buyPriceAtAdj = parseFloat(pendingProductForModal.avgCost || pendingProductForModal.lastBuyPrice) || 0;
-                const currentBuyPrice = parseFloat(pendingProductForModal.lastBuyPrice) || 0;
-                const retailPrice = parseFloat(pendingProductForModal.retailPrice) || 0;
-                const valueDiff = Number((qtyDiff * buyPriceAtAdj).toFixed(3));
-
-                const rowPayload = {
-                    productId: pendingProductForModal.id,
-                    categoryName: pendingProductForModal.categoryName || 'سايب',
-                    name: pendingProductForModal.name,
-                    unit: pendingProductForModal.unit || 'كيلو',
-                    barcode: pendingProductForModal.barcode || '',
-                    oldBalance: oldQty,
-                    newBalance: newBalance,
-                    qtyDiff: qtyDiff,
-                    valueDiff: valueDiff,
-                    statusLabel: qtyDiff > 0 ? 'زيادة' : 'عجز',
-                    notes: '',
-                    buyPriceAtAdj: buyPriceAtAdj,
-                    currentBuyPrice: currentBuyPrice,
-                    retailPrice: retailPrice
-                };
-
-                const existingIdx = adjustmentRows.findIndex(r => r.productId === pendingProductForModal.id);
-                if (existingIdx !== -1) {
-                    rowPayload.notes = adjustmentRows[existingIdx].notes || '';
-                    adjustmentRows[existingIdx] = rowPayload;
-                    selectedRowIndex = existingIdx;
-                } else {
-                    adjustmentRows.push(rowPayload);
-                    selectedRowIndex = adjustmentRows.length - 1;
-                }
-
-                updateStockModal.classList.remove('open');
-                pendingProductForModal = null;
-                renderAdjustmentTable();
-                yellowSearchInput.focus();
+            if (dropdownMatches.length === 0) {
+                searchDropdownBody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:12px; color:var(--ns-muted);">لا توجد أصناف مطابقة للبحث في المخزن</td></tr>`;
+                searchDropdown.style.display = 'block';
+                return;
             }
 
-            // ==================== 5. رسم الجدول الرئيسي وحساب جدول الملخص المالي الثلاثي ====================
-            function renderAdjustmentTable() {
-                const tbody = document.getElementById('adjustmentTableBody');
-                const filterQ = toEnglishDigits(document.getElementById('inTableSearchInput').value).trim().toLowerCase();
+            if (dropdownActiveIndex < 0 || dropdownActiveIndex >= dropdownMatches.length) {
+                dropdownActiveIndex = 0;
+            }
 
-                const visibleRows = adjustmentRows
-                    .map((row, originalIdx) => ({ ...row, originalIdx }))
-                    .filter(r => !filterQ || r.name.toLowerCase().includes(filterQ) || String(r.barcode).includes(filterQ));
+            searchDropdownBody.innerHTML = dropdownMatches.map((item, idx) => `
+                <tr data-index="${idx}" class="${idx === dropdownActiveIndex ? 'active-drop-row' : ''}">
+                    <td>${idx + 1}</td>
+                    <td>${item.categoryName || 'عام'}</td>
+                    <td>${item.name}</td>
+                    <td style="font-family:monospace; direction:ltr;">${item.barcode || ''}</td>
+                    <td style="direction:ltr;">${formatSmartNumber(item.qty)}</td>
+                    <td>${formatSmartNumber(item.lastBuyPrice)}</td>
+                    <td>${formatSmartNumber(item.retailPrice)}</td>
+                </tr>
+            `).join('');
 
-                if (visibleRows.length === 0) {
-                    tbody.innerHTML = `
-                        <tr>
-                            <td colspan="13" style="padding: 55px 20px; text-align: center; color: var(--ns-muted);">
-                                <i class="fa-solid fa-scale-balanced" style="font-size: 38px; color: #cbd5e1; margin-bottom: 8px; display: block;"></i>
-                                <div style="font-weight: 800; font-size: 14px;">ابحث عن الصنف في الشريط الأصفر بالأعلى (F3) أو اضغط "إدراج أصناف" للبدء في ضبط الأرصدة</div>
-                            </td>
-                        </tr>
-                    `;
-                    recalcMatrixTotals();
-                    updateToolbarButtonsState();
-                    return;
-                }
+            searchDropdown.style.display = 'block';
 
-                if (selectedRowIndex < 0 || selectedRowIndex >= adjustmentRows.length) {
-                    selectedRowIndex = 0;
-                }
-
-                tbody.innerHTML = visibleRows.map((row, idx) => {
-                    const isSelected = row.originalIdx === selectedRowIndex;
-                    const isSurplus = row.qtyDiff > 0;
-                    const diffFormatted = row.qtyDiff <= 0 ? `${formatSmartNumber(Math.abs(row.qtyDiff))}-` : formatSmartNumber(row.qtyDiff);
-                    const valDiffFormatted = row.valueDiff <= 0 ? `${formatSmartNumber(Math.abs(row.valueDiff))}-` : formatSmartNumber(row.valueDiff);
-
-                    return `
-                        <tr data-orig-index="${row.originalIdx}" class="${isSelected ? 'selected-row' : ''}">
-                            <td class="td-idx">${idx + 1}</td>
-                            <td>${row.categoryName}</td>
-                            <td style="font-weight: 900; color: var(--ns-navy);">${row.name}</td>
-                            <td>${row.unit}</td>
-                            <td style="font-family: monospace; direction: ltr;">${row.barcode}</td>
-                            <td class="${isSurplus ? 'td-diff-pos' : 'td-diff-neg'}">${diffFormatted}</td>
-                            <td class="${isSurplus ? 'td-diff-pos' : 'td-diff-neg'}">${valDiffFormatted}</td>
-                            <td>
-                                <span class="${isSurplus ? 'status-surplus' : 'status-deficit'}">
-                                    ${isSurplus ? 'زيادة' : 'عجز'}
-                                </span>
-                            </td>
-                            <td style="font-weight: 900; direction: ltr;">${formatSmartNumber(row.newBalance)}</td>
-                            <td>
-                                <input type="text" class="row-note-input" data-note-idx="${row.originalIdx}" value="${row.notes || ''}" placeholder="ملحوظة...">
-                            </td>
-                            <td>${formatSmartNumber(row.buyPriceAtAdj)} ج.م</td>
-                            <td>${formatSmartNumber(row.currentBuyPrice)} ج.م</td>
-                            <td style="font-weight: 900; color: var(--ns-navy);">${formatSmartNumber(row.retailPrice)} ج.م</td>
-                        </tr>
-                    `;
-                }).join('');
-
-                tbody.querySelectorAll('tr[data-orig-index]').forEach(tr => {
-                    tr.addEventListener('click', function (e) {
-                        if (e.target.classList.contains('row-note-input')) return;
-                        selectedRowIndex = parseInt(this.getAttribute('data-orig-index'), 10);
-                        highlightSelectedRow();
-                    });
-
-                    // دبل كليك على أي سطر في الجدول يفتح نافذة "تحديث الرصيد" لتعديل الكمية
-                    tr.addEventListener('dblclick', function (e) {
-                        if (e.target.classList.contains('row-note-input')) return;
-                        selectedRowIndex = parseInt(this.getAttribute('data-orig-index'), 10);
-                        const row = adjustmentRows[selectedRowIndex];
-                        const prod = products.find(p => p.id === row.productId);
-                        if (prod) openStockUpdateModal(prod);
-                    });
+            searchDropdownBody.querySelectorAll('tr[data-index]').forEach(tr => {
+                tr.addEventListener('mousedown', function (e) {
+                    e.preventDefault();
+                    const idx = parseInt(this.getAttribute('data-index'), 10);
+                    openStockUpdateModal(dropdownMatches[idx]);
                 });
+            });
+        }
 
-                tbody.querySelectorAll('.row-note-input').forEach(inp => {
-                    inp.addEventListener('input', function () {
-                        const i = parseInt(this.getAttribute('data-note-idx'), 10);
-                        adjustmentRows[i].notes = toEnglishDigits(this.value);
-                    });
-                });
+        const updateStockModal = document.getElementById('updateStockModal');
+        const modalNewQtyInput = document.getElementById('modalNewQtyInput');
 
+        function openStockUpdateModal(product) {
+            if (!product) return;
+            pendingProductForModal = product;
+            searchDropdown.style.display = 'none';
+            yellowSearchInput.value = '';
+
+            const existingRow = adjustmentRows.find(r => String(r.productId) === String(product.id));
+            const currentQtyVal = existingRow ? (parseFloat(existingRow.oldBalance) || 0) : (parseFloat(product.qty) || 0);
+            const defaultInputVal = existingRow ? existingRow.newBalance : currentQtyVal;
+
+            document.getElementById('modalItemCategory').textContent = product.categoryName || 'عام';
+            document.getElementById('modalItemName').textContent = product.name;
+            document.getElementById('modalItemUnit').textContent = product.unit || 'كيلو';
+            document.getElementById('modalItemBarcode').textContent = product.barcode || '-';
+            document.getElementById('modalItemCurrentQty').textContent = formatSmartNumber(currentQtyVal);
+
+            modalNewQtyInput.value = defaultInputVal;
+            updateStockModal.classList.add('open');
+
+            setTimeout(() => {
+                modalNewQtyInput.focus();
+                modalNewQtyInput.select();
+            }, 50);
+        }
+
+        function confirmStockUpdateFromModal() {
+            if (!pendingProductForModal) return;
+            const rawVal = toEnglishDigits(modalNewQtyInput.value).trim();
+            const enteredVal = parseFloat(rawVal);
+
+            if (isNaN(enteredVal)) {
+                modalNewQtyInput.focus();
+                return;
+            }
+
+            const mode = document.getElementById('adjModeSelect').value;
+            const existingIdx = adjustmentRows.findIndex(r => String(r.productId) === String(pendingProductForModal.id));
+            const oldQty = existingIdx !== -1
+                ? (parseFloat(adjustmentRows[existingIdx].oldBalance) || 0)
+                : (parseFloat(pendingProductForModal.qty) || 0);
+
+            const newBalance = mode === 'فعلي'
+                ? Number(enteredVal.toFixed(3))
+                : Number((oldQty + enteredVal).toFixed(3));
+
+            const qtyDiff = Number((newBalance - oldQty).toFixed(3));
+            const buyPriceAtAdj = parseFloat(pendingProductForModal.avgCost || pendingProductForModal.lastBuyPrice) || 0;
+            const currentBuyPrice = parseFloat(pendingProductForModal.lastBuyPrice) || 0;
+            const retailPrice = parseFloat(pendingProductForModal.retailPrice) || 0;
+            const valueDiff = Number((qtyDiff * buyPriceAtAdj).toFixed(3));
+
+            const rowPayload = {
+                productId: String(pendingProductForModal.id),
+                categoryName: pendingProductForModal.categoryName || 'عام',
+                name: pendingProductForModal.name,
+                unit: pendingProductForModal.unit || 'كيلو',
+                barcode: pendingProductForModal.barcode || '',
+                oldBalance: oldQty,
+                newBalance: newBalance,
+                qtyDiff: qtyDiff,
+                valueDiff: valueDiff,
+                statusLabel: qtyDiff > 0 ? 'زيادة' : 'عجز',
+                notes: '',
+                buyPriceAtAdj: buyPriceAtAdj,
+                currentBuyPrice: currentBuyPrice,
+                retailPrice: retailPrice
+            };
+
+            if (existingIdx !== -1) {
+                rowPayload.notes = adjustmentRows[existingIdx].notes || '';
+                adjustmentRows[existingIdx] = rowPayload;
+                selectedRowIndex = existingIdx;
+            } else {
+                adjustmentRows.push(rowPayload);
+                selectedRowIndex = adjustmentRows.length - 1;
+            }
+
+            updateStockModal.classList.remove('open');
+            pendingProductForModal = null;
+            renderAdjustmentTable();
+            yellowSearchInput.focus();
+        }
+
+        function renderAdjustmentTable() {
+            const tbody = document.getElementById('adjustmentTableBody');
+            const filterQ = toEnglishDigits(document.getElementById('inTableSearchInput').value).trim().toLowerCase();
+
+            const visibleRows = adjustmentRows
+                .map((row, originalIdx) => ({ ...row, originalIdx }))
+                .filter(r => !filterQ || (r.name || '').toLowerCase().includes(filterQ) || String(r.barcode).includes(filterQ));
+
+            if (visibleRows.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="13" style="padding: 55px 20px; text-align: center; color: var(--ns-muted);">
+                            <i class="fa-solid fa-scale-balanced" style="font-size: 38px; color: #cbd5e1; margin-bottom: 8px; display: block;"></i>
+                            <div style="font-weight: 800; font-size: 14px;">ابحث عن الصنف في الشريط الأصفر بالأعلى (F3) أو اضغط "إدراج أصناف" للبدء في ضبط الأرصدة</div>
+                        </td>
+                    </tr>
+                `;
                 recalcMatrixTotals();
                 updateToolbarButtonsState();
+                return;
             }
 
-            function highlightSelectedRow() {
-                document.querySelectorAll('#adjustmentTableBody tr[data-orig-index]').forEach(tr => {
-                    const i = parseInt(tr.getAttribute('data-orig-index'), 10);
-                    tr.classList.toggle('selected-row', i === selectedRowIndex);
+            if (selectedRowIndex < 0 || selectedRowIndex >= adjustmentRows.length) {
+                selectedRowIndex = 0;
+            }
+
+            tbody.innerHTML = visibleRows.map((row, idx) => {
+                const isSelected = row.originalIdx === selectedRowIndex;
+                const isSurplus = row.qtyDiff > 0;
+                const diffFormatted = row.qtyDiff <= 0 ? `${formatSmartNumber(Math.abs(row.qtyDiff))}-` : formatSmartNumber(row.qtyDiff);
+                const valDiffFormatted = row.valueDiff <= 0 ? `${formatSmartNumber(Math.abs(row.valueDiff))}-` : formatSmartNumber(row.valueDiff);
+
+                return `
+                    <tr data-orig-index="${row.originalIdx}" class="${isSelected ? 'selected-row' : ''}">
+                        <td class="td-idx">${idx + 1}</td>
+                        <td>${row.categoryName}</td>
+                        <td style="font-weight: 900; color: var(--ns-navy);">${row.name}</td>
+                        <td>${row.unit}</td>
+                        <td style="font-family: monospace; direction: ltr;">${row.barcode}</td>
+                        <td class="${isSurplus ? 'td-diff-pos' : 'td-diff-neg'}">${diffFormatted}</td>
+                        <td class="${isSurplus ? 'td-diff-pos' : 'td-diff-neg'}">${valDiffFormatted}</td>
+                        <td>
+                            <span class="${isSurplus ? 'status-surplus' : 'status-deficit'}">
+                                ${isSurplus ? 'زيادة' : 'عجز'}
+                            </span>
+                        </td>
+                        <td style="font-weight: 900; direction: ltr;">${formatSmartNumber(row.newBalance)}</td>
+                        <td>
+                            <input type="text" class="row-note-input" data-note-idx="${row.originalIdx}" value="${row.notes || ''}" placeholder="ملحوظة...">
+                        </td>
+                        <td>${formatSmartNumber(row.buyPriceAtAdj)} ج.م</td>
+                        <td>${formatSmartNumber(row.currentBuyPrice)} ج.م</td>
+                        <td style="font-weight: 900; color: var(--ns-navy);">${formatSmartNumber(row.retailPrice)} ج.م</td>
+                    </tr>
+                `;
+            }).join('');
+
+            tbody.querySelectorAll('tr[data-orig-index]').forEach(tr => {
+                tr.addEventListener('click', function (e) {
+                    if (e.target.classList.contains('row-note-input')) return;
+                    selectedRowIndex = parseInt(this.getAttribute('data-orig-index'), 10);
+                    highlightSelectedRow();
                 });
-                updateToolbarButtonsState();
-            }
 
-            function recalcMatrixTotals() {
-                let surplusQty = 0, surplusCost = 0, surplusSale = 0;
-                let deficitQty = 0, deficitCost = 0, deficitSale = 0;
-
-                adjustmentRows.forEach(r => {
-                    const q = parseFloat(r.qtyDiff) || 0;
-                    const costP = parseFloat(r.buyPriceAtAdj) || 0;
-                    const saleP = parseFloat(r.retailPrice) || 0;
-
-                    if (q > 0) {
-                        surplusQty += q;
-                        surplusCost += (q * costP);
-                        surplusSale += (q * saleP);
-                    } else if (q < 0) {
-                        deficitQty += q; // قيمة سالبة
-                        deficitCost += (q * costP);
-                        deficitSale += (q * saleP);
-                    }
+                tr.addEventListener('dblclick', function (e) {
+                    if (e.target.classList.contains('row-note-input')) return;
+                    selectedRowIndex = parseInt(this.getAttribute('data-orig-index'), 10);
+                    const row = adjustmentRows[selectedRowIndex];
+                    const prod = products.find(p => String(p.id) === String(row.productId)) || {
+                        id: row.productId,
+                        categoryName: row.categoryName,
+                        name: row.name,
+                        unit: row.unit,
+                        barcode: row.barcode,
+                        qty: row.oldBalance,
+                        avgCost: row.buyPriceAtAdj,
+                        lastBuyPrice: row.currentBuyPrice,
+                        retailPrice: row.retailPrice
+                    };
+                    openStockUpdateModal(prod);
                 });
+            });
 
-                const netQty = surplusQty + deficitQty;
-                const netCost = surplusCost + deficitCost;
-                const netSale = surplusSale + deficitSale;
+            tbody.querySelectorAll('.row-note-input').forEach(inp => {
+                inp.addEventListener('input', function () {
+                    const i = parseInt(this.getAttribute('data-note-idx'), 10);
+                    adjustmentRows[i].notes = toEnglishDigits(this.value);
+                });
+            });
 
-                document.getElementById('sumSurplusQty').textContent = formatSmartNumber(surplusQty);
-                document.getElementById('sumSurplusCost').textContent = formatSmartNumber(surplusCost);
-                document.getElementById('sumSurplusSale').textContent = formatSmartNumber(surplusSale);
+            recalcMatrixTotals();
+            updateToolbarButtonsState();
+        }
 
-                document.getElementById('sumDeficitQty').textContent = formatSmartNumber(deficitQty);
-                document.getElementById('sumDeficitCost').textContent = formatSmartNumber(deficitCost);
-                document.getElementById('sumDeficitSale').textContent = formatSmartNumber(deficitSale);
+        function highlightSelectedRow() {
+            document.querySelectorAll('#adjustmentTableBody tr[data-orig-index]').forEach(tr => {
+                const i = parseInt(tr.getAttribute('data-orig-index'), 10);
+                tr.classList.toggle('selected-row', i === selectedRowIndex);
+            });
+            updateToolbarButtonsState();
+        }
 
-                document.getElementById('sumNetQty').textContent = formatSmartNumber(netQty);
-                document.getElementById('sumNetCost').textContent = formatSmartNumber(netCost);
-                document.getElementById('sumNetSale').textContent = formatSmartNumber(netSale);
-            }
+        function recalcMatrixTotals() {
+            let surplusQty = 0, surplusCost = 0, surplusSale = 0;
+            let deficitQty = 0, deficitCost = 0, deficitSale = 0;
 
-            function updateToolbarButtonsState() {
-                const hasRows = adjustmentRows.length > 0;
-                const hasSel = selectedRowIndex >= 0 && selectedRowIndex < adjustmentRows.length;
-                document.getElementById('btnShowSelectedMovement').disabled = !hasSel;
-                document.getElementById('btnRemoveSelectedRow').disabled = !hasSel;
-                document.getElementById('btnRemoveAllRows').disabled = !hasRows;
-            }
+            adjustmentRows.forEach(r => {
+                const q = parseFloat(r.qtyDiff) || 0;
+                const costP = parseFloat(r.buyPriceAtAdj) || 0;
+                const saleP = parseFloat(r.retailPrice) || 0;
 
-            // ==================== 6. حفظ عملية التسوية وتحديث المخزن وحركة الأصناف ====================
-            function saveAdjustmentDocument() {
-                if (adjustmentRows.length === 0) {
-                    Swal.fire({ icon: 'warning', title: 'لا توجد أصناف', text: 'يرجى إضافة صنف واحد على الأقل لضبط رصيده قبل الحفظ.', confirmButtonColor: '#119744' });
-                    return;
+                if (q > 0) {
+                    surplusQty += q;
+                    surplusCost += (q * costP);
+                    surplusSale += (q * saleP);
+                } else if (q < 0) {
+                    deficitQty += q;
+                    deficitCost += (q * costP);
+                    deficitSale += (q * saleP);
                 }
+            });
 
-                const statement = toEnglishDigits(document.getElementById('adjStatementInput').value).trim() || 'عملية ضبط وتعديل رصيد';
-                const mode = document.getElementById('adjModeSelect').value;
-                const isoDate = toISODate(currentDocDate);
-                const now = new Date();
-                const registeredAt = `${isoDate.replace(/-/g, '/')} ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
-                const editingId = document.getElementById('editingAdjustmentId').value;
+            const netQty = surplusQty + deficitQty;
+            const netCost = surplusCost + deficitCost;
+            const netSale = surplusSale + deficitSale;
 
-                // 1) تحديث أرصدة الأصناف الفعلية في المخزن + تسجيل الفروق في حركة الأصناف
-                adjustmentRows.forEach(row => {
-                    const pIdx = products.findIndex(p => p.id === row.productId);
-                    if (pIdx !== -1) {
-                        products[pIdx].qty = row.newBalance;
-                    }
+            document.getElementById('sumSurplusQty').textContent = formatSmartNumber(surplusQty);
+            document.getElementById('sumSurplusCost').textContent = formatSmartNumber(surplusCost);
+            document.getElementById('sumSurplusSale').textContent = formatSmartNumber(surplusSale);
 
-                    // تحديث عمود "تسوية رصيد" في جدول حركة الأصناف
-                    let movRow = movementsSummary.find(m => m.barcode === row.barcode || m.name === row.name);
-                    if (!movRow) {
-                        movRow = {
-                            id: 'MOV-' + row.productId,
-                            categoryName: row.categoryName,
-                            name: row.name,
-                            barcode: row.barcode,
-                            purchases: 0, purchaseReturns: 0, sales: 0, salesReturns: 0,
-                            adjustment: 0, supplyIn: 0, issueOut: 0, openingBalance: row.oldBalance,
-                            unitCost: row.buyPriceAtAdj, retailPrice: row.retailPrice,
-                            unit: row.unit, isDeleted: false, lastDate: isoDate, ledger: []
-                        };
-                        movementsSummary.unshift(movRow);
-                    }
+            document.getElementById('sumDeficitQty').textContent = formatSmartNumber(deficitQty);
+            document.getElementById('sumDeficitCost').textContent = formatSmartNumber(deficitCost);
+            document.getElementById('sumDeficitSale').textContent = formatSmartNumber(deficitSale);
 
-                    movRow.adjustment = Number(((parseFloat(movRow.adjustment) || 0) + row.qtyDiff).toFixed(3));
-                    if (!Array.isArray(movRow.ledger)) movRow.ledger = [];
-                    movRow.ledger.unshift({
-                        date: registeredAt,
-                        type: `تسوية رصيد (${row.statusLabel})`,
-                        refNo: editingId || ('ADJ-' + Math.floor(1000 + Math.random() * 9000)),
-                        party: statement,
-                        user: 'مدير الفرع',
-                        before: row.oldBalance,
-                        inQty: row.qtyDiff > 0 ? row.qtyDiff : 0,
-                        outQty: row.qtyDiff < 0 ? Math.abs(row.qtyDiff) : 0,
-                        after: row.newBalance,
-                        price: row.buyPriceAtAdj
-                    });
-                });
+            document.getElementById('sumNetQty').textContent = formatSmartNumber(netQty);
+            document.getElementById('sumNetCost').textContent = formatSmartNumber(netCost);
+            document.getElementById('sumNetSale').textContent = formatSmartNumber(netSale);
+        }
 
-                // 2) حفظ المحضر الكامل في سجل تسوية الأرصدة
-                const netValue = parseFloat(document.getElementById('sumNetCost').textContent) || 0;
-                const docPayload = {
-                    id: editingId || ('ADJ-' + Date.now()),
-                    date: isoDate.replace(/-/g, '/'),
-                    registeredAt: registeredAt,
-                    mode: mode,
-                    statement: statement,
-                    itemsCount: adjustmentRows.length,
-                    netValue: netValue,
-                    surplusQty: parseFloat(document.getElementById('sumSurplusQty').textContent) || 0,
-                    surplusCost: parseFloat(document.getElementById('sumSurplusCost').textContent) || 0,
-                    deficitQty: parseFloat(document.getElementById('sumDeficitQty').textContent) || 0,
-                    deficitCost: parseFloat(document.getElementById('sumDeficitCost').textContent) || 0,
-                    user: 'مدير الفرع',
-                    isDeleted: false,
-                    rows: JSON.parse(JSON.stringify(adjustmentRows))
-                };
+        function updateToolbarButtonsState() {
+            const hasRows = adjustmentRows.length > 0;
+            const hasSel = selectedRowIndex >= 0 && selectedRowIndex < adjustmentRows.length;
+            document.getElementById('btnShowSelectedMovement').disabled = !hasSel;
+            document.getElementById('btnRemoveSelectedRow').disabled = !hasSel;
+            document.getElementById('btnRemoveAllRows').disabled = !hasRows;
+        }
 
-                if (editingId) {
-                    const idx = adjustmentsArchive.findIndex(a => a.id === editingId);
-                    if (idx !== -1) adjustmentsArchive[idx] = docPayload;
-                } else {
-                    adjustmentsArchive.unshift(docPayload);
-                }
-
-                localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
-                localStorage.setItem(MOVEMENTS_KEY, JSON.stringify(movementsSummary));
-                localStorage.setItem(ADJUSTMENTS_LOG_KEY, JSON.stringify(adjustmentsArchive));
-
+        // حفظ عملية التسوية في قاعدة البيانات الحقيقية
+        async function saveAdjustmentDocument() {
+            if (adjustmentRows.length === 0) {
                 Swal.fire({
-                    icon: 'success',
-                    title: 'تم حفظ عملية ضبط الرصيد بنجاح!',
-                    html: `تم تحديث أرصدة <b>(${adjustmentRows.length})</b> أصناف في المخزن وتسجيل الفروق بصافي قيمة <b>(${formatSmartNumber(netValue)} ج.م)</b>.`,
-                    confirmButtonColor: '#119744',
-                    timer: 2600
+                    icon: 'warning',
+                    title: 'لا توجد أصناف',
+                    text: 'يرجى إضافة صنف واحد على الأقل لضبط رصيده قبل الحفظ.',
+                    confirmButtonColor: '#119744'
+                });
+                return;
+            }
+
+            const statement = toEnglishDigits(document.getElementById('adjStatementInput').value).trim();
+            const mode = document.getElementById('adjModeSelect').value;
+            const isoDate = toISODate(currentDocDate);
+            const editingId = document.getElementById('editingAdjustmentId').value;
+
+            try {
+                document.getElementById('btnSaveAdjustment').disabled = true;
+                const res = await fetch('/api/inventory/adjustments/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({
+                        editingId: editingId || null,
+                        date: isoDate,
+                        mode: mode,
+                        statement: statement,
+                        rows: adjustmentRows
+                    })
                 });
 
-                // تفريغ الشاشة لعملية جديدة
+                const out = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(out.message || 'تعذر حفظ عملية ضبط الرصيد في قاعدة البيانات');
+
+                if (out.bootstrap) {
+                    categories = out.bootstrap.initialCategories || categories;
+                    products = out.bootstrap.initialProducts || products;
+                    adjustmentsArchive = out.bootstrap.initialAdjustments || adjustmentsArchive;
+                }
+
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'تم حفظ عملية ضبط الرصيد في قاعدة البيانات بنجاح!',
+                    html: `تم تحديث أرصدة <b>(${adjustmentRows.length})</b> أصناف في المخزن وتسجيل الفروق بصافي قيمة <b>(${formatSmartNumber(out.netValue)} ج.م)</b>.`,
+                    confirmButtonColor: '#119744',
+                    timer: 2400
+                });
+
                 document.getElementById('editingAdjustmentId').value = '';
                 document.getElementById('adjStatementInput').value = '';
                 adjustmentRows = [];
                 selectedRowIndex = -1;
                 renderAdjustmentTable();
+            } catch (err) {
+                Swal.fire('خطأ', err.message, 'error');
+            } finally {
+                document.getElementById('btnSaveAdjustment').disabled = false;
             }
+        }
 
-            // ==================== 7. أزرار إدراج أصناف / باقي الأصناف / حركة الصنف ====================
-            function insertItemsByCategoryPrompt() {
-                const catNames = [...new Set(products.filter(p => !p.isDeleted).map(p => p.categoryName || 'سايب'))];
-                const opts = `<option value="all">كل التصنيفات</option>` + catNames.map(c => `<option value="${c}">${c}</option>`).join('');
+        function insertItemsByCategoryPrompt() {
+            const catNames = [...new Set(products.filter(p => !p.isDeleted).map(p => p.categoryName || 'عام'))];
+            const opts = `<option value="all">كل التصنيفات</option>` + catNames.map(c => `<option value="${c}">${c}</option>`).join('');
 
-                Swal.fire({
-                    title: 'إدراج أصناف للتسوية والجرد',
-                    html: `<p style="font-size:13px; color:#64748b; margin-bottom:8px;">اختر التصنيف لإدراج أصنافه في جدول الجرد:</p>
-                           <select id="swalInsertCat" class="ns-select" style="width:100%; height:40px;">${opts}</select>`,
-                    showCancelButton: true,
-                    confirmButtonText: 'إدراج الآن',
-                    cancelButtonText: 'إلغاء',
-                    confirmButtonColor: '#119744'
-                }).then(res => {
-                    if (!res.isConfirmed) return;
-                    const chosenCat = document.getElementById('swalInsertCat').value;
-                    const matching = products.filter(p => !p.isDeleted && (chosenCat === 'all' || (p.categoryName || 'سايب') === chosenCat));
+            Swal.fire({
+                title: 'إدراج أصناف للتسوية والجرد',
+                html: `<p style="font-size:13px; color:#64748b; margin-bottom:8px;">اختر التصنيف لإدراج أصنافه في جدول الجرد:</p>
+                       <select id="swalInsertCat" class="ns-select" style="width:100%; height:40px;">${opts}</select>`,
+                showCancelButton: true,
+                confirmButtonText: 'إدراج الآن',
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: '#119744'
+            }).then(res => {
+                if (!res.isConfirmed) return;
+                const chosenCat = document.getElementById('swalInsertCat').value;
+                const matching = products.filter(p => !p.isDeleted && (chosenCat === 'all' || (p.categoryName || 'عام') === chosenCat));
 
-                    matching.forEach(prod => {
-                        if (!adjustmentRows.some(r => r.productId === prod.id)) {
-                            const curQ = parseFloat(prod.qty) || 0;
-                            const buyP = parseFloat(prod.avgCost || prod.lastBuyPrice) || 0;
-                            adjustmentRows.push({
-                                productId: prod.id,
-                                categoryName: prod.categoryName || 'سايب',
-                                name: prod.name,
-                                unit: prod.unit || 'كيلو',
-                                barcode: prod.barcode || '',
-                                oldBalance: curQ,
-                                newBalance: curQ,
-                                qtyDiff: 0,
-                                valueDiff: 0,
-                                statusLabel: 'عجز',
-                                notes: '',
-                                buyPriceAtAdj: buyP,
-                                currentBuyPrice: parseFloat(prod.lastBuyPrice) || 0,
-                                retailPrice: parseFloat(prod.retailPrice) || 0
-                            });
-                        }
-                    });
-                    renderAdjustmentTable();
-                });
-            }
-
-            document.getElementById('btnInsertByCategory').addEventListener('click', insertItemsByCategoryPrompt);
-            document.getElementById('btnQuickInsertCategory').addEventListener('click', insertItemsByCategoryPrompt);
-
-            document.getElementById('btnInsertRemainingItems').addEventListener('click', () => {
-                products.filter(p => !p.isDeleted).forEach(prod => {
-                    if (!adjustmentRows.some(r => r.productId === prod.id)) {
+                matching.forEach(prod => {
+                    if (!adjustmentRows.some(r => String(r.productId) === String(prod.id))) {
                         const curQ = parseFloat(prod.qty) || 0;
                         const buyP = parseFloat(prod.avgCost || prod.lastBuyPrice) || 0;
                         adjustmentRows.push({
-                            productId: prod.id,
-                            categoryName: prod.categoryName || 'سايب',
+                            productId: String(prod.id),
+                            categoryName: prod.categoryName || 'عام',
                             name: prod.name,
                             unit: prod.unit || 'كيلو',
                             barcode: prod.barcode || '',
@@ -1653,217 +1471,266 @@
                 });
                 renderAdjustmentTable();
             });
+        }
 
-            document.getElementById('btnShowSelectedMovement').addEventListener('click', () => {
-                if (selectedRowIndex < 0 || !adjustmentRows[selectedRowIndex]) return;
-                const r = adjustmentRows[selectedRowIndex];
-                Swal.fire({
-                    title: `ملخص حركة الصنف: ${r.name}`,
-                    html: `
-                        <div style="text-align:right; line-height:2; font-size:14px;">
-                            <div><b>الباركود:</b> ${r.barcode}</div>
-                            <div><b>الرصيد الدفتري قبل التسوية:</b> ${r.oldBalance} ${r.unit}</div>
-                            <div><b>الرصيد بعد التعديل:</b> <b style="color:#119744">${r.newBalance} ${r.unit}</b></div>
-                            <div><b>فرق الكمية:</b> <b style="color:${r.qtyDiff >= 0 ? '#119744' : '#dc2626'}">${r.qtyDiff} ${r.unit} (${r.statusLabel})</b></div>
-                        </div>
-                    `,
-                    confirmButtonText: 'إغلاق',
-                    confirmButtonColor: '#17283d'
-                });
+        document.getElementById('btnInsertByCategory').addEventListener('click', insertItemsByCategoryPrompt);
+        document.getElementById('btnQuickInsertCategory').addEventListener('click', insertItemsByCategoryPrompt);
+
+        document.getElementById('btnInsertRemainingItems').addEventListener('click', () => {
+            products.filter(p => !p.isDeleted).forEach(prod => {
+                if (!adjustmentRows.some(r => String(r.productId) === String(prod.id))) {
+                    const curQ = parseFloat(prod.qty) || 0;
+                    const buyP = parseFloat(prod.avgCost || prod.lastBuyPrice) || 0;
+                    adjustmentRows.push({
+                        productId: String(prod.id),
+                        categoryName: prod.categoryName || 'عام',
+                        name: prod.name,
+                        unit: prod.unit || 'كيلو',
+                        barcode: prod.barcode || '',
+                        oldBalance: curQ,
+                        newBalance: curQ,
+                        qtyDiff: 0,
+                        valueDiff: 0,
+                        statusLabel: 'عجز',
+                        notes: '',
+                        buyPriceAtAdj: buyP,
+                        currentBuyPrice: parseFloat(prod.lastBuyPrice) || 0,
+                        retailPrice: parseFloat(prod.retailPrice) || 0
+                    });
+                }
             });
+            renderAdjustmentTable();
+        });
 
-            document.getElementById('btnRemoveSelectedRow').addEventListener('click', () => {
-                if (selectedRowIndex < 0 || !adjustmentRows[selectedRowIndex]) return;
-                adjustmentRows.splice(selectedRowIndex, 1);
-                selectedRowIndex = Math.max(0, selectedRowIndex - 1);
-                renderAdjustmentTable();
+        document.getElementById('btnShowSelectedMovement').addEventListener('click', () => {
+            if (selectedRowIndex < 0 || !adjustmentRows[selectedRowIndex]) return;
+            const r = adjustmentRows[selectedRowIndex];
+            Swal.fire({
+                title: `ملخص حركة الصنف: ${r.name}`,
+                html: `
+                    <div style="text-align:right; line-height:2; font-size:14px;">
+                        <div><b>الباركود:</b> ${r.barcode}</div>
+                        <div><b>الرصيد الدفتري قبل التسوية:</b> ${r.oldBalance} ${r.unit}</div>
+                        <div><b>الرصيد بعد التعديل:</b> <b style="color:#119744">${r.newBalance} ${r.unit}</b></div>
+                        <div><b>فرق الكمية:</b> <b style="color:${r.qtyDiff >= 0 ? '#119744' : '#dc2626'}">${r.qtyDiff} ${r.unit} (${r.statusLabel})</b></div>
+                    </div>
+                `,
+                confirmButtonText: 'إغلاق',
+                confirmButtonColor: '#17283d'
             });
+        });
 
-            document.getElementById('btnRemoveAllRows').addEventListener('click', () => {
-                if (adjustmentRows.length === 0) return;
-                adjustmentRows = [];
-                selectedRowIndex = -1;
-                renderAdjustmentTable();
-            });
+        document.getElementById('btnRemoveSelectedRow').addEventListener('click', () => {
+            if (selectedRowIndex < 0 || !adjustmentRows[selectedRowIndex]) return;
+            adjustmentRows.splice(selectedRowIndex, 1);
+            selectedRowIndex = Math.max(0, selectedRowIndex - 1);
+            renderAdjustmentTable();
+        });
 
-            // ==================== 8. الأحداث واختصارات الكيبورد ====================
-            document.getElementById('btnPrevDay').addEventListener('click', () => {
-                currentDocDate.setDate(currentDocDate.getDate() - 1);
-                document.getElementById('lblCurrentDateArabic').textContent = formatArabicDateLabel(currentDocDate);
-            });
+        document.getElementById('btnRemoveAllRows').addEventListener('click', () => {
+            if (adjustmentRows.length === 0) return;
+            adjustmentRows = [];
+            selectedRowIndex = -1;
+            renderAdjustmentTable();
+        });
 
-            document.getElementById('btnNextDay').addEventListener('click', () => {
-                currentDocDate.setDate(currentDocDate.getDate() + 1);
-                document.getElementById('lblCurrentDateArabic').textContent = formatArabicDateLabel(currentDocDate);
-            });
+        document.getElementById('btnPrevDay').addEventListener('click', () => {
+            currentDocDate.setDate(currentDocDate.getDate() - 1);
+            document.getElementById('lblCurrentDateArabic').textContent = formatArabicDateLabel(currentDocDate);
+        });
 
-            yellowSearchInput.addEventListener('input', function () {
-                this.value = toEnglishDigits(this.value);
-                dropdownActiveIndex = 0;
-                renderYellowSearchDropdown(this.value);
-            });
+        document.getElementById('btnNextDay').addEventListener('click', () => {
+            currentDocDate.setDate(currentDocDate.getDate() + 1);
+            document.getElementById('lblCurrentDateArabic').textContent = formatArabicDateLabel(currentDocDate);
+        });
 
-            yellowSearchInput.addEventListener('keydown', (e) => {
-                if (searchDropdown.style.display !== 'block' || dropdownMatches.length === 0) return;
+        yellowSearchInput.addEventListener('input', function () {
+            this.value = toEnglishDigits(this.value);
+            dropdownActiveIndex = 0;
+            renderYellowSearchDropdown(this.value);
+        });
+
+        yellowSearchInput.addEventListener('keydown', (e) => {
+            if (searchDropdown.style.display !== 'block' || dropdownMatches.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                dropdownActiveIndex = (dropdownActiveIndex + 1) % dropdownMatches.length;
+                renderYellowSearchDropdown(yellowSearchInput.value);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                dropdownActiveIndex = (dropdownActiveIndex - 1 + dropdownMatches.length) % dropdownMatches.length;
+                renderYellowSearchDropdown(yellowSearchInput.value);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                const chosen = dropdownMatches[dropdownActiveIndex >= 0 ? dropdownActiveIndex : 0];
+                if (chosen) openStockUpdateModal(chosen);
+            } else if (e.key === 'Escape') {
+                searchDropdown.style.display = 'none';
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-yellow-wrapper')) {
+                searchDropdown.style.display = 'none';
+            }
+        });
+
+        document.getElementById('btnSpinnerUp').addEventListener('click', () => {
+            const v = parseFloat(toEnglishDigits(modalNewQtyInput.value)) || 0;
+            modalNewQtyInput.value = Number((v + 1).toFixed(3));
+            modalNewQtyInput.focus();
+        });
+
+        document.getElementById('btnSpinnerDown').addEventListener('click', () => {
+            const v = parseFloat(toEnglishDigits(modalNewQtyInput.value)) || 0;
+            modalNewQtyInput.value = Number((v - 1).toFixed(3));
+            modalNewQtyInput.focus();
+        });
+
+        modalNewQtyInput.addEventListener('input', function () {
+            this.value = toEnglishDigits(this.value).replace(/[^0-9.-]/g, '');
+        });
+
+        modalNewQtyInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                confirmStockUpdateFromModal();
+            }
+        });
+
+        document.getElementById('btnConfirmStockUpdate').addEventListener('click', confirmStockUpdateFromModal);
+        document.getElementById('btnCancelStockUpdate').addEventListener('click', () => updateStockModal.classList.remove('open'));
+        document.getElementById('btnCloseStockModal').addEventListener('click', () => updateStockModal.classList.remove('open'));
+
+        document.getElementById('inTableSearchInput').addEventListener('input', renderAdjustmentTable);
+        document.getElementById('btnSaveAdjustment').addEventListener('click', saveAdjustmentDocument);
+        document.getElementById('btnPrintDoc').addEventListener('click', () => window.print());
+
+        document.getElementById('btnExportExcel').addEventListener('click', () => {
+            if (adjustmentRows.length === 0) return;
+            const headers = ['#', 'التصنيف', 'الصنف', 'وحدة القياس', 'باركود', 'تحديث الرصيد', 'فرق القيمة', 'بيان', 'الرصيد بعد التعديل', 'ملحوظات', 'آخر سعر شراء وقت التسوية', 'آخر سعر شراء حالياً', 'سعر البيع'];
+            const rows = adjustmentRows.map((r, i) => [
+                i + 1,
+                `"${r.categoryName}"`,
+                `"${r.name}"`,
+                `"${r.unit}"`,
+                `"${r.barcode}"`,
+                r.qtyDiff,
+                r.valueDiff,
+                `"${r.statusLabel}"`,
+                r.newBalance,
+                `"${r.notes || ''}"`,
+                r.buyPriceAtAdj,
+                r.currentBuyPrice,
+                r.retailPrice
+            ].join(','));
+
+            const blob = new Blob(['\uFEFF' + [headers.join(','), ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `تسوية_أرصدة_${toISODate(currentDocDate)}.csv`;
+            a.click();
+        });
+
+        document.getElementById('btnImportExcel').addEventListener('click', () => document.getElementById('excelFileInput').click());
+
+        function handleExit() {
+            if (window.history.length > 1) window.history.back();
+            else window.location.href = '/inventory/items';
+        }
+        document.getElementById('btnExitPage').addEventListener('click', handleExit);
+        document.getElementById('btnBottomClose').addEventListener('click', handleExit);
+
+        document.addEventListener('keydown', (e) => {
+            if (Swal.isVisible()) return;
+            const modalOpen = updateStockModal.classList.contains('open');
+
+            if (e.key === 'Escape') {
+                if (modalOpen) {
+                    updateStockModal.classList.remove('open');
+                    return;
+                }
+                if (searchDropdown.style.display === 'block') {
+                    searchDropdown.style.display = 'none';
+                    return;
+                }
+                e.preventDefault();
+                handleExit();
+                return;
+            }
+
+            if (modalOpen) return;
+
+            if (e.key === 'F3') {
+                e.preventDefault();
+                yellowSearchInput.focus();
+                yellowSearchInput.select();
+                return;
+            }
+
+            if (e.key === 'F2') {
+                e.preventDefault();
+                saveAdjustmentDocument();
+                return;
+            }
+
+            if (searchDropdown.style.display !== 'block' && adjustmentRows.length > 0 && document.activeElement.tagName !== 'INPUT') {
                 if (e.key === 'ArrowDown') {
                     e.preventDefault();
-                    dropdownActiveIndex = (dropdownActiveIndex + 1) % dropdownMatches.length;
-                    renderYellowSearchDropdown(yellowSearchInput.value);
+                    selectedRowIndex = Math.min(adjustmentRows.length - 1, selectedRowIndex + 1);
+                    highlightSelectedRow();
                 } else if (e.key === 'ArrowUp') {
                     e.preventDefault();
-                    dropdownActiveIndex = (dropdownActiveIndex - 1 + dropdownMatches.length) % dropdownMatches.length;
-                    renderYellowSearchDropdown(yellowSearchInput.value);
-                } else if (e.key === 'Enter') {
+                    selectedRowIndex = Math.max(0, selectedRowIndex - 1);
+                    highlightSelectedRow();
+                } else if (e.key === 'Enter' && selectedRowIndex >= 0) {
                     e.preventDefault();
-                    const chosen = dropdownMatches[dropdownActiveIndex >= 0 ? dropdownActiveIndex : 0];
-                    if (chosen) openStockUpdateModal(chosen);
-                } else if (e.key === 'Escape') {
-                    searchDropdown.style.display = 'none';
-                }
-            });
-
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('.search-yellow-wrapper')) {
-                    searchDropdown.style.display = 'none';
-                }
-            });
-
-            // أحداث نافذة "تحديث الرصيد"
-            document.getElementById('btnSpinnerUp').addEventListener('click', () => {
-                const v = parseFloat(toEnglishDigits(modalNewQtyInput.value)) || 0;
-                modalNewQtyInput.value = Number((v + 1).toFixed(3));
-                modalNewQtyInput.focus();
-            });
-
-            document.getElementById('btnSpinnerDown').addEventListener('click', () => {
-                const v = parseFloat(toEnglishDigits(modalNewQtyInput.value)) || 0;
-                modalNewQtyInput.value = Number((v - 1).toFixed(3));
-                modalNewQtyInput.focus();
-            });
-
-            modalNewQtyInput.addEventListener('input', function () {
-                this.value = toEnglishDigits(this.value).replace(/[^0-9.-]/g, '');
-            });
-
-            modalNewQtyInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
+                    const row = adjustmentRows[selectedRowIndex];
+                    const prod = products.find(p => String(p.id) === String(row.productId)) || {
+                        id: row.productId,
+                        categoryName: row.categoryName,
+                        name: row.name,
+                        unit: row.unit,
+                        barcode: row.barcode,
+                        qty: row.oldBalance,
+                        avgCost: row.buyPriceAtAdj,
+                        lastBuyPrice: row.currentBuyPrice,
+                        retailPrice: row.retailPrice
+                    };
+                    openStockUpdateModal(prod);
+                } else if (e.key === 'Delete' && selectedRowIndex >= 0) {
                     e.preventDefault();
-                    confirmStockUpdateFromModal();
+                    adjustmentRows.splice(selectedRowIndex, 1);
+                    selectedRowIndex = Math.max(0, selectedRowIndex - 1);
+                    renderAdjustmentTable();
                 }
-            });
-
-            document.getElementById('btnConfirmStockUpdate').addEventListener('click', confirmStockUpdateFromModal);
-            document.getElementById('btnCancelStockUpdate').addEventListener('click', () => updateStockModal.classList.remove('open'));
-            document.getElementById('btnCloseStockModal').addEventListener('click', () => updateStockModal.classList.remove('open'));
-
-            document.getElementById('inTableSearchInput').addEventListener('input', renderAdjustmentTable);
-            document.getElementById('btnSaveAdjustment').addEventListener('click', saveAdjustmentDocument);
-            document.getElementById('btnPrintDoc').addEventListener('click', () => window.print());
-
-            // تصدير إلى Excel
-            document.getElementById('btnExportExcel').addEventListener('click', () => {
-                if (adjustmentRows.length === 0) return;
-                const headers = ['#', 'التصنيف', 'الصنف', 'وحدة القياس', 'باركود', 'تحديث الرصيد', 'فرق القيمة', 'بيان', 'الرصيد بعد التعديل', 'ملحوظات', 'آخر سعر شراء وقت التسوية', 'آخر سعر شراء حالياً', 'سعر البيع'];
-                const rows = adjustmentRows.map((r, i) => [
-                    i + 1, `"${r.categoryName}"`, `"${r.name}"`, `"${r.unit}"`, `"${r.barcode}"`,
-                    r.qtyDiff, r.valueDiff, `"${r.statusLabel}"`, r.newBalance, `"${r.notes || ''}"`,
-                    r.buyPriceAtAdj, r.currentBuyPrice, r.retailPrice
-                ].join(','));
-                const blob = new Blob(['\uFEFF' + [headers.join(','), ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = `تسوية_أرصدة_${toISODate(currentDocDate)}.csv`;
-                a.click();
-            });
-
-            document.getElementById('btnImportExcel').addEventListener('click', () => document.getElementById('excelFileInput').click());
-
-            function handleExit() {
-                if (window.history.length > 1) window.history.back();
-                else window.location.href = '/inventory/items';
             }
-            document.getElementById('btnExitPage').addEventListener('click', handleExit);
-            document.getElementById('btnBottomClose').addEventListener('click', handleExit);
+        });
 
-            document.addEventListener('keydown', (e) => {
-                if (Swal.isVisible()) return;
-                const modalOpen = updateStockModal.classList.contains('open');
-
-                if (e.key === 'Escape') {
-                    if (modalOpen) {
-                        updateStockModal.classList.remove('open');
-                        return;
+        function init() {
+            const params = new URLSearchParams(window.location.search);
+            const docId = params.get('id');
+            if (docId) {
+                const existingDoc = adjustmentsArchive.find(a => String(a.id) === String(docId) || String(a.docCode) === String(docId));
+                if (existingDoc) {
+                    document.getElementById('editingAdjustmentId').value = existingDoc.id;
+                    document.getElementById('adjStatementInput').value = existingDoc.statement || '';
+                    document.getElementById('adjModeSelect').value = existingDoc.mode || 'فعلي';
+                    if (existingDoc.isoDate) {
+                        currentDocDate = new Date(existingDoc.isoDate + 'T00:00:00');
                     }
-                    if (searchDropdown.style.display === 'block') {
-                        searchDropdown.style.display = 'none';
-                        return;
-                    }
-                    e.preventDefault();
-                    handleExit();
-                    return;
+                    adjustmentRows = JSON.parse(JSON.stringify(existingDoc.rows || []));
                 }
-
-                if (modalOpen) return;
-
-                if (e.key === 'F3') {
-                    e.preventDefault();
-                    yellowSearchInput.focus();
-                    yellowSearchInput.select();
-                    return;
-                }
-
-                if (e.key === 'F2') {
-                    e.preventDefault();
-                    saveAdjustmentDocument();
-                    return;
-                }
-
-                if (searchDropdown.style.display !== 'block' && adjustmentRows.length > 0 && document.activeElement.tagName !== 'INPUT') {
-                    if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        selectedRowIndex = Math.min(adjustmentRows.length - 1, selectedRowIndex + 1);
-                        highlightSelectedRow();
-                    } else if (e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        selectedRowIndex = Math.max(0, selectedRowIndex - 1);
-                        highlightSelectedRow();
-                    } else if (e.key === 'Enter' && selectedRowIndex >= 0) {
-                        e.preventDefault();
-                        const row = adjustmentRows[selectedRowIndex];
-                        const prod = products.find(p => p.id === row.productId);
-                        if (prod) openStockUpdateModal(prod);
-                    } else if (e.key === 'Delete' && selectedRowIndex >= 0) {
-                        e.preventDefault();
-                        adjustmentRows.splice(selectedRowIndex, 1);
-                        selectedRowIndex = Math.max(0, selectedRowIndex - 1);
-                        renderAdjustmentTable();
-                    }
-                }
-            });
-
-            // ==================== 9. التهيئة (مع دعم فتح محضر قديم من سجل التسويات ?id=ADJ-...) ====================
-            function init() {
-                loadAllData();
-                document.getElementById('lblCurrentDateArabic').textContent = formatArabicDateLabel(currentDocDate);
-
-                const params = new URLSearchParams(window.location.search);
-                const docId = params.get('id');
-                if (docId) {
-                    const existingDoc = adjustmentsArchive.find(a => a.id === docId);
-                    if (existingDoc) {
-                        document.getElementById('editingAdjustmentId').value = existingDoc.id;
-                        document.getElementById('adjStatementInput').value = existingDoc.statement || '';
-                        document.getElementById('adjModeSelect').value = existingDoc.mode || 'فعلي';
-                        adjustmentRows = JSON.parse(JSON.stringify(existingDoc.rows || []));
-                    }
-                }
-
-                renderAdjustmentTable();
-                yellowSearchInput.focus();
             }
 
-            init();
-        })();
+            document.getElementById('lblCurrentDateArabic').textContent = formatArabicDateLabel(currentDocDate);
+            renderAdjustmentTable();
+            yellowSearchInput.focus();
+        }
+
+        init();
+    })();
     </script>
 </body>
 </html>

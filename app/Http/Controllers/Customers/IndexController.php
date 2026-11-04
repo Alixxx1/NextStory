@@ -40,7 +40,22 @@ class IndexController extends Controller
      */
     public function getInitData()
     {
-        $zones = DeliveryZone::orderBy('id', 'asc')->get()->map(function ($z) {
+        if (DeliveryZone::count() === 0) {
+            DeliveryZone::create([
+                'uuid'      => (string) Str::uuid(),
+                'name'      => 'المنطقة الأولى',
+                'fee'       => 15,
+                'is_synced' => false,
+            ]);
+            DeliveryZone::create([
+                'uuid'      => (string) Str::uuid(),
+                'name'      => 'المنطقة الثانية',
+                'fee'       => 20,
+                'is_synced' => false,
+            ]);
+        }
+
+        $zones = DeliveryZone::orderBy('id', 'asc')->get()->map(function (DeliveryZone $z) {
             return [
                 'id'        => (string) $z->id,
                 'uuid'      => $z->uuid,
@@ -53,12 +68,13 @@ class IndexController extends Controller
         $customers = Customer::withTrashed()
             ->orderBy('id', 'asc')
             ->get()
-            ->map(function ($c) use ($zones) {
+            ->map(function (Customer $c) use ($zones) {
                 return $this->formatCustomerResponse($c, $zones);
             });
 
         return response()->json([
             'ok'        => true,
+            'status'    => 'success',
             'zones'     => $zones->values(),
             'customers' => $customers->values(),
         ]);
@@ -70,16 +86,16 @@ class IndexController extends Controller
     public function saveCustomer(Request $request)
     {
         $validated = $request->validate([
-            'id'           => 'nullable',
-            'code'         => 'nullable|string|max:50',
-            'name'         => 'required|string|max:120',
-            'phone1'       => 'required|string|max:30',
-            'phone2'       => 'nullable|string|max:30',
-            'contactNote'  => 'nullable|string|max:500',
-            'invoiceNote'  => 'nullable|string|max:500',
-            'balance'      => 'nullable|numeric|min:0',
-            'balanceType'  => 'nullable|in:debit,credit',
-            'addresses'    => 'nullable|array',
+            'id'          => 'nullable',
+            'code'        => 'nullable|string|max:50',
+            'name'        => 'required|string|max:150',
+            'phone1'      => 'required|string|max:30',
+            'phone2'      => 'nullable|string|max:30',
+            'contactNote' => 'nullable|string|max:500',
+            'invoiceNote' => 'nullable|string|max:500',
+            'balance'     => 'nullable|numeric|min:0',
+            'balanceType' => 'nullable|in:debit,credit',
+            'addresses'   => 'nullable|array',
         ]);
 
         return DB::transaction(function () use ($request, $validated) {
@@ -96,8 +112,12 @@ class IndexController extends Controller
 
             for ($i = 0; $i < 3; $i++) {
                 $addrItem = $rawAddresses[$i] ?? [];
-                $zoneId = !empty($addrItem['zoneId']) ? $addrItem['zoneId'] : null;
+                $zoneId = !empty($addrItem['zoneId']) && is_numeric($addrItem['zoneId']) ? (int) $addrItem['zoneId'] : null;
                 $zoneObj = $zoneId ? DeliveryZone::find($zoneId) : null;
+
+                if (!$zoneObj && !empty($addrItem['zoneName'])) {
+                    $zoneObj = DeliveryZone::where('name', trim((string) $addrItem['zoneName']))->first();
+                }
 
                 $normalizedAddresses[] = [
                     'label'        => $addrItem['label'] ?? $defaultLabels[$i],
@@ -112,8 +132,13 @@ class IndexController extends Controller
 
             $code = trim((string) ($validated['code'] ?? ''));
             if ($code === '') {
-                $maxCode = Customer::withTrashed()->max(DB::raw('CAST(code AS INTEGER)')) ?? 0;
-                $code = str_pad((string) ($maxCode + 1), 3, '0', STR_PAD_LEFT);
+                $maxCodeNumeric = Customer::withTrashed()
+                    ->pluck('code')
+                    ->map(fn ($val) => (int) preg_replace('/\D/', '', (string) $val))
+                    ->max() ?? 0;
+                $maxId = Customer::withTrashed()->max('id') ?? 0;
+                $nextNum = max($maxCodeNumeric, $maxId) + 1;
+                $code = str_pad((string) $nextNum, 3, '0', STR_PAD_LEFT);
             }
 
             $balanceVal = isset($validated['balance']) ? (float) $validated['balance'] : 0.0;
@@ -150,7 +175,7 @@ class IndexController extends Controller
                 $customer = Customer::create($payload);
             }
 
-            $zones = DeliveryZone::orderBy('id', 'asc')->get()->map(function ($z) {
+            $zones = DeliveryZone::orderBy('id', 'asc')->get()->map(function (DeliveryZone $z) {
                 return [
                     'id'   => (string) $z->id,
                     'name' => $z->name,
@@ -160,6 +185,7 @@ class IndexController extends Controller
 
             return response()->json([
                 'ok'       => true,
+                'status'   => 'success',
                 'message'  => 'تم حفظ بيانات العميل بنجاح',
                 'customer' => $this->formatCustomerResponse($customer->fresh(), $zones),
             ]);
@@ -183,7 +209,7 @@ class IndexController extends Controller
             $action = 'deleted';
         }
 
-        $zones = DeliveryZone::orderBy('id', 'asc')->get()->map(function ($z) {
+        $zones = DeliveryZone::orderBy('id', 'asc')->get()->map(function (DeliveryZone $z) {
             return [
                 'id'   => (string) $z->id,
                 'name' => $z->name,
@@ -193,6 +219,7 @@ class IndexController extends Controller
 
         return response()->json([
             'ok'       => true,
+            'status'   => 'success',
             'action'   => $action,
             'customer' => $this->formatCustomerResponse($customer->fresh(), $zones),
         ]);
@@ -208,16 +235,28 @@ class IndexController extends Controller
             'fee'  => 'required|numeric|min:0',
         ]);
 
-        $zone = DeliveryZone::create([
-            'uuid'      => (string) Str::uuid(),
-            'name'      => trim($validated['name']),
-            'fee'       => (float) $validated['fee'],
-            'is_synced' => false,
-        ]);
+        $cleanName = trim($validated['name']);
+        $existing = DeliveryZone::where('name', $cleanName)->first();
+
+        if ($existing) {
+            $existing->update([
+                'fee'       => (float) $validated['fee'],
+                'is_synced' => false,
+            ]);
+            $zone = $existing;
+        } else {
+            $zone = DeliveryZone::create([
+                'uuid'      => (string) Str::uuid(),
+                'name'      => $cleanName,
+                'fee'       => (float) $validated['fee'],
+                'is_synced' => false,
+            ]);
+        }
 
         return response()->json([
-            'ok'   => true,
-            'zone' => [
+            'ok'     => true,
+            'status' => 'success',
+            'zone'   => [
                 'id'        => (string) $zone->id,
                 'uuid'      => $zone->uuid,
                 'name'      => $zone->name,
@@ -230,24 +269,23 @@ class IndexController extends Controller
     /**
      * تنسيق كائن العميل ليتطابق 100% مع هيكل الواجهة الأمامية وشاشة الكاشير
      */
-    private function formatCustomerResponse(Customer $c, $zones)
+    private function formatCustomerResponse(Customer $c, $zones): array
     {
         $rawAddresses = is_array($c->addresses)
             ? $c->addresses
-            : (json_decode($c->addresses ?? '[]', true) ?: []);
+            : (json_decode((string) ($c->addresses ?? '[]'), true) ?: []);
 
         $defaultLabels = ['العنوان الرئيسي', 'عنوان بديل', 'عنوان بديل 2'];
         $fallbackColumns = [$c->addr1, $c->addr2, $c->addr3];
-        $addresses = [];
 
+        $addresses = [];
         for ($i = 0; $i < 3; $i++) {
             $a = $rawAddresses[$i] ?? [];
             $zoneId = (string) ($a['zoneId'] ?? ($i === 0 && $c->primary_zone_id ? $c->primary_zone_id : ''));
             $zoneName = (string) ($a['zoneName'] ?? ($i === 0 && $c->primary_zone_name ? $c->primary_zone_name : ''));
 
             $matchedZone = $zones->first(function ($z) use ($zoneId, $zoneName) {
-                return ($zoneId !== '' && (string) $z['id'] === $zoneId)
-                    || ($zoneName !== '' && $z['name'] === $zoneName);
+                return ($zoneId !== '' && (string) $z['id'] === $zoneId) || ($zoneName !== '' && $z['name'] === $zoneName);
             });
 
             $addresses[] = [

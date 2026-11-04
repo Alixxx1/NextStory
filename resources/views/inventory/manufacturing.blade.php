@@ -3,17 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>المخزن | التصنيع والعروض التجميعية - NextStore SaaS</title>
-
-    <!-- خط Cairo المعتمد -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-
-    <!-- أيقونات FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-    <!-- مكتبة SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
@@ -181,11 +176,8 @@
             font-size: 11px;
         }
 
-        .mode-badge.edit {
-            background: var(--ns-warning);
-        }
+        .mode-badge.edit { background: var(--ns-warning); }
 
-        /* ================= القسم الأيمن: شاشة التصنيع الواسعة والمنظمة ================= */
         .builder-body {
             flex: 1;
             padding: 10px 14px;
@@ -225,8 +217,7 @@
             color: var(--ns-navy);
         }
 
-        .ns-input,
-        .ns-select {
+        .ns-input, .ns-select {
             height: 33px;
             padding: 0 10px;
             border: 1.5px solid var(--ns-border);
@@ -239,8 +230,7 @@
             transition: all 0.15s;
         }
 
-        .ns-input:focus,
-        .ns-select:focus {
+        .ns-input:focus, .ns-select:focus {
             outline: none;
             border-color: var(--ns-green);
             box-shadow: 0 0 0 3px rgba(17, 151, 68, 0.12);
@@ -299,8 +289,7 @@
             font-weight: 700;
         }
 
-        .raw-dropdown-item:hover,
-        .raw-dropdown-item.active {
+        .raw-dropdown-item:hover, .raw-dropdown-item.active {
             background: var(--ns-green-soft);
         }
 
@@ -349,7 +338,7 @@
             box-shadow: 0 2px 6px rgba(124, 58, 237, 0.25);
         }
 
-        /* ================= سلة المكونات الواسعة والمريحة للعين ================= */
+        /* ================= سلة المكونات ================= */
         .components-basket-container {
             flex: 1;
             border: 1.5px solid var(--ns-border);
@@ -386,14 +375,8 @@
             transition: background 0.12s;
         }
 
-        .ns-basket-table tbody tr:nth-child(even) {
-            background: #fafbfc;
-        }
-
-        .ns-basket-table tbody tr:hover {
-            background: #f0f9ff;
-        }
-
+        .ns-basket-table tbody tr:nth-child(even) { background: #fafbfc; }
+        .ns-basket-table tbody tr:hover { background: #f0f9ff; }
         .ns-basket-table tbody tr.active-basket-row {
             background: #dcfce7 !important;
             outline: 2px solid var(--ns-green);
@@ -439,9 +422,7 @@
             background: #fff;
         }
 
-        .qty-inline-group:focus-within {
-            border-color: var(--ns-green);
-        }
+        .qty-inline-group:focus-within { border-color: var(--ns-green); }
 
         .qty-input-cell {
             width: 75px;
@@ -637,9 +618,7 @@
             transition: all 0.15s;
         }
 
-        .btn-manufacture-save:hover {
-            background: var(--ns-green-hover);
-        }
+        .btn-manufacture-save:hover { background: var(--ns-green-hover); }
 
         .btn-reset-builder {
             height: 38px;
@@ -652,7 +631,7 @@
             cursor: pointer;
         }
 
-        /* ================= القسم الأيسر: بطاقات الأصناف المصنعة + أزرار التعديل والحذف من الخارج ================= */
+        /* ================= القسم الأيسر: بطاقات الأصناف المصنعة ================= */
         .batches-list-body {
             flex: 1;
             display: flex;
@@ -724,15 +703,8 @@
             border-radius: 999px;
         }
 
-        .deduct-type-badge.immediate {
-            background: #dcfce7;
-            color: #15803d;
-        }
-
-        .deduct-type-badge.on-sale {
-            background: #f3e8ff;
-            color: #6d28d9;
-        }
+        .deduct-type-badge.immediate { background: #dcfce7; color: #15803d; }
+        .deduct-type-badge.on-sale { background: #f3e8ff; color: #6d28d9; }
 
         .ingredient-chips-wrap {
             display: flex;
@@ -781,7 +753,6 @@
             font-weight: 700;
         }
 
-        /* أزرار التعديل والحذف للخلطة من الخارج */
         .batch-card-actions {
             display: flex;
             align-items: center;
@@ -842,9 +813,7 @@
             padding: 14px;
         }
 
-        .ns-modal-backdrop.open {
-            display: flex;
-        }
+        .ns-modal-backdrop.open { display: flex; }
 
         .ns-modal-window {
             background: #f4f6f9;
@@ -964,9 +933,7 @@
             padding: 14px;
         }
 
-        .ns-tab-pane.active {
-            display: block;
-        }
+        .ns-tab-pane.active { display: block; }
 
         .ns-modal-footer {
             background: #e2e8f0;
@@ -1001,7 +968,6 @@
 </head>
 <body>
 
-    <!-- ==================== 1. الهيدر العلوي ==================== -->
     <header class="ns-header">
         <div class="ns-header-right">
             <div class="ns-logo-icon">
@@ -1011,7 +977,6 @@
                 <span class="module-pill">المخزن</span>
                 <span>التصنيع والعروض التجميعية</span>
             </h1>
-
             <div class="top-nav-links">
                 <a href="/inventory/manufacturing-log" class="btn-top-link">
                     <i class="fa-solid fa-boxes-packing"></i> سجل الأصناف المصنعة
@@ -1031,13 +996,12 @@
         </button>
     </header>
 
-    <!-- ==================== 2. مساحة العمل الرئيسية ==================== -->
     <main class="manufacturing-workspace">
 
-        <!-- ======== اليمين: شاشة التصنيع والعروض والسلة الواسعة ======== -->
+        <!-- اليمين: شاشة التصنيع والعروض والسلة الواسعة -->
         <section class="ns-panel">
             <div class="ns-panel-header">
-                <span><i class="fa-solid fa-wand-magic-sparkles"></i> تكوين صنف مُصنَّع أو بوكس تجميعي</span>
+                <span><i class="fa-solid fa-wand-magic-sparkles"></i> تكوين صنف مُصنَّع أو بوكس تجميعي</span>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span style="font-size:11px; color:#cbd5e1;">(الأسهم ↑↓ للتنقل بالسلة + Enter لتعديل بيانات الصنف نفسه)</span>
                     <span class="mode-badge" id="builderModeBadge">عملية جديدة</span>
@@ -1047,12 +1011,11 @@
             <div class="builder-body">
                 <input type="hidden" id="editingBatchId" value="">
 
-                <!-- البطاقة العلوية المدمجة: اسم الصنف + البحث + اختيار طريقة الخصم -->
                 <div class="top-config-card">
                     <div class="product-fields-row">
                         <div class="field-col">
                             <label>اسم الخلطة / البوكس التجميعي: <span style="color:var(--ns-danger)">*</span></label>
-                            <input type="text" id="mfgProductName" class="ns-input" placeholder="مثال: السبع بهارات الملكية / بوكس التقوى...">
+                            <input type="text" id="mfgProductName" class="ns-input" placeholder="اكتب اسم الخلطة أو البوكس التجميعي...">
                         </div>
 
                         <div class="field-col">
@@ -1077,15 +1040,12 @@
                     </div>
 
                     <div class="search-and-mode-row">
-                        <!-- خانة البحث السريع لإضافة مكونات للسلة (تبدأ الفلترة من أول حرف) -->
                         <div class="raw-search-input-wrap">
                             <i class="fa-solid fa-magnifying-glass"></i>
-                            <input type="text" id="rawMaterialSearchInput" class="ns-input"
-                                   placeholder="اكتب أول حرف للبحث وإضافة مكون للسلة بالاسم أو الباركود (F3)..." autocomplete="off">
+                            <input type="text" id="rawMaterialSearchInput" class="ns-input" placeholder="اكتب أول حرف للبحث وإضافة مكون للسلة بالاسم أو الباركود (F3)..." autocomplete="off">
                             <div class="raw-dropdown" id="rawMaterialDropdown"></div>
                         </div>
 
-                        <!-- خيار طريقة الخصم من المخزون (فوري vs عند البيع) -->
                         <div class="deduction-mode-switch" title="اختر متى يتم خصم المكونات من المخزون">
                             <label class="deduct-mode-option">
                                 <input type="radio" name="deductionModeRadio" value="immediate" checked>
@@ -1103,7 +1063,7 @@
                     </div>
                 </div>
 
-                <!-- السلة الواسعة والمريحة للعين -->
+                <!-- السلة الواسعة -->
                 <div class="components-basket-container" id="basketContainer">
                     <table class="ns-basket-table">
                         <thead>
@@ -1118,13 +1078,11 @@
                                 <th style="width:45px; text-align:center;">حذف</th>
                             </tr>
                         </thead>
-                        <tbody id="componentsTableBody">
-                            <!-- يملأ ديناميكياً -->
-                        </tbody>
+                        <tbody id="componentsTableBody"></tbody>
                     </table>
                 </div>
 
-                <!-- الشريط السفلي المودرن للتكلفة والتسعير ومربع النسبة (%) -->
+                <!-- الشريط السفلي للتكلفة والتسعير -->
                 <div class="modern-pricing-Ribbon">
                     <div class="summary-stats-cluster">
                         <div class="stat-item">
@@ -1157,9 +1115,9 @@
                         </div>
                     </div>
                 </div>
+
             </div>
 
-            <!-- أزرار الحفظ -->
             <div class="builder-footer">
                 <button type="button" class="btn-manufacture-save" id="btnSaveManufacture">
                     <i class="fa-solid fa-circle-check"></i>
@@ -1171,10 +1129,10 @@
             </div>
         </section>
 
-        <!-- ======== اليسار: بطاقات الأصناف المصنعة بالكبسولات الدائرية + زري التعديل والحذف ======== -->
+        <!-- اليسار: بطاقات الأصناف المصنعة -->
         <aside class="ns-panel">
             <div class="ns-panel-header">
-                <span><i class="fa-solid fa-layer-group"></i> الأصناف والبوكسات المُصنَّعة</span>
+                <span><i class="fa-solid fa-layer-group"></i> الأصناف والبوكسات المُصنَّعة</span>
                 <span style="font-size:11px; color:#cbd5e1;">تعديل وحذف مباشر</span>
             </div>
 
@@ -1188,15 +1146,13 @@
                     </select>
                 </div>
 
-                <div class="batches-scroll" id="batchesListContainer">
-                    <!-- يملأ ديناميكياً ببطاقات الكبسولات -->
-                </div>
+                <div class="batches-scroll" id="batchesListContainer"></div>
             </div>
         </aside>
 
     </main>
 
-    <!-- ==================== 3. نافذة "صنف مخزن" الأصلية ==================== -->
+    <!-- نافذة "صنف مخزن" الأصلية -->
     <div class="ns-modal-backdrop" id="itemFormModal">
         <div class="ns-modal-window">
             <div class="ns-modal-header">
@@ -1209,7 +1165,6 @@
 
                 <div class="fieldset-box">
                     <div class="fieldset-title">بيانات أساسية</div>
-
                     <div class="modal-form-row">
                         <label>النوع:</label>
                         <div style="display:flex; gap:16px; font-weight:700;">
@@ -1278,7 +1233,7 @@
                             </div>
                             <div class="modal-form-row">
                                 <label>آخر تاريخ شراء:</label>
-                                <input type="text" id="formLastBuyDate" class="ns-input" value="2026/10/19" style="text-align:center;">
+                                <input type="text" id="formLastBuyDate" class="ns-input" value="{{ now()->format('Y/m/d') }}" style="text-align:center;">
                             </div>
                             <div class="modal-form-row">
                                 <label>الحد الأدنى للمخزون:</label>
@@ -1320,455 +1275,345 @@
             </div>
 
             <div class="ns-modal-footer">
-                <span style="color:var(--ns-muted); font-size:12px; font-weight:700;">يتم تحديث بيانات الصنف في المخزن وسلة التصنيع فوراً</span>
+                <span style="color:var(--ns-muted); font-size:12px; font-weight:700;">يتم تحديث بيانات الصنف في قاعدة البيانات وسلة التصنيع فوراً</span>
                 <div style="display:flex; gap:8px;">
                     <button type="button" class="ns-action-btn primary-green" id="btnSaveProductModal">
-                        <i class="fa-solid fa-floppy-disk"></i>
-                        <span>حفظ الصنف</span>
+                        <i class="fa-solid fa-floppy-disk"></i> <span>حفظ الصنف</span>
                     </button>
                     <button type="button" class="ns-action-btn" id="btnCancelProductModal">
-                        <i class="fa-solid fa-circle-xmark" style="color:var(--ns-danger);"></i>
-                        <span>إلغاء الأمر</span>
+                        <i class="fa-solid fa-circle-xmark" style="color:var(--ns-danger);"></i> <span>إلغاء الأمر</span>
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ==================== 4. الكود البرمجي الكامل (JavaScript) ==================== -->
     <script>
-        (function () {
-            'use strict';
+    (function () {
+        'use strict';
 
-            const CATEGORIES_KEY = 'nextstore_inventory_categories_v1';
-            const PRODUCTS_KEY = 'nextstore_inventory_products_v1';
-            const MOVEMENTS_KEY = 'nextstore_inventory_movements_v1';
-            const MFG_BATCHES_KEY = 'nextstore_inventory_mfg_batches_v1';
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
-            let categories = [];
-            let products = [];
-            let movementsSummary = [];
-            let mfgBatches = [];
+        let categories = @json($initialCategories ?? []);
+        let products = @json($initialProducts ?? []);
+        let mfgBatches = @json($initialBatches ?? []);
 
-            let selectedComponents = [];
-            let activeBasketRowIndex = -1;
-            let dropdownMatches = [];
-            let dropdownIndex = -1;
+        let selectedComponents = [];
+        let activeBasketRowIndex = -1;
+        let dropdownMatches = [];
+        let dropdownIndex = -1;
 
-            function toEnglishDigits(str) {
-                if (str === null || str === undefined) return '';
-                return String(str)
-                    .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
-                    .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+        function toEnglishDigits(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+                .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+        }
+
+        function formatMoney(val) {
+            return (parseFloat(val) || 0).toFixed(2);
+        }
+
+        function generateBarcode() {
+            return '200' + String(Math.floor(1000 + Math.random() * 9000));
+        }
+
+        function populateCategorySelects() {
+            const activeCats = categories.filter(c => !c.isDeleted);
+            const html = activeCats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            document.getElementById('mfgCategorySelect').innerHTML = html;
+            document.getElementById('formCategorySelect').innerHTML = html;
+        }
+
+        const rawSearchInput = document.getElementById('rawMaterialSearchInput');
+        const rawDropdown = document.getElementById('rawMaterialDropdown');
+
+        function renderRawDropdown(query = '') {
+            const cleanQ = toEnglishDigits(query).trim().toLowerCase();
+            if (!cleanQ) {
+                dropdownMatches = [];
+                rawDropdown.style.display = 'none';
+                return;
             }
 
-            function formatMoney(val) {
-                return (parseFloat(val) || 0).toFixed(2);
-            }
+            dropdownMatches = products.filter(p => !p.isDeleted && !p.isDisabled).filter(p => {
+                return (p.name || '').toLowerCase().includes(cleanQ) ||
+                       String(p.barcode || '').includes(cleanQ);
+            });
 
-            function generateBarcode() {
-                return '200' + String(Math.floor(1000 + Math.random() * 9000));
-            }
-
-            // ==================== 1. تحميل البيانات وتجهيز أمثلة ====================
-            function loadAllStorage() {
-                try { categories = JSON.parse(localStorage.getItem(CATEGORIES_KEY)) || []; } catch (e) { categories = []; }
-                if (!categories.some(c => c.id === 'CAT-SPICES')) {
-                    categories.unshift(
-                        { id: 'CAT-SPICES', code: '088', name: 'عطارة وبهارات وتوابل', parentId: null, itemsCount: 4, isDeleted: false },
-                        { id: 'CAT-COSM', code: '089', name: 'عناية وبوكسات وعروض', parentId: null, itemsCount: 3, isDeleted: false }
-                    );
-                    localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
-                }
-
-                try { products = JSON.parse(localStorage.getItem(PRODUCTS_KEY)) || []; } catch (e) { products = []; }
-
-                const sampleItems = [
-                    { id: 'RAW-PEPPER', catId: 'CAT-SPICES', catName: 'عطارة وبهارات وتوابل', name: 'فلفل أسود حصى', barcode: '8001', unit: 'كيلو', qty: 12, lastBuyPrice: 200, retailPrice: 250 },
-                    { id: 'RAW-CUMIN', catId: 'CAT-SPICES', catName: 'عطارة وبهارات وتوابل', name: 'كمون بلدي', barcode: '8002', unit: 'كيلو', qty: 10, lastBuyPrice: 180, retailPrice: 230 },
-                    { id: 'RAW-CORIANDER', catId: 'CAT-SPICES', catName: 'عطارة وبهارات وتوابل', name: 'كزبرة جافة', barcode: '8003', unit: 'كيلو', qty: 15, lastBuyPrice: 80, retailPrice: 110 },
-                    { id: 'RAW-CHILI', catId: 'CAT-SPICES', catName: 'عطارة وبهارات وتوابل', name: 'شطة سوداني', barcode: '8004', unit: 'كيلو', qty: 8, lastBuyPrice: 140, retailPrice: 180 },
-                    { id: 'BOX-ALOE', catId: 'CAT-COSM', catName: 'عناية وبوكسات وعروض', name: 'علبة جل صبار كوري', barcode: '9001', unit: 'قطعة', qty: 20, lastBuyPrice: 45, retailPrice: 65 },
-                    { id: 'BOX-SHAMP', catId: 'CAT-COSM', catName: 'عناية وبوكسات وعروض', name: 'علبة شامبو أرجان', barcode: '9002', unit: 'قطعة', qty: 18, lastBuyPrice: 75, retailPrice: 110 },
-                    { id: 'BOX-CREAM', catId: 'CAT-COSM', catName: 'عناية وبوكسات وعروض', name: 'علبة كريم ترطيب', barcode: '9003', unit: 'قطعة', qty: 25, lastBuyPrice: 50, retailPrice: 80 }
-                ];
-
-                let prodChanged = false;
-                sampleItems.forEach(sp => {
-                    if (!products.some(p => p.id === sp.id)) {
-                        products.unshift({
-                            id: sp.id, itemType: 'صنف مخزني', categoryId: sp.catId, categoryName: sp.catName,
-                            name: sp.name, description: '', barcode: sp.barcode, unit: sp.unit, qty: sp.qty,
-                            supplier: 'مورد رئيسي', lastBuyPrice: sp.lastBuyPrice, avgCost: sp.lastBuyPrice,
-                            lastBuyDate: '2026/10/19', retailPrice: sp.retailPrice, minStock: 1, maxStock: 50,
-                            isPinned: false, isDisabled: false, isDeleted: false
-                        });
-                        prodChanged = true;
-                    }
-                });
-                if (prodChanged) localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
-
-                try { movementsSummary = JSON.parse(localStorage.getItem(MOVEMENTS_KEY)) || []; } catch (e) { movementsSummary = []; }
-                try { mfgBatches = JSON.parse(localStorage.getItem(MFG_BATCHES_KEY)) || []; } catch (e) { mfgBatches = []; }
-
-                if (mfgBatches.length === 0) {
-                    mfgBatches = [
-                        {
-                            id: 'BATCH-DEMO-1',
-                            productId: 'PRD-MFG-1',
-                            productName: 'السبع بهارات الملكية',
-                            categoryId: 'CAT-SPICES',
-                            categoryName: 'عطارة وبهارات وتوابل',
-                            finalUnit: 'كيلو',
-                            barcode: '2007711',
-                            deductionMode: 'immediate',
-                            totalWeightKg: 1,
-                            totalBatchCost: 150,
-                            costPerKg: 150,
-                            profitPercent: 25,
-                            sellingPrice: 187.50,
-                            components: [
-                                { productId: 'RAW-PEPPER', name: 'فلفل أسود حصى', availableQty: 12, baseUnit: 'كيلو', costPerKg: 200, inputQty: 250, inputUnit: 'gram' },
-                                { productId: 'RAW-CUMIN', name: 'كمون بلدي', availableQty: 10, baseUnit: 'كيلو', costPerKg: 180, inputQty: 250, inputUnit: 'gram' },
-                                { productId: 'RAW-CORIANDER', name: 'كزبرة جافة', availableQty: 15, baseUnit: 'كيلو', costPerKg: 80, inputQty: 250, inputUnit: 'gram' },
-                                { productId: 'RAW-CHILI', name: 'شطة سوداني', availableQty: 8, baseUnit: 'كيلو', costPerKg: 140, inputQty: 250, inputUnit: 'gram' }
-                            ]
-                        },
-                        {
-                            id: 'BATCH-DEMO-2',
-                            productId: 'PRD-MFG-2',
-                            productName: 'عرض بوكس التقوى المتكامل',
-                            categoryId: 'CAT-COSM',
-                            categoryName: 'عناية وبوكسات وعروض',
-                            finalUnit: 'بوكس',
-                            barcode: '2008822',
-                            deductionMode: 'on_sale',
-                            totalWeightKg: 3,
-                            totalBatchCost: 170,
-                            costPerKg: 170,
-                            profitPercent: 20,
-                            sellingPrice: 204.00,
-                            components: [
-                                { productId: 'BOX-ALOE', name: 'علبة جل صبار كوري', availableQty: 20, baseUnit: 'قطعة', costPerKg: 45, inputQty: 1, inputUnit: 'kg' },
-                                { productId: 'BOX-SHAMP', name: 'علبة شامبو أرجان', availableQty: 18, baseUnit: 'قطعة', costPerKg: 75, inputQty: 1, inputUnit: 'kg' },
-                                { productId: 'BOX-CREAM', name: 'علبة كريم ترطيب', availableQty: 25, baseUnit: 'قطعة', costPerKg: 50, inputQty: 1, inputUnit: 'kg' }
-                            ]
-                        }
-                    ];
-                    localStorage.setItem(MFG_BATCHES_KEY, JSON.stringify(mfgBatches));
-                }
-
-                populateCategorySelects();
-            }
-
-            function saveAllToStorage() {
-                localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
-                localStorage.setItem(MOVEMENTS_KEY, JSON.stringify(movementsSummary));
-                localStorage.setItem(MFG_BATCHES_KEY, JSON.stringify(mfgBatches));
-            }
-
-            function populateCategorySelects() {
-                const activeCats = categories.filter(c => !c.isDeleted);
-                const html = activeCats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-                document.getElementById('mfgCategorySelect').innerHTML = html;
-                document.getElementById('formCategorySelect').innerHTML = html;
-            }
-
-            // ==================== 2. البحث عن المكونات (لا يظهر أي شيء إلا بعد كتابة أول حرف) ====================
-            const rawSearchInput = document.getElementById('rawMaterialSearchInput');
-            const rawDropdown = document.getElementById('rawMaterialDropdown');
-
-            function renderRawDropdown(query = '') {
-                const cleanQ = toEnglishDigits(query).trim().toLowerCase();
-
-                // عدم إظهار أي منتجات طالما الحقل فارغ ولم يكتب المستخدم أول حرف
-                if (!cleanQ) {
-                    dropdownMatches = [];
-                    rawDropdown.style.display = 'none';
-                    return;
-                }
-
-                dropdownMatches = products.filter(p => !p.isDeleted && !p.isDisabled).filter(p => {
-                    return (p.name || '').toLowerCase().includes(cleanQ) || String(p.barcode || '').includes(cleanQ);
-                });
-
-                if (dropdownMatches.length === 0) {
-                    rawDropdown.innerHTML = `<div style="padding:10px; text-align:center; color:var(--ns-muted);">لا توجد أصناف مطابقة</div>`;
-                    rawDropdown.style.display = 'block';
-                    return;
-                }
-
-                rawDropdown.innerHTML = dropdownMatches.map((item, idx) => `
-                    <div class="raw-dropdown-item ${idx === dropdownIndex ? 'active' : ''}" data-index="${idx}">
-                        <div>
-                            <strong style="color:var(--ns-navy);">${item.name}</strong>
-                            <small style="color:var(--ns-muted); margin-right:6px;">(${item.unit} | باركود: ${item.barcode})</small>
-                        </div>
-                        <span style="background:var(--ns-green-soft); color:var(--ns-green-hover); padding:2px 8px; border-radius:999px; font-size:11.5px;">
-                            المتاح: ${item.qty} | شراء: ${item.lastBuyPrice} ج.م
-                        </span>
-                    </div>
-                `).join('');
-
+            if (dropdownMatches.length === 0) {
+                rawDropdown.innerHTML = `<div style="padding:10px; text-align:center; color:var(--ns-muted);">لا توجد أصناف مطابقة في المخزن</div>`;
                 rawDropdown.style.display = 'block';
-
-                rawDropdown.querySelectorAll('.raw-dropdown-item').forEach(el => {
-                    el.addEventListener('mousedown', function (e) {
-                        e.preventDefault();
-                        const i = parseInt(this.getAttribute('data-index'), 10);
-                        addComponentToBasket(dropdownMatches[i]);
-                    });
-                });
+                return;
             }
 
-            function addComponentToBasket(product) {
-                if (!product) return;
-                const existingIdx = selectedComponents.findIndex(c => c.productId === product.id);
-                if (existingIdx !== -1) {
-                    activeBasketRowIndex = existingIdx;
-                    renderComponentsTable();
-                    rawDropdown.style.display = 'none';
-                    rawSearchInput.value = '';
-                    return;
-                }
+            rawDropdown.innerHTML = dropdownMatches.map((item, idx) => `
+                <div class="raw-dropdown-item ${idx === dropdownIndex ? 'active' : ''}" data-index="${idx}">
+                    <div>
+                        <strong style="color:var(--ns-navy);">${item.name}</strong>
+                        <small style="color:var(--ns-muted); margin-right:6px;">(${item.unit} | باركود: ${item.barcode})</small>
+                    </div>
+                    <span style="background:var(--ns-green-soft); color:var(--ns-green-hover); padding:2px 8px; border-radius:999px; font-size:11.5px;">
+                        المتاح: ${item.qty} | شراء: ${item.lastBuyPrice} ج.م
+                    </span>
+                </div>
+            `).join('');
 
-                const isPiece = product.unit === 'قطعة' || product.unit === 'علبة';
-                selectedComponents.push({
-                    productId: product.id,
-                    name: product.name,
-                    availableQty: parseFloat(product.qty) || 0,
-                    baseUnit: product.unit || 'كيلو',
-                    costPerKg: parseFloat(product.lastBuyPrice) || 0,
-                    inputQty: isPiece ? 1 : 250,
-                    inputUnit: isPiece ? 'kg' : 'gram'
+            rawDropdown.style.display = 'block';
+
+            rawDropdown.querySelectorAll('.raw-dropdown-item').forEach(el => {
+                el.addEventListener('mousedown', function (e) {
+                    e.preventDefault();
+                    const i = parseInt(this.getAttribute('data-index'), 10);
+                    addComponentToBasket(dropdownMatches[i]);
                 });
+            });
+        }
 
-                activeBasketRowIndex = selectedComponents.length - 1;
+        function addComponentToBasket(product) {
+            if (!product) return;
+            const existingIdx = selectedComponents.findIndex(c => String(c.productId) === String(product.id));
+            if (existingIdx !== -1) {
+                activeBasketRowIndex = existingIdx;
+                renderComponentsTable();
                 rawDropdown.style.display = 'none';
                 rawSearchInput.value = '';
-                renderComponentsTable();
-                recalculateCostAndPrice(true);
+                return;
             }
 
-            function getComponentNormalizedQty(comp) {
-                const q = parseFloat(comp.inputQty) || 0;
-                return comp.inputUnit === 'gram' ? (q / 1000) : q;
+            const isPiece = product.unit === 'قطعة' || product.unit === 'علبة';
+            selectedComponents.push({
+                productId: String(product.id),
+                name: product.name,
+                availableQty: parseFloat(product.qty) || 0,
+                baseUnit: product.unit || 'كيلو',
+                costPerKg: parseFloat(product.lastBuyPrice) || 0,
+                inputQty: isPiece ? 1 : 250,
+                inputUnit: isPiece ? 'kg' : 'gram'
+            });
+
+            activeBasketRowIndex = selectedComponents.length - 1;
+            rawDropdown.style.display = 'none';
+            rawSearchInput.value = '';
+            renderComponentsTable();
+            recalculateCostAndPrice(true);
+        }
+
+        function getComponentNormalizedQty(comp) {
+            const q = parseFloat(comp.inputQty) || 0;
+            return comp.inputUnit === 'gram' ? (q / 1000) : q;
+        }
+
+        function renderComponentsTable() {
+            const tbody = document.getElementById('componentsTableBody');
+            if (selectedComponents.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align:center; padding:55px 15px; color:var(--ns-muted);">
+                            <i class="fa-solid fa-basket-shopping" style="font-size:34px; color:#cbd5e1; margin-bottom:8px; display:block;"></i>
+                            <div style="font-weight:800; font-size:13.5px;">سلة التصنيع والتجميع فارغة حالياً</div>
+                            <small>اكتب أول حرف في خانة البحث فوق (F3) لإضافة الأصناف ويمكنك الضغط على أي صنف لتعديل سعره واسمه</small>
+                        </td>
+                    </tr>
+                `;
+                activeBasketRowIndex = -1;
+                return;
             }
 
-            // ==================== 3. رسم سلة المكونات الواسعة + فتح نافذة تعديل الصنف ====================
-            function renderComponentsTable() {
-                const tbody = document.getElementById('componentsTableBody');
-                if (selectedComponents.length === 0) {
-                    tbody.innerHTML = `
-                        <tr>
-                            <td colspan="8" style="text-align:center; padding:55px 15px; color:var(--ns-muted);">
-                                <i class="fa-solid fa-basket-shopping" style="font-size:34px; color:#cbd5e1; margin-bottom:8px; display:block;"></i>
-                                <div style="font-weight:800; font-size:13.5px;">سلة التصنيع والتجميع فارغة حالياً</div>
-                                <small>اكتب أول حرف في خانة البحث فوق (F3) لإضافة الأصناف ويمكنك الضغط على أي صنف لتعديل سعره واسمه</small>
-                            </td>
-                        </tr>
-                    `;
-                    activeBasketRowIndex = -1;
-                    return;
-                }
-
-                if (activeBasketRowIndex < 0 || activeBasketRowIndex >= selectedComponents.length) {
-                    activeBasketRowIndex = 0;
-                }
-
-                const totalNormWeight = selectedComponents.reduce((sum, c) => sum + getComponentNormalizedQty(c), 0);
-
-                tbody.innerHTML = selectedComponents.map((comp, idx) => {
-                    const normQty = getComponentNormalizedQty(comp);
-                    const ratioPercent = totalNormWeight > 0 ? ((normQty / totalNormWeight) * 100) : 0;
-                    const rowCost = normQty * comp.costPerKg;
-                    const isActive = idx === activeBasketRowIndex;
-
-                    return `
-                        <tr data-index="${idx}" class="${isActive ? 'active-basket-row' : ''}">
-                            <td style="text-align:center; color:var(--ns-muted);">${idx + 1}</td>
-                            <td>
-                                <a href="javascript:void(0)" class="comp-name-btn" data-index="${idx}" title="اضغط لتعديل بيانات الصنف نفسه وسعره في المخزن">
-                                    <span>${comp.name}</span>
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                </a>
-                            </td>
-                            <td style="text-align:center;">${comp.availableQty} ${comp.baseUnit}</td>
-                            <td style="text-align:center;">${formatMoney(comp.costPerKg)} ج.م</td>
-                            <td style="text-align:center;">
-                                <div class="qty-inline-group">
-                                    <input type="text" class="qty-input-cell comp-qty-input" data-index="${idx}" value="${comp.inputQty}">
-                                    <select class="unit-select-cell comp-unit-select" data-index="${idx}">
-                                        <option value="gram" ${comp.inputUnit === 'gram' ? 'selected' : ''}>جرام</option>
-                                        <option value="kg" ${comp.inputUnit === 'kg' ? 'selected' : ''}>${comp.baseUnit === 'كيلو' ? 'كيلو' : 'قطعة/وحدة'}</option>
-                                    </select>
-                                </div>
-                            </td>
-                            <td style="text-align:center;">
-                                <span class="ratio-pill">${ratioPercent.toFixed(1)}%</span>
-                            </td>
-                            <td style="text-align:center; font-weight:900; color:var(--ns-danger);">${formatMoney(rowCost)} ج.م</td>
-                            <td style="text-align:center;">
-                                <button type="button" class="btn-remove-comp" data-index="${idx}">
-                                    <i class="fa-solid fa-xmark"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
-
-                tbody.querySelectorAll('tr[data-index]').forEach(tr => {
-                    tr.addEventListener('click', function (e) {
-                        if (e.target.closest('.qty-inline-group') || e.target.closest('.btn-remove-comp')) return;
-                        activeBasketRowIndex = parseInt(this.getAttribute('data-index'), 10);
-                        highlightBasketRow();
-                    });
-                });
-
-                tbody.querySelectorAll('.comp-name-btn').forEach(btn => {
-                    btn.addEventListener('click', function (e) {
-                        e.stopPropagation();
-                        const idx = parseInt(this.getAttribute('data-index'), 10);
-                        activeBasketRowIndex = idx;
-                        highlightBasketRow();
-                        openProductEditModalByProductId(selectedComponents[idx].productId);
-                    });
-                });
-
-                tbody.querySelectorAll('.comp-qty-input').forEach(inp => {
-                    inp.addEventListener('input', function () {
-                        const idx = parseInt(this.getAttribute('data-index'), 10);
-                        this.value = toEnglishDigits(this.value).replace(/[^0-9.]/g, '');
-                        selectedComponents[idx].inputQty = parseFloat(this.value) || 0;
-                        renderComponentsTable();
-                        recalculateCostAndPrice(true);
-                    });
-                });
-
-                tbody.querySelectorAll('.comp-unit-select').forEach(sel => {
-                    sel.addEventListener('change', function () {
-                        const idx = parseInt(this.getAttribute('data-index'), 10);
-                        selectedComponents[idx].inputUnit = this.value;
-                        if (this.value === 'kg' && selectedComponents[idx].inputQty >= 10) {
-                            selectedComponents[idx].inputQty = selectedComponents[idx].inputQty / 1000;
-                        } else if (this.value === 'gram' && selectedComponents[idx].inputQty <= 5) {
-                            selectedComponents[idx].inputQty = selectedComponents[idx].inputQty * 1000;
-                        }
-                        renderComponentsTable();
-                        recalculateCostAndPrice(true);
-                    });
-                });
-
-                tbody.querySelectorAll('.btn-remove-comp').forEach(btn => {
-                    btn.addEventListener('click', function () {
-                        const idx = parseInt(this.getAttribute('data-index'), 10);
-                        selectedComponents.splice(idx, 1);
-                        renderComponentsTable();
-                        recalculateCostAndPrice(true);
-                    });
-                });
+            if (activeBasketRowIndex < 0 || activeBasketRowIndex >= selectedComponents.length) {
+                activeBasketRowIndex = 0;
             }
 
-            function highlightBasketRow() {
-                document.querySelectorAll('#componentsTableBody tr[data-index]').forEach((tr, idx) => {
-                    if (idx === activeBasketRowIndex) {
-                        tr.classList.add('active-basket-row');
-                        tr.scrollIntoView({ block: 'nearest' });
-                    } else {
-                        tr.classList.remove('active-basket-row');
+            const totalNormWeight = selectedComponents.reduce((sum, c) => sum + getComponentNormalizedQty(c), 0);
+
+            tbody.innerHTML = selectedComponents.map((comp, idx) => {
+                const normQty = getComponentNormalizedQty(comp);
+                const ratioPercent = totalNormWeight > 0 ? ((normQty / totalNormWeight) * 100) : 0;
+                const rowCost = normQty * comp.costPerKg;
+                const isActive = idx === activeBasketRowIndex;
+
+                return `
+                    <tr data-index="${idx}" class="${isActive ? 'active-basket-row' : ''}">
+                        <td style="text-align:center; color:var(--ns-muted);">${idx + 1}</td>
+                        <td>
+                            <a href="javascript:void(0)" class="comp-name-btn" data-index="${idx}" title="اضغط لتعديل بيانات الصنف نفسه وسعره في المخزن">
+                                <span>${comp.name}</span>
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </a>
+                        </td>
+                        <td style="text-align:center;">${comp.availableQty} ${comp.baseUnit}</td>
+                        <td style="text-align:center;">${formatMoney(comp.costPerKg)} ج.م</td>
+                        <td style="text-align:center;">
+                            <div class="qty-inline-group">
+                                <input type="text" class="qty-input-cell comp-qty-input" data-index="${idx}" value="${comp.inputQty}">
+                                <select class="unit-select-cell comp-unit-select" data-index="${idx}">
+                                    <option value="gram" ${comp.inputUnit === 'gram' ? 'selected' : ''}>جرام</option>
+                                    <option value="kg" ${comp.inputUnit === 'kg' ? 'selected' : ''}>${comp.baseUnit === 'كيلو' ? 'كيلو' : 'قطعة/وحدة'}</option>
+                                </select>
+                            </div>
+                        </td>
+                        <td style="text-align:center;">
+                            <span class="ratio-pill">${ratioPercent.toFixed(1)}%</span>
+                        </td>
+                        <td style="text-align:center; font-weight:900; color:var(--ns-danger);">${formatMoney(rowCost)} ج.م</td>
+                        <td style="text-align:center;">
+                            <button type="button" class="btn-remove-comp" data-index="${idx}">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            tbody.querySelectorAll('tr[data-index]').forEach(tr => {
+                tr.addEventListener('click', function (e) {
+                    if (e.target.closest('.qty-inline-group') || e.target.closest('.btn-remove-comp')) return;
+                    activeBasketRowIndex = parseInt(this.getAttribute('data-index'), 10);
+                    highlightBasketRow();
+                });
+            });
+
+            tbody.querySelectorAll('.comp-name-btn').forEach(btn => {
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    const idx = parseInt(this.getAttribute('data-index'), 10);
+                    activeBasketRowIndex = idx;
+                    highlightBasketRow();
+                    openProductEditModalByProductId(selectedComponents[idx].productId);
+                });
+            });
+
+            tbody.querySelectorAll('.comp-qty-input').forEach(inp => {
+                inp.addEventListener('input', function () {
+                    const idx = parseInt(this.getAttribute('data-index'), 10);
+                    this.value = toEnglishDigits(this.value).replace(/[^0-9.]/g, '');
+                    selectedComponents[idx].inputQty = parseFloat(this.value) || 0;
+                    renderComponentsTable();
+                    recalculateCostAndPrice(true);
+                });
+            });
+
+            tbody.querySelectorAll('.comp-unit-select').forEach(sel => {
+                sel.addEventListener('change', function () {
+                    const idx = parseInt(this.getAttribute('data-index'), 10);
+                    selectedComponents[idx].inputUnit = this.value;
+                    if (this.value === 'kg' && selectedComponents[idx].inputQty >= 10) {
+                        selectedComponents[idx].inputQty = selectedComponents[idx].inputQty / 1000;
+                    } else if (this.value === 'gram' && selectedComponents[idx].inputQty <= 5) {
+                        selectedComponents[idx].inputQty = selectedComponents[idx].inputQty * 1000;
                     }
+                    renderComponentsTable();
+                    recalculateCostAndPrice(true);
                 });
-            }
+            });
 
-            // ==================== 4. فتح نافذة "صنف مخزن" الأصلية لتعديل المنتج نفسه ====================
-            function openProductEditModalByProductId(productId) {
-                const item = products.find(p => p.id === productId);
-                if (!item) return;
+            tbody.querySelectorAll('.btn-remove-comp').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const idx = parseInt(this.getAttribute('data-index'), 10);
+                    selectedComponents.splice(idx, 1);
+                    renderComponentsTable();
+                    recalculateCostAndPrice(true);
+                });
+            });
+        }
 
-                document.getElementById('itemModalTitle').innerHTML = `<i class="fa-solid fa-pen-to-square"></i> صنف مخزن — تعديل (${item.name})`;
-                document.getElementById('formItemId').value = item.id;
+        function highlightBasketRow() {
+            document.querySelectorAll('#componentsTableBody tr[data-index]').forEach((tr, idx) => {
+                if (idx === activeBasketRowIndex) {
+                    tr.classList.add('active-basket-row');
+                    tr.scrollIntoView({ block: 'nearest' });
+                } else {
+                    tr.classList.remove('active-basket-row');
+                }
+            });
+        }
 
-                const typeRadio = document.querySelector(`input[name="itemTypeRadio"][value="${item.itemType || 'صنف مخزني'}"]`);
-                if (typeRadio) typeRadio.checked = true;
+        function openProductEditModalByProductId(productId) {
+            const item = products.find(p => String(p.id) === String(productId));
+            if (!item) return;
 
-                document.getElementById('formCategorySelect').value = item.categoryId || '';
-                document.getElementById('formItemName').value = item.name || '';
-                document.getElementById('formItemDesc').value = item.description || '';
-                document.getElementById('formMainUnit').value = item.unit || 'كيلو';
-                document.getElementById('formBarcode').value = item.barcode || '';
+            document.getElementById('itemModalTitle').innerHTML = `<i class="fa-solid fa-pen-to-square"></i> صنف مخزن — تعديل (${item.name})`;
+            document.getElementById('formItemId').value = item.id;
 
-                document.getElementById('formQtyReadonly').value = item.qty || 0;
-                document.getElementById('formLastBuyPrice').value = item.lastBuyPrice || 0;
-                document.getElementById('formLastBuyDate').value = item.lastBuyDate || '2026/10/19';
-                document.getElementById('formMinStock').value = item.minStock || 0;
-                document.getElementById('formMaxStock').value = item.maxStock || 0;
-                document.getElementById('formRetailPrice').value = item.retailPrice || 0;
+            const typeRadio = document.querySelector(`input[name="itemTypeRadio"][value="${item.itemType || 'صنف مخزني'}"]`);
+            if (typeRadio) typeRadio.checked = true;
 
-                document.getElementById('formOptDisabled').checked = Boolean(item.isDisabled);
-                document.getElementById('formOptCommission').checked = Boolean(item.hasCommission);
-                document.getElementById('formOptAllowPriceEdit').checked = Boolean(item.allowPriceEdit);
-                document.getElementById('formOptPinned').checked = Boolean(item.isPinned);
+            document.getElementById('formCategorySelect').value = item.categoryId || '';
+            document.getElementById('formItemName').value = item.name || '';
+            document.getElementById('formItemDesc').value = item.description || '';
+            document.getElementById('formMainUnit').value = item.unit || 'كيلو';
+            document.getElementById('formBarcode').value = item.barcode || '';
+            document.getElementById('formQtyReadonly').value = item.qty || 0;
+            document.getElementById('formLastBuyPrice').value = item.lastBuyPrice || 0;
+            document.getElementById('formLastBuyDate').value = item.lastBuyDate || '';
+            document.getElementById('formMinStock').value = item.minStock || 0;
+            document.getElementById('formMaxStock').value = item.maxStock || 0;
+            document.getElementById('formRetailPrice').value = item.retailPrice || 0;
 
-                document.getElementById('itemFormModal').classList.add('open');
-                setTimeout(() => document.getElementById('formItemName').focus(), 60);
-            }
+            document.getElementById('formOptDisabled').checked = Boolean(item.isDisabled);
+            document.getElementById('formOptCommission').checked = Boolean(item.hasCommission);
+            document.getElementById('formOptAllowPriceEdit').checked = Boolean(item.allowPriceEdit);
+            document.getElementById('formOptPinned').checked = Boolean(item.isPinned);
 
-            function saveEditedProductFromModal() {
-                const id = document.getElementById('formItemId').value;
-                const pIdx = products.findIndex(p => p.id === id);
-                if (pIdx === -1) return;
+            document.getElementById('itemFormModal').classList.add('open');
+            setTimeout(() => document.getElementById('formItemName').focus(), 60);
+        }
 
-                const newName = toEnglishDigits(document.getElementById('formItemName').value).trim();
-                const newBuyPrice = parseFloat(toEnglishDigits(document.getElementById('formLastBuyPrice').value)) || 0;
-                const newRetailPrice = parseFloat(toEnglishDigits(document.getElementById('formRetailPrice').value)) || 0;
-                const newUnit = document.getElementById('formMainUnit').value;
-                const newCatId = document.getElementById('formCategorySelect').value;
-                const catObj = categories.find(c => String(c.id) === String(newCatId));
+        async function saveEditedProductFromModal() {
+            const id = document.getElementById('formItemId').value;
+            const newName = toEnglishDigits(document.getElementById('formItemName').value).trim();
+            const newBuyPrice = parseFloat(toEnglishDigits(document.getElementById('formLastBuyPrice').value)) || 0;
+            const newRetailPrice = parseFloat(toEnglishDigits(document.getElementById('formRetailPrice').value)) || 0;
+            const newUnit = document.getElementById('formMainUnit').value;
+            const newCatId = document.getElementById('formCategorySelect').value;
 
-                if (!newName) return;
+            if (!newName) return;
 
-                products[pIdx] = {
-                    ...products[pIdx],
-                    itemType: document.querySelector('input[name="itemTypeRadio"]:checked')?.value || 'صنف مخزني',
-                    categoryId: newCatId,
-                    categoryName: catObj ? catObj.name : products[pIdx].categoryName,
-                    name: newName,
-                    description: toEnglishDigits(document.getElementById('formItemDesc').value).trim(),
-                    unit: newUnit,
-                    barcode: toEnglishDigits(document.getElementById('formBarcode').value).trim(),
-                    lastBuyPrice: newBuyPrice,
-                    avgCost: newBuyPrice,
-                    retailPrice: newRetailPrice,
-                    minStock: parseFloat(toEnglishDigits(document.getElementById('formMinStock').value)) || 0,
-                    maxStock: parseFloat(toEnglishDigits(document.getElementById('formMaxStock').value)) || 0,
-                    isDisabled: document.getElementById('formOptDisabled').checked,
-                    hasCommission: document.getElementById('formOptCommission').checked,
-                    allowPriceEdit: document.getElementById('formOptAllowPriceEdit').checked,
-                    isPinned: document.getElementById('formOptPinned').checked
-                };
+            try {
+                document.getElementById('btnSaveProductModal').disabled = true;
+                const res = await fetch('/api/inventory/manufacturing/item-quick-update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({
+                        id: id,
+                        itemType: document.querySelector('input[name="itemTypeRadio"]:checked')?.value || 'صنف مخزني',
+                        categoryId: newCatId,
+                        name: newName,
+                        description: toEnglishDigits(document.getElementById('formItemDesc').value).trim(),
+                        unit: newUnit,
+                        barcode: toEnglishDigits(document.getElementById('formBarcode').value).trim(),
+                        lastBuyPrice: newBuyPrice,
+                        retailPrice: newRetailPrice,
+                        minStock: parseFloat(toEnglishDigits(document.getElementById('formMinStock').value)) || 0,
+                        maxStock: parseFloat(toEnglishDigits(document.getElementById('formMaxStock').value)) || 0,
+                        isDisabled: document.getElementById('formOptDisabled').checked,
+                        hasCommission: document.getElementById('formOptCommission').checked,
+                        allowPriceEdit: document.getElementById('formOptAllowPriceEdit').checked,
+                        isPinned: document.getElementById('formOptPinned').checked
+                    })
+                });
+
+                const out = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(out.message || 'تعذر حفظ تعديل الصنف');
+
+                if (out.bootstrap) {
+                    categories = out.bootstrap.initialCategories || categories;
+                    products = out.bootstrap.initialProducts || products;
+                    mfgBatches = out.bootstrap.initialBatches || mfgBatches;
+                }
 
                 selectedComponents.forEach(c => {
-                    if (c.productId === id) {
+                    if (String(c.productId) === String(id)) {
                         c.name = newName;
                         c.costPerKg = newBuyPrice;
                         c.baseUnit = newUnit;
                     }
                 });
 
-                mfgBatches.forEach(b => {
-                    if (b.productId === id) {
-                        b.productName = newName;
-                        b.sellingPrice = newRetailPrice;
-                    }
-                    (b.components || []).forEach(c => {
-                        if (c.productId === id) {
-                            c.name = newName;
-                            c.costPerKg = newBuyPrice;
-                        }
-                    });
-                });
-
-                saveAllToStorage();
                 document.getElementById('itemFormModal').classList.remove('open');
                 renderComponentsTable();
                 recalculateCostAndPrice(true);
@@ -1782,168 +1627,126 @@
                     showConfirmButton: false,
                     timer: 2200
                 });
+            } catch (err) {
+                Swal.fire('خطأ', err.message, 'error');
+            } finally {
+                document.getElementById('btnSaveProductModal').disabled = false;
+            }
+        }
+
+        const profitPercentInput = document.getElementById('mfgProfitPercentInput');
+        const sellingPriceInput = document.getElementById('mfgSellingPriceInput');
+
+        function getRecipeTotals() {
+            let totalWeightKg = 0;
+            let totalBatchCost = 0;
+            const finalUnit = document.getElementById('mfgFinalUnit').value;
+
+            selectedComponents.forEach(comp => {
+                const wKg = getComponentNormalizedQty(comp);
+                totalWeightKg += wKg;
+                totalBatchCost += (wKg * comp.costPerKg);
+            });
+
+            const costPerUnit = (finalUnit === 'بوكس' || finalUnit === 'علبة' || finalUnit === 'قطعة')
+                ? totalBatchCost
+                : (totalWeightKg > 0 ? (totalBatchCost / totalWeightKg) : 0);
+
+            return { totalWeightKg, totalBatchCost, costPerKg: costPerUnit };
+        }
+
+        function recalculateCostAndPrice(applyPercentToPrice = true) {
+            const { totalWeightKg, totalBatchCost, costPerKg } = getRecipeTotals();
+            const finalUnit = document.getElementById('mfgFinalUnit').value;
+
+            document.getElementById('lblTotalProducedWeight').textContent = finalUnit === 'كيلو'
+                ? `${Number(totalWeightKg.toFixed(3))} كجم`
+                : `${selectedComponents.length} أصناف بالعرض`;
+
+            document.getElementById('lblTotalBatchCost').textContent = `${formatMoney(totalBatchCost)} ج.م`;
+            document.getElementById('lblCostPerKg').textContent = `${formatMoney(costPerKg)} ج.م`;
+
+            if (applyPercentToPrice) {
+                const pct = parseFloat(toEnglishDigits(profitPercentInput.value)) || 0;
+                const calculatedPrice = costPerKg + (costPerKg * (pct / 100));
+                sellingPriceInput.value = formatMoney(calculatedPrice);
+            } else {
+                const manualPrice = parseFloat(toEnglishDigits(sellingPriceInput.value)) || 0;
+                const newPct = costPerKg > 0 ? (((manualPrice - costPerKg) / costPerKg) * 100) : 0;
+                profitPercentInput.value = Number(newPct.toFixed(1));
             }
 
-            // ==================== 5. حساب التكلفة ونسبة الربح (%) وسعر البيع ====================
-            const profitPercentInput = document.getElementById('mfgProfitPercentInput');
-            const sellingPriceInput = document.getElementById('mfgSellingPriceInput');
+            const finalSellPrice = parseFloat(toEnglishDigits(sellingPriceInput.value)) || 0;
+            const netProfit = finalSellPrice - costPerKg;
+            document.getElementById('lblNetProfitPerKg').textContent = `مكسب: ${formatMoney(netProfit)} ج.م`;
+        }
 
-            function getRecipeTotals() {
-                let totalWeightKg = 0;
-                let totalBatchCost = 0;
-                const finalUnit = document.getElementById('mfgFinalUnit').value;
+        profitPercentInput.addEventListener('input', function () {
+            this.value = toEnglishDigits(this.value).replace(/[^0-9.-]/g, '');
+            recalculateCostAndPrice(true);
+        });
 
-                selectedComponents.forEach(comp => {
-                    const wKg = getComponentNormalizedQty(comp);
-                    totalWeightKg += wKg;
-                    totalBatchCost += (wKg * comp.costPerKg);
+        sellingPriceInput.addEventListener('input', function () {
+            this.value = toEnglishDigits(this.value).replace(/[^0-9.]/g, '');
+            recalculateCostAndPrice(false);
+        });
+
+        document.getElementById('mfgFinalUnit').addEventListener('change', () => recalculateCostAndPrice(true));
+
+        async function saveAndManufactureBatch() {
+            const productName = toEnglishDigits(document.getElementById('mfgProductName').value).trim();
+            const categoryId = document.getElementById('mfgCategorySelect').value;
+            const finalUnit = document.getElementById('mfgFinalUnit').value;
+            const barcode = toEnglishDigits(document.getElementById('mfgBarcode').value).trim() || generateBarcode();
+            const deductionMode = document.querySelector('input[name="deductionModeRadio"]:checked')?.value || 'immediate';
+            const editingBatchId = document.getElementById('editingBatchId').value;
+
+            if (!productName) {
+                Swal.fire({ icon: 'warning', title: 'تنبيه', text: 'يرجى كتابة اسم الصنف المصنع أو البوكس', confirmButtonColor: '#119744' });
+                return;
+            }
+            if (selectedComponents.length === 0) {
+                Swal.fire({ icon: 'warning', title: 'تنبيه', text: 'يرجى إضافة مكونات للسلة أولاً', confirmButtonColor: '#119744' });
+                return;
+            }
+
+            const { totalWeightKg, totalBatchCost, costPerKg } = getRecipeTotals();
+            const sellingPrice = parseFloat(toEnglishDigits(sellingPriceInput.value)) || 0;
+
+            try {
+                document.getElementById('btnSaveManufacture').disabled = true;
+                const res = await fetch('/api/inventory/manufacturing/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({
+                        editingBatchId: editingBatchId || null,
+                        productName: productName,
+                        categoryId: categoryId || null,
+                        finalUnit: finalUnit,
+                        barcode: barcode,
+                        deductionMode: deductionMode,
+                        totalWeightKg: Number(totalWeightKg.toFixed(3)),
+                        totalBatchCost: Number(totalBatchCost.toFixed(2)),
+                        costPerKg: Number(costPerKg.toFixed(2)),
+                        profitPercent: parseFloat(toEnglishDigits(profitPercentInput.value)) || 0,
+                        sellingPrice: sellingPrice,
+                        components: selectedComponents
+                    })
                 });
 
-                const costPerUnit = (finalUnit === 'بوكس' || finalUnit === 'علبة' || finalUnit === 'قطعة')
-                    ? totalBatchCost
-                    : (totalWeightKg > 0 ? (totalBatchCost / totalWeightKg) : 0);
+                const out = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(out.message || 'تعذر حفظ عملية التصنيع في قاعدة البيانات');
 
-                return { totalWeightKg, totalBatchCost, costPerKg: costPerUnit };
-            }
-
-            function recalculateCostAndPrice(applyPercentToPrice = true) {
-                const { totalWeightKg, totalBatchCost, costPerKg } = getRecipeTotals();
-                const finalUnit = document.getElementById('mfgFinalUnit').value;
-
-                document.getElementById('lblTotalProducedWeight').textContent = finalUnit === 'كيلو'
-                    ? `${Number(totalWeightKg.toFixed(3))} كجم`
-                    : `${selectedComponents.length} أصناف بالعرض`;
-                document.getElementById('lblTotalBatchCost').textContent = `${formatMoney(totalBatchCost)} ج.م`;
-                document.getElementById('lblCostPerKg').textContent = `${formatMoney(costPerKg)} ج.م`;
-
-                if (applyPercentToPrice) {
-                    const pct = parseFloat(toEnglishDigits(profitPercentInput.value)) || 0;
-                    const calculatedPrice = costPerKg + (costPerKg * (pct / 100));
-                    sellingPriceInput.value = formatMoney(calculatedPrice);
-                } else {
-                    const manualPrice = parseFloat(toEnglishDigits(sellingPriceInput.value)) || 0;
-                    const newPct = costPerKg > 0 ? (((manualPrice - costPerKg) / costPerKg) * 100) : 0;
-                    profitPercentInput.value = Number(newPct.toFixed(1));
+                if (out.bootstrap) {
+                    categories = out.bootstrap.initialCategories || categories;
+                    products = out.bootstrap.initialProducts || products;
+                    mfgBatches = out.bootstrap.initialBatches || mfgBatches;
                 }
 
-                const finalSellPrice = parseFloat(toEnglishDigits(sellingPriceInput.value)) || 0;
-                const netProfit = finalSellPrice - costPerKg;
-                document.getElementById('lblNetProfitPerKg').textContent = `مكسب: ${formatMoney(netProfit)} ج.م`;
-            }
-
-            profitPercentInput.addEventListener('input', function () {
-                this.value = toEnglishDigits(this.value).replace(/[^0-9.-]/g, '');
-                recalculateCostAndPrice(true);
-            });
-
-            sellingPriceInput.addEventListener('input', function () {
-                this.value = toEnglishDigits(this.value).replace(/[^0-9.]/g, '');
-                recalculateCostAndPrice(false);
-            });
-
-            document.getElementById('mfgFinalUnit').addEventListener('change', () => recalculateCostAndPrice(true));
-
-            // ==================== 6. حفظ التصنيع (مفتوح للتعديل في أي وقت) ====================
-            function saveAndManufactureBatch() {
-                const productName = toEnglishDigits(document.getElementById('mfgProductName').value).trim();
-                const categoryId = document.getElementById('mfgCategorySelect').value;
-                const finalUnit = document.getElementById('mfgFinalUnit').value;
-                const barcode = toEnglishDigits(document.getElementById('mfgBarcode').value).trim() || generateBarcode();
-                const deductionMode = document.querySelector('input[name="deductionModeRadio"]:checked')?.value || 'immediate';
-                const editingBatchId = document.getElementById('editingBatchId').value;
-
-                if (!productName) {
-                    Swal.fire({ icon: 'warning', title: 'تنبيه', text: 'يرجى كتابة اسم الصنف المصنع أو البوكس', confirmButtonColor: '#119744' });
-                    return;
-                }
-                if (selectedComponents.length === 0) {
-                    Swal.fire({ icon: 'warning', title: 'تنبيه', text: 'يرجى إضافة مكونات للسلة أولاً', confirmButtonColor: '#119744' });
-                    return;
-                }
-
-                const { totalWeightKg, totalBatchCost, costPerKg } = getRecipeTotals();
-                const sellingPrice = parseFloat(toEnglishDigits(sellingPriceInput.value)) || 0;
-
-                if (editingBatchId) {
-                    const oldBatch = mfgBatches.find(b => b.id === editingBatchId);
-                    if (oldBatch && oldBatch.deductionMode === 'immediate') {
-                        reverseBatchStockImpact(oldBatch);
-                    }
-                }
-
-                if (deductionMode === 'immediate') {
-                    selectedComponents.forEach(comp => {
-                        const deductQty = getComponentNormalizedQty(comp);
-                        const pIdx = products.findIndex(p => p.id === comp.productId);
-                        if (pIdx !== -1) {
-                            products[pIdx].qty = Number(((parseFloat(products[pIdx].qty) || 0) - deductQty).toFixed(3));
-                        }
-                    });
-                }
-
-                const catObj = categories.find(c => String(c.id) === String(categoryId));
-                let mfgProduct = products.find(p => p.name === productName || (p.barcode === barcode && barcode !== ''));
-                const addedFinalQty = deductionMode === 'immediate' ? Number(totalWeightKg.toFixed(3)) : 0;
-
-                if (mfgProduct) {
-                    if (deductionMode === 'immediate') {
-                        mfgProduct.qty = Number(((parseFloat(mfgProduct.qty) || 0) + addedFinalQty).toFixed(3));
-                    }
-                    mfgProduct.lastBuyPrice = Number(costPerKg.toFixed(2));
-                    mfgProduct.avgCost = Number(costPerKg.toFixed(2));
-                    mfgProduct.retailPrice = sellingPrice;
-                    mfgProduct.deductionMode = deductionMode;
-                    mfgProduct.recipeComponents = JSON.parse(JSON.stringify(selectedComponents));
-                } else {
-                    mfgProduct = {
-                        id: 'PRD-MFG-' + Date.now(),
-                        itemType: 'صنف مجمع',
-                        categoryId: categoryId,
-                        categoryName: catObj ? catObj.name : 'عام',
-                        name: productName,
-                        description: deductionMode === 'immediate' ? 'خلطة مصنعة جاهزة' : 'عرض تجميعي (يخصم عند البيع)',
-                        barcode: barcode,
-                        unit: finalUnit,
-                        qty: addedFinalQty,
-                        supplier: 'تصنيع داخلي',
-                        lastBuyPrice: Number(costPerKg.toFixed(2)),
-                        avgCost: Number(costPerKg.toFixed(2)),
-                        lastBuyDate: '2026/10/19',
-                        retailPrice: sellingPrice,
-                        deductionMode: deductionMode,
-                        recipeComponents: JSON.parse(JSON.stringify(selectedComponents)),
-                        isPinned: true,
-                        isDisabled: false,
-                        isDeleted: false
-                    };
-                    products.unshift(mfgProduct);
-                }
-
-                const batchPayload = {
-                    id: editingBatchId || ('BATCH-' + Date.now()),
-                    productId: mfgProduct.id,
-                    productName: productName,
-                    categoryId: categoryId,
-                    categoryName: catObj ? catObj.name : 'عام',
-                    finalUnit: finalUnit,
-                    barcode: barcode,
-                    deductionMode: deductionMode,
-                    totalWeightKg: Number(totalWeightKg.toFixed(3)),
-                    totalBatchCost: Number(totalBatchCost.toFixed(2)),
-                    costPerKg: Number(costPerKg.toFixed(2)),
-                    profitPercent: parseFloat(toEnglishDigits(profitPercentInput.value)) || 0,
-                    sellingPrice: sellingPrice,
-                    components: JSON.parse(JSON.stringify(selectedComponents))
-                };
-
-                if (editingBatchId) {
-                    const bIdx = mfgBatches.findIndex(b => b.id === editingBatchId);
-                    if (bIdx !== -1) mfgBatches[bIdx] = batchPayload;
-                } else {
-                    mfgBatches.unshift(batchPayload);
-                }
-
-                saveAllToStorage();
                 resetBuilderForm();
                 renderBatchesList();
 
@@ -1952,327 +1755,325 @@
                     position: 'bottom-start',
                     icon: 'success',
                     title: deductionMode === 'immediate'
-                        ? `تم تصنيع "${productName}" وخصم المكونات من المخزن فوراً`
-                        : `تم حفظ العرض "${productName}" (سيتم خصم مكوناته تلقائياً عند البيع)`,
+                        ? `تم تصنيع "${productName}" في قاعدة البيانات وخصم المكونات من المخزن فوراً`
+                        : `تم حفظ العرض "${productName}" في قاعدة البيانات`,
                     showConfirmButton: false,
                     timer: 2800
                 });
+            } catch (err) {
+                Swal.fire('خطأ', err.message, 'error');
+            } finally {
+                document.getElementById('btnSaveManufacture').disabled = false;
+            }
+        }
+
+        function resetBuilderForm() {
+            document.getElementById('editingBatchId').value = '';
+            document.getElementById('builderModeBadge').textContent = 'عملية جديدة';
+            document.getElementById('builderModeBadge').classList.remove('edit');
+            document.getElementById('btnSaveManufactureText').textContent = 'حفظ وتأكيد التصنيع (F2)';
+
+            document.getElementById('mfgProductName').value = '';
+            document.getElementById('mfgBarcode').value = generateBarcode();
+            document.querySelector('input[name="deductionModeRadio"][value="immediate"]').checked = true;
+            profitPercentInput.value = '25';
+            sellingPriceInput.value = '0.00';
+
+            selectedComponents = [];
+            activeBasketRowIndex = -1;
+            renderComponentsTable();
+            recalculateCostAndPrice(true);
+        }
+
+        function renderBatchesList() {
+            const container = document.getElementById('batchesListContainer');
+            const q = toEnglishDigits(document.getElementById('searchBatchesInput').value).trim().toLowerCase();
+            const modeFilter = document.getElementById('filterBatchesMode').value;
+
+            const list = mfgBatches.filter(b => {
+                if (modeFilter !== 'all' && b.deductionMode !== modeFilter) return false;
+                if (q && !(b.productName || '').toLowerCase().includes(q)) return false;
+                return true;
+            });
+
+            if (list.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding:40px 10px; color:var(--ns-muted);">لا توجد عناصر مصنعة مسجلة</div>`;
+                return;
             }
 
-            function reverseBatchStockImpact(oldBatch) {
-                (oldBatch.components || []).forEach(comp => {
-                    const wKg = getComponentNormalizedQty(comp);
-                    const pIdx = products.findIndex(p => p.id === comp.productId);
-                    if (pIdx !== -1) {
-                        products[pIdx].qty = Number(((parseFloat(products[pIdx].qty) || 0) + wKg).toFixed(3));
-                    }
-                });
-                const mfgIdx = products.findIndex(p => p.id === oldBatch.productId || p.name === oldBatch.productName);
-                if (mfgIdx !== -1) {
-                    products[mfgIdx].qty = Number(((parseFloat(products[mfgIdx].qty) || 0) - (parseFloat(oldBatch.totalWeightKg) || 0)).toFixed(3));
-                }
-            }
+            const editingId = document.getElementById('editingBatchId').value;
 
-            function resetBuilderForm() {
-                document.getElementById('editingBatchId').value = '';
-                document.getElementById('builderModeBadge').textContent = 'عملية جديدة';
-                document.getElementById('builderModeBadge').classList.remove('edit');
-                document.getElementById('btnSaveManufactureText').textContent = 'حفظ وتأكيد التصنيع (F2)';
-
-                document.getElementById('mfgProductName').value = '';
-                document.getElementById('mfgBarcode').value = generateBarcode();
-                document.querySelector('input[name="deductionModeRadio"][value="immediate"]').checked = true;
-                profitPercentInput.value = '25';
-                sellingPriceInput.value = '0.00';
-                selectedComponents = [];
-                activeBasketRowIndex = -1;
-                renderComponentsTable();
-                recalculateCostAndPrice(true);
-            }
-
-            // ==================== 7. عرض البطاقات بالكبسولات الدائرية + أزرار التعديل والحذف من الخارج ====================
-            function renderBatchesList() {
-                const container = document.getElementById('batchesListContainer');
-                const q = toEnglishDigits(document.getElementById('searchBatchesInput').value).trim().toLowerCase();
-                const modeFilter = document.getElementById('filterBatchesMode').value;
-
-                const list = mfgBatches.filter(b => {
-                    if (modeFilter !== 'all' && b.deductionMode !== modeFilter) return false;
-                    if (q && !(b.productName || '').toLowerCase().includes(q)) return false;
-                    return true;
-                });
-
-                if (list.length === 0) {
-                    container.innerHTML = `<div style="text-align:center; padding:40px 10px; color:var(--ns-muted);">لا توجد عناصر مطابقة</div>`;
-                    return;
-                }
-
-                const editingId = document.getElementById('editingBatchId').value;
-
-                container.innerHTML = list.map(b => {
-                    const isImmediate = b.deductionMode !== 'on_sale';
-
-                    const chipsHtml = (b.components || []).map(c => {
-                        const unitLabel = c.inputUnit === 'gram' ? 'جم' : (c.baseUnit === 'كيلو' ? 'كجم' : 'قطعة');
-                        return `
-                            <span class="ingredient-pill-chip" data-prod-id="${c.productId}" title="اضغط لتعديل بيانات هذا الصنف">
-                                <span>${c.name}</span>
-                                <span class="chip-qty">${c.inputQty} ${unitLabel}</span>
-                            </span>
-                        `;
-                    }).join('');
-
+            container.innerHTML = list.map(b => {
+                const isImmediate = b.deductionMode !== 'on_sale';
+                const chipsHtml = (b.components || []).map(c => {
+                    const unitLabel = c.inputUnit === 'gram' ? 'جم' : (c.baseUnit === 'كيلو' ? 'كجم' : 'قطعة');
                     return `
-                        <div class="batch-card ${b.id === editingId ? 'selected' : ''}" data-id="${b.id}">
-                            <div class="batch-card-top">
-                                <span class="batch-title">
-                                    <span>${b.productName}</span>
-                                </span>
-                                <span class="deduct-type-badge ${isImmediate ? 'immediate' : 'on-sale'}">
-                                    ${isImmediate ? '⚡ خصم فوري' : '🎁 يخصم عند البيع'}
-                                </span>
-                            </div>
-
-                            <div class="ingredient-chips-wrap">
-                                ${chipsHtml}
-                            </div>
-
-                            <div class="batch-meta-footer">
-                                <span>تكلفة: <b style="color:var(--ns-danger)">${formatMoney(b.costPerKg)} ج</b> | بيع: <b style="color:var(--ns-green)">${formatMoney(b.sellingPrice)} ج</b></span>
-                                <div class="batch-card-actions">
-                                    <button type="button" class="btn-card-edit" data-edit-id="${b.id}" title="تعديل هذه الخلطة">
-                                        <i class="fa-solid fa-pen-to-square"></i> تعديل
-                                    </button>
-                                    <button type="button" class="btn-card-delete" data-delete-id="${b.id}" title="حذف هذه الخلطة">
-                                        <i class="fa-solid fa-trash-can"></i> حذف
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        <span class="ingredient-pill-chip" data-prod-id="${c.productId}" title="اضغط لتعديل بيانات هذا الصنف">
+                            <span>${c.name}</span>
+                            <span class="chip-qty">${c.inputQty} ${unitLabel}</span>
+                        </span>
                     `;
                 }).join('');
 
-                container.querySelectorAll('.batch-card').forEach(card => {
-                    card.addEventListener('click', function (e) {
-                        const editBtn = e.target.closest('.btn-card-edit');
-                        if (editBtn) {
-                            e.stopPropagation();
-                            loadBatchForEdit(editBtn.getAttribute('data-edit-id'));
-                            return;
-                        }
+                return `
+                    <div class="batch-card ${String(b.id) === String(editingId) ? 'selected' : ''}" data-id="${b.id}">
+                        <div class="batch-card-top">
+                            <span class="batch-title">
+                                <span>${b.productName}</span>
+                            </span>
+                            <span class="deduct-type-badge ${isImmediate ? 'immediate' : 'on-sale'}">
+                                ${isImmediate ? '⚡ خصم فوري' : '🎁 يخصم عند البيع'}
+                            </span>
+                        </div>
+                        <div class="ingredient-chips-wrap">
+                            ${chipsHtml}
+                        </div>
+                        <div class="batch-meta-footer">
+                            <span>تكلفة: <b style="color:var(--ns-danger)">${formatMoney(b.costPerKg)} ج</b> | بيع: <b style="color:var(--ns-green)">${formatMoney(b.sellingPrice)} ج</b></span>
+                            <div class="batch-card-actions">
+                                <button type="button" class="btn-card-edit" data-edit-id="${b.id}" title="تعديل هذه الخلطة">
+                                    <i class="fa-solid fa-pen-to-square"></i> تعديل
+                                </button>
+                                <button type="button" class="btn-card-delete" data-delete-id="${b.id}" title="حذف هذه الخلطة">
+                                    <i class="fa-solid fa-trash-can"></i> حذف
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
 
-                        const delBtn = e.target.closest('.btn-card-delete');
-                        if (delBtn) {
-                            e.stopPropagation();
-                            deleteBatchFromList(delBtn.getAttribute('data-delete-id'));
-                            return;
-                        }
-
-                        const chip = e.target.closest('.ingredient-pill-chip');
-                        if (chip) {
-                            e.stopPropagation();
-                            openProductEditModalByProductId(chip.getAttribute('data-prod-id'));
-                            return;
-                        }
-
-                        loadBatchForEdit(this.getAttribute('data-id'));
-                    });
-
-                    card.addEventListener('dblclick', function () {
-                        const batch = mfgBatches.find(b => b.id === this.getAttribute('data-id'));
-                        if (batch && batch.productId) {
-                            openProductEditModalByProductId(batch.productId);
-                        }
-                    });
+            container.querySelectorAll('.batch-card').forEach(card => {
+                card.addEventListener('click', function (e) {
+                    const editBtn = e.target.closest('.btn-card-edit');
+                    if (editBtn) {
+                        e.stopPropagation();
+                        loadBatchForEdit(editBtn.getAttribute('data-edit-id'));
+                        return;
+                    }
+                    const delBtn = e.target.closest('.btn-card-delete');
+                    if (delBtn) {
+                        e.stopPropagation();
+                        deleteBatchFromList(delBtn.getAttribute('data-delete-id'));
+                        return;
+                    }
+                    const chip = e.target.closest('.ingredient-pill-chip');
+                    if (chip) {
+                        e.stopPropagation();
+                        openProductEditModalByProductId(chip.getAttribute('data-prod-id'));
+                        return;
+                    }
+                    loadBatchForEdit(this.getAttribute('data-id'));
                 });
-            }
 
-            function loadBatchForEdit(batchId) {
-                const batch = mfgBatches.find(b => b.id === batchId);
-                if (!batch) return;
-
-                document.getElementById('editingBatchId').value = batch.id;
-                document.getElementById('builderModeBadge').textContent = `تعديل (${batch.productName})`;
-                document.getElementById('builderModeBadge').classList.add('edit');
-                document.getElementById('btnSaveManufactureText').textContent = 'حفظ التعديلات (F2)';
-
-                document.getElementById('mfgProductName').value = batch.productName;
-                document.getElementById('mfgCategorySelect').value = batch.categoryId;
-                document.getElementById('mfgFinalUnit').value = batch.finalUnit || 'كيلو';
-                document.getElementById('mfgBarcode').value = batch.barcode;
-
-                const modeRadio = document.querySelector(`input[name="deductionModeRadio"][value="${batch.deductionMode || 'immediate'}"]`);
-                if (modeRadio) modeRadio.checked = true;
-
-                profitPercentInput.value = batch.profitPercent;
-                sellingPriceInput.value = formatMoney(batch.sellingPrice);
-
-                selectedComponents = JSON.parse(JSON.stringify(batch.components || []));
-                activeBasketRowIndex = 0;
-                renderComponentsTable();
-                recalculateCostAndPrice(false);
-                renderBatchesList();
-            }
-
-            function deleteBatchFromList(batchId) {
-                const batch = mfgBatches.find(b => b.id === batchId);
-                if (!batch) return;
-
-                Swal.fire({
-                    title: 'حذف الخلطة / العرض؟',
-                    html: `هل أنت متأكد من حذف <b>"${batch.productName}"</b> نهائياً؟`,
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#dc2626',
-                    cancelButtonColor: '#64748b',
-                    confirmButtonText: 'نعم، احذف',
-                    cancelButtonText: 'إلغاء'
-                }).then(res => {
-                    if (res.isConfirmed) {
-                        if (batch.deductionMode === 'immediate') {
-                            reverseBatchStockImpact(batch);
-                        }
-                        mfgBatches = mfgBatches.filter(b => b.id !== batchId);
-                        if (document.getElementById('editingBatchId').value === batchId) {
-                            resetBuilderForm();
-                        }
-                        saveAllToStorage();
-                        renderBatchesList();
-
-                        Swal.fire({
-                            toast: true,
-                            position: 'bottom-start',
-                            icon: 'success',
-                            title: `تم حذف "${batch.productName}" بنجاح`,
-                            showConfirmButton: false,
-                            timer: 2000
-                        });
+                card.addEventListener('dblclick', function () {
+                    const batch = mfgBatches.find(b => String(b.id) === String(this.getAttribute('data-id')));
+                    if (batch && batch.productId) {
+                        openProductEditModalByProductId(batch.productId);
                     }
                 });
-            }
+            });
+        }
 
-            // ==================== 8. الأحداث واختصارات الكيبورد ====================
-            // عند التركيز لا يفتح القائمة إلا إذا كان هناك نص مكتوب بالفعل
-            rawSearchInput.addEventListener('focus', () => {
-                if (rawSearchInput.value.trim().length > 0) {
-                    renderRawDropdown(rawSearchInput.value);
+        function loadBatchForEdit(batchId) {
+            const batch = mfgBatches.find(b => String(b.id) === String(batchId));
+            if (!batch) return;
+
+            document.getElementById('editingBatchId').value = batch.id;
+            document.getElementById('builderModeBadge').textContent = `تعديل (${batch.productName})`;
+            document.getElementById('builderModeBadge').classList.add('edit');
+            document.getElementById('btnSaveManufactureText').textContent = 'حفظ التعديلات (F2)';
+
+            document.getElementById('mfgProductName').value = batch.productName;
+            document.getElementById('mfgCategorySelect').value = batch.categoryId;
+            document.getElementById('mfgFinalUnit').value = batch.finalUnit || 'كيلو';
+            document.getElementById('mfgBarcode').value = batch.barcode;
+
+            const modeRadio = document.querySelector(`input[name="deductionModeRadio"][value="${batch.deductionMode || 'immediate'}"]`);
+            if (modeRadio) modeRadio.checked = true;
+
+            profitPercentInput.value = batch.profitPercent;
+            sellingPriceInput.value = formatMoney(batch.sellingPrice);
+
+            selectedComponents = JSON.parse(JSON.stringify(batch.components || []));
+            activeBasketRowIndex = 0;
+
+            renderComponentsTable();
+            recalculateCostAndPrice(false);
+            renderBatchesList();
+        }
+
+        function deleteBatchFromList(batchId) {
+            const batch = mfgBatches.find(b => String(b.id) === String(batchId));
+            if (!batch) return;
+
+            Swal.fire({
+                title: 'حذف الخلطة / العرض؟',
+                html: `هل أنت متأكد من حذف <b>"${batch.productName}"</b> نهائياً؟`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'نعم، احذف',
+                cancelButtonText: 'إلغاء'
+            }).then(async res => {
+                if (!res.isConfirmed) return;
+                try {
+                    const r = await fetch(`/api/inventory/manufacturing/${encodeURIComponent(batch.id)}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        }
+                    });
+                    const out = await r.json().catch(() => ({}));
+                    if (!r.ok) throw new Error(out.message || 'تعذر حذف الخلطة');
+
+                    if (out.bootstrap) {
+                        products = out.bootstrap.initialProducts || products;
+                        mfgBatches = out.bootstrap.initialBatches || mfgBatches;
+                    }
+
+                    if (String(document.getElementById('editingBatchId').value) === String(batchId)) {
+                        resetBuilderForm();
+                    }
+                    renderBatchesList();
+
+                    Swal.fire({
+                        toast: true,
+                        position: 'bottom-start',
+                        icon: 'success',
+                        title: `تم حذف "${batch.productName}" وتحديث المخزن بنجاح`,
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+                } catch (err) {
+                    Swal.fire('خطأ', err.message, 'error');
                 }
             });
+        }
 
-            rawSearchInput.addEventListener('input', function () {
-                this.value = toEnglishDigits(this.value);
-                dropdownIndex = 0;
-                renderRawDropdown(this.value);
+        rawSearchInput.addEventListener('focus', () => {
+            if (rawSearchInput.value.trim().length > 0) {
+                renderRawDropdown(rawSearchInput.value);
+            }
+        });
+
+        rawSearchInput.addEventListener('input', function () {
+            this.value = toEnglishDigits(this.value);
+            dropdownIndex = 0;
+            renderRawDropdown(this.value);
+        });
+
+        rawSearchInput.addEventListener('keydown', (e) => {
+            if (rawDropdown.style.display !== 'block' || dropdownMatches.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                dropdownIndex = (dropdownIndex + 1) % dropdownMatches.length;
+                renderRawDropdown(rawSearchInput.value);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                dropdownIndex = (dropdownIndex - 1 + dropdownMatches.length) % dropdownMatches.length;
+                renderRawDropdown(rawSearchInput.value);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                const chosen = dropdownMatches[dropdownIndex >= 0 ? dropdownIndex : 0];
+                if (chosen) addComponentToBasket(chosen);
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.raw-search-input-wrap')) rawDropdown.style.display = 'none';
+        });
+
+        document.querySelectorAll('.ns-tab-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const tabId = this.getAttribute('data-tab');
+                document.querySelectorAll('.ns-tab-btn').forEach(b => b.classList.toggle('active', b === this));
+                document.querySelectorAll('.ns-tab-pane').forEach(p => p.classList.toggle('active', p.id === tabId));
             });
+        });
 
-            rawSearchInput.addEventListener('keydown', (e) => {
-                if (rawDropdown.style.display !== 'block' || dropdownMatches.length === 0) return;
+        document.getElementById('btnCloseItemModal').addEventListener('click', () => document.getElementById('itemFormModal').classList.remove('open'));
+        document.getElementById('btnCancelProductModal').addEventListener('click', () => document.getElementById('itemFormModal').classList.remove('open'));
+        document.getElementById('btnSaveProductModal').addEventListener('click', saveEditedProductFromModal);
+
+        document.getElementById('btnSaveManufacture').addEventListener('click', saveAndManufactureBatch);
+        document.getElementById('btnResetBuilder').addEventListener('click', resetBuilderForm);
+
+        document.getElementById('searchBatchesInput').addEventListener('input', renderBatchesList);
+        document.getElementById('filterBatchesMode').addEventListener('change', renderBatchesList);
+
+        function handleExit() {
+            if (window.history.length > 1) window.history.back();
+            else window.location.href = '/inventory/items';
+        }
+        document.getElementById('btnExitPage').addEventListener('click', handleExit);
+
+        document.addEventListener('keydown', (e) => {
+            if (Swal.isVisible()) return;
+            const modalOpen = document.getElementById('itemFormModal').classList.contains('open');
+
+            if (e.key === 'Escape') {
+                if (modalOpen) {
+                    document.getElementById('itemFormModal').classList.remove('open');
+                    return;
+                }
+                if (rawDropdown.style.display === 'block') {
+                    rawDropdown.style.display = 'none';
+                    return;
+                }
+                e.preventDefault();
+                handleExit();
+                return;
+            }
+
+            if (modalOpen) return;
+
+            if (e.key === 'F3') {
+                e.preventDefault();
+                rawSearchInput.focus();
+                rawSearchInput.select();
+                return;
+            }
+
+            if (e.key === 'F2') {
+                e.preventDefault();
+                saveAndManufactureBatch();
+                return;
+            }
+
+            if (rawDropdown.style.display !== 'block' && selectedComponents.length > 0 && document.activeElement.tagName !== 'INPUT') {
                 if (e.key === 'ArrowDown') {
                     e.preventDefault();
-                    dropdownIndex = (dropdownIndex + 1) % dropdownMatches.length;
-                    renderRawDropdown(rawSearchInput.value);
+                    activeBasketRowIndex = Math.min(selectedComponents.length - 1, activeBasketRowIndex + 1);
+                    highlightBasketRow();
                 } else if (e.key === 'ArrowUp') {
                     e.preventDefault();
-                    dropdownIndex = (dropdownIndex - 1 + dropdownMatches.length) % dropdownMatches.length;
-                    renderRawDropdown(rawSearchInput.value);
-                } else if (e.key === 'Enter') {
+                    activeBasketRowIndex = Math.max(0, activeBasketRowIndex - 1);
+                    highlightBasketRow();
+                } else if (e.key === 'Enter' && activeBasketRowIndex >= 0) {
                     e.preventDefault();
-                    const chosen = dropdownMatches[dropdownIndex >= 0 ? dropdownIndex : 0];
-                    if (chosen) addComponentToBasket(chosen);
-                }
-            });
-
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('.raw-search-input-wrap')) rawDropdown.style.display = 'none';
-            });
-
-            document.querySelectorAll('.ns-tab-btn').forEach(btn => {
-                btn.addEventListener('click', function () {
-                    const tabId = this.getAttribute('data-tab');
-                    document.querySelectorAll('.ns-tab-btn').forEach(b => b.classList.toggle('active', b === this));
-                    document.querySelectorAll('.ns-tab-pane').forEach(p => p.classList.toggle('active', p.id === tabId));
-                });
-            });
-
-            document.getElementById('btnCloseItemModal').addEventListener('click', () => document.getElementById('itemFormModal').classList.remove('open'));
-            document.getElementById('btnCancelProductModal').addEventListener('click', () => document.getElementById('itemFormModal').classList.remove('open'));
-            document.getElementById('btnSaveProductModal').addEventListener('click', saveEditedProductFromModal);
-
-            document.getElementById('btnSaveManufacture').addEventListener('click', saveAndManufactureBatch);
-            document.getElementById('btnResetBuilder').addEventListener('click', resetBuilderForm);
-            document.getElementById('searchBatchesInput').addEventListener('input', renderBatchesList);
-            document.getElementById('filterBatchesMode').addEventListener('change', renderBatchesList);
-
-            function handleExit() {
-                if (window.history.length > 1) window.history.back();
-                else window.location.href = '/inventory/items';
-            }
-            document.getElementById('btnExitPage').addEventListener('click', handleExit);
-
-            document.addEventListener('keydown', (e) => {
-                if (Swal.isVisible()) return;
-                const modalOpen = document.getElementById('itemFormModal').classList.contains('open');
-
-                if (e.key === 'Escape') {
-                    if (modalOpen) {
-                        document.getElementById('itemFormModal').classList.remove('open');
-                        return;
-                    }
-                    if (rawDropdown.style.display === 'block') {
-                        rawDropdown.style.display = 'none';
-                        return;
-                    }
-                    e.preventDefault();
-                    handleExit();
-                    return;
-                }
-
-                if (modalOpen) return;
-
-                if (e.key === 'F3') {
-                    e.preventDefault();
-                    rawSearchInput.focus();
-                    rawSearchInput.select();
-                    return;
-                }
-
-                if (e.key === 'F2') {
-                    e.preventDefault();
-                    saveAndManufactureBatch();
-                    return;
-                }
-
-                if (rawDropdown.style.display !== 'block' && selectedComponents.length > 0 && document.activeElement.tagName !== 'INPUT') {
-                    if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        activeBasketRowIndex = Math.min(selectedComponents.length - 1, activeBasketRowIndex + 1);
-                        highlightBasketRow();
-                    } else if (e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        activeBasketRowIndex = Math.max(0, activeBasketRowIndex - 1);
-                        highlightBasketRow();
-                    } else if (e.key === 'Enter' && activeBasketRowIndex >= 0) {
-                        e.preventDefault();
-                        openProductEditModalByProductId(selectedComponents[activeBasketRowIndex].productId);
-                    }
-                }
-            });
-
-            function init() {
-                loadAllStorage();
-                resetBuilderForm();
-                renderBatchesList();
-
-                // دعم فتح التعديل المباشر عند القدوم من صفحة الأرشيف ?batch=ID
-                const params = new URLSearchParams(window.location.search);
-                const batchIdParam = params.get('batch');
-                if (batchIdParam) {
-                    loadBatchForEdit(batchIdParam);
+                    openProductEditModalByProductId(selectedComponents[activeBasketRowIndex].productId);
                 }
             }
+        });
 
-            init();
-        })();
+        function init() {
+            populateCategorySelects();
+            resetBuilderForm();
+            renderBatchesList();
+
+            const params = new URLSearchParams(window.location.search);
+            const batchIdParam = params.get('batch');
+            if (batchIdParam) {
+                loadBatchForEdit(batchIdParam);
+            }
+        }
+
+        init();
+    })();
     </script>
 </body>
 </html>

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>إدارة وتسجيل المصروفات | NextStore SaaS</title>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
@@ -34,7 +35,6 @@
             gap: 10px;
         }
 
-        /* توحيد الأرقام باللغة الإنجليزية */
         .en-digit, .numeric-input {
             font-family: Arial, Helvetica, sans-serif !important;
             direction: ltr !important;
@@ -56,7 +56,6 @@
             gap: 15px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.03);
         }
-
         .page-title {
             margin: 0;
             color: var(--dark);
@@ -66,7 +65,6 @@
             align-items: center;
             gap: 10px;
         }
-
         .exit-btn {
             background-color: var(--danger);
             color: #ffffff;
@@ -83,7 +81,7 @@
         }
         .exit-btn:hover { background-color: #bb2d3b; }
 
-        /* 2. مساحة العمل المقسومة (يمين: نافذة إضافة مصروف | يسار: سجل المصروفات) */
+        /* 2. مساحة العمل المقسومة */
         .expenses-workspace {
             display: grid;
             grid-template-columns: 430px 1fr;
@@ -93,7 +91,6 @@
             overflow: hidden;
         }
 
-        /* الكارت الأيمن: فورم المصاريف (مطابق للصورة) */
         .expense-form-card {
             background: #ffffff;
             border: 1px solid var(--border-color);
@@ -104,7 +101,6 @@
             flex-direction: column;
             overflow: hidden;
         }
-
         .form-card-header {
             background: #f8fafc;
             border-bottom: 1px solid var(--border-color);
@@ -122,7 +118,6 @@
             align-items: center;
             gap: 8px;
         }
-
         .form-card-body {
             padding: 16px;
             display: flex;
@@ -132,7 +127,6 @@
             flex-grow: 1;
         }
 
-        /* صفوف الفورم على غرار شاشة الديسك توب */
         .exp-row {
             display: flex;
             align-items: center;
@@ -147,7 +141,6 @@
             margin: 0;
             text-align: right;
         }
-
         .exp-control-wrap {
             flex-grow: 1;
             display: flex;
@@ -156,7 +149,6 @@
             min-width: 0;
         }
 
-        /* شريط التاريخ بالأسهم داخل الفورم */
         .date-nav-box {
             display: flex;
             align-items: center;
@@ -191,7 +183,6 @@
         }
         .date-arrow-btn:hover { background: #cbd5e1; }
 
-        /* القوائم المنسدلة (الحساب / القسم / البند) */
         .exp-select {
             flex-grow: 1;
             height: 38px;
@@ -211,7 +202,6 @@
             box-shadow: 0 0 0 3px rgba(17,151,68,0.14);
         }
 
-        /* زرار القلم (إضافة حساب / قسم / بند جديد) */
         .btn-Quick-manage {
             width: 38px;
             height: 38px;
@@ -249,7 +239,6 @@
             box-shadow: 0 0 0 3px rgba(17,151,68,0.14);
         }
 
-        /* خانة المبلغ مع أزرار الزيادة والنقصان */
         .amount-stepper-wrap {
             display: flex;
             align-items: stretch;
@@ -304,7 +293,6 @@
             display: flex;
             gap: 10px;
         }
-
         .btn-save-exp {
             flex: 1.4;
             background: var(--primary);
@@ -322,7 +310,6 @@
             transition: 0.2s;
         }
         .btn-save-exp:hover { background: var(--primary-dark); }
-
         .btn-reset-exp {
             flex: 1;
             background: #e2e8f0;
@@ -351,7 +338,6 @@
             overflow: hidden;
             min-height: 0;
         }
-
         .log-filters-bar {
             background: #f8fafc;
             padding: 10px 14px;
@@ -361,7 +347,6 @@
             gap: 10px;
             flex-wrap: wrap;
         }
-
         .search-wrap {
             display: flex;
             align-items: center;
@@ -381,11 +366,7 @@
             padding: 4px;
         }
 
-        .table-scroll {
-            flex-grow: 1;
-            overflow: auto;
-        }
-
+        .table-scroll { flex-grow: 1; overflow: auto; }
         .expenses-table {
             width: 100%;
             margin: 0;
@@ -435,7 +416,6 @@
             gap: 15px;
             flex-wrap: wrap;
         }
-
         .summary-stat-pill {
             display: flex;
             align-items: center;
@@ -457,7 +437,7 @@
             color: var(--danger);
         }
 
-        /* 3. النافذة المنبثقة لإضافة (حساب / قسم / بند) مطابقة للصورة الثانية */
+        /* 3. النافذة المنبثقة لإضافة (حساب / قسم / بند) */
         .quick-modal-backdrop {
             display: none;
             position: fixed;
@@ -469,7 +449,6 @@
             padding: 15px;
         }
         .quick-modal-backdrop.is-open { display: flex; }
-
         .quick-modal-window {
             background: #f8fafc;
             border: 2px solid var(--dark);
@@ -484,7 +463,6 @@
             from { transform: scale(0.94); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
         }
-
         .quick-modal-bar {
             background: var(--dark);
             color: #ffffff;
@@ -502,7 +480,6 @@
             cursor: pointer;
             line-height: 1;
         }
-
         .quick-modal-body { padding: 16px; }
         .quick-modal-footer {
             padding: 10px 16px;
@@ -511,7 +488,6 @@
             justify-content: flex-end;
             gap: 8px;
         }
-
         .existing-tags-list {
             max-height: 130px;
             overflow-y: auto;
@@ -544,7 +520,6 @@
             cursor: pointer;
             line-height: 1;
         }
-
         .field-error {
             display: none;
             color: var(--danger);
@@ -589,32 +564,36 @@
                 سجل مصروفات التشغيل والتأسيس والأجور بدقة، ويتم خصم مصروفات الدرج تلقائياً في تقارير الوردية وأرشيف الطلبات.
             </small>
         </div>
-
-        <button type="button" class="exit-btn" id="btn-exit-page" title="الخروج والرجوع (Esc)">
-            <i class="fas fa-sign-out-alt"></i>
-            <span>خروج (Esc)</span>
-        </button>
+        <div class="d-flex align-items-center gap-2">
+            <a href="/expenses/reports" class="btn btn-outline-dark fw-bold">
+                <i class="fas fa-chart-pie text-success me-1"></i> تقارير المصروفات
+            </a>
+            <button type="button" class="exit-btn" id="btn-exit-page" title="الخروج والرجوع (Esc)">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>خروج (Esc)</span>
+            </button>
+        </div>
     </header>
 
     {{-- 2. مساحة العمل الرئيسية --}}
     <main class="expenses-workspace">
 
-        {{-- اليمين: نافذة إدخال المصروف (مطابقة للصورة تماماً) --}}
+        {{-- اليمين: نافذة إدخال المصروف --}}
         <section class="expense-form-card">
             <div class="form-card-header">
                 <h5><i class="fas fa-coins text-warning"></i> <span id="form-mode-title">تسجيل مصروف جديد</span></h5>
                 <span class="badge bg-secondary en-digit" id="editing-badge" style="display:none;">وضع التعديل</span>
             </div>
 
-            <form id="expense-entry-form" class=" d-flex flex-column flex-grow-1" novalidate>
+            <form id="expense-entry-form" class="d-flex flex-column flex-grow-1" novalidate>
                 <div class="form-card-body">
 
-                    {{-- التاريخ بالأسهم (اليوم السابق / التالي) --}}
+                    {{-- التاريخ بالأسهم --}}
                     <div class="exp-row">
                         <label>التاريخ:</label>
                         <div class="exp-control-wrap">
                             <div class="date-nav-box">
-                                <span class="date-display-text" id="entry-date-display">الاثنين 2026/10/19</span>
+                                <span class="date-display-text" id="entry-date-display"></span>
                                 <button type="button" class="date-arrow-btn" id="btn-date-next" title="اليوم التالي">
                                     <i class="fas fa-arrow-right"></i>
                                 </button>
@@ -625,7 +604,7 @@
                         </div>
                     </div>
 
-                    {{-- 1. الحساب (مصروفات تشغيل / مصروفات تأسيس) + زرار القلم --}}
+                    {{-- 1. الحساب --}}
                     <div class="exp-row">
                         <label for="select-account">الحساب:</label>
                         <div class="exp-control-wrap">
@@ -636,7 +615,7 @@
                         </div>
                     </div>
 
-                    {{-- 2. القسم (عام / أجور / مرافق...) + زرار القلم --}}
+                    {{-- 2. القسم --}}
                     <div class="exp-row">
                         <label for="select-department">القسم:</label>
                         <div class="exp-control-wrap">
@@ -647,7 +626,7 @@
                         </div>
                     </div>
 
-                    {{-- 3. البند (كهرباء / إيجار / شاي وضيافة...) + زرار القلم --}}
+                    {{-- 3. البند --}}
                     <div class="exp-row">
                         <label for="select-item">البند:</label>
                         <div class="exp-control-wrap">
@@ -658,22 +637,20 @@
                         </div>
                     </div>
 
-                    {{-- 4. الوصف / البيان --}}
+                    {{-- 4. الوصف --}}
                     <div class="exp-row">
                         <label for="input-description">وصف:</label>
                         <div class="exp-control-wrap">
-                            <input type="text" class="exp-input" id="input-description"
-                                   placeholder="بيان أو تفاصيل إضافية للمصروف..." maxlength="150" autocomplete="off">
+                            <input type="text" class="exp-input" id="input-description" placeholder="بيان أو تفاصيل إضافية للمصروف..." maxlength="150" autocomplete="off">
                         </div>
                     </div>
 
-                    {{-- 5. المبلغ + أسهم الزيادة والنقصان --}}
+                    {{-- 5. المبلغ --}}
                     <div class="exp-row">
                         <label for="input-amount">المبلغ:</label>
                         <div class="exp-control-wrap flex-column align-items-stretch">
                             <div class="amount-stepper-wrap">
-                                <input type="text" inputmode="decimal" class="amount-stepper-input numeric-input"
-                                       id="input-amount" value="0" autocomplete="off">
+                                <input type="text" inputmode="decimal" class="amount-stepper-input numeric-input" id="input-amount" value="0" autocomplete="off">
                                 <div class="stepper-arrows-col">
                                     <button type="button" class="stepper-mini-btn" id="btn-amt-up" title="زيادة (+10)">
                                         <i class="fas fa-caret-up"></i>
@@ -687,7 +664,7 @@
                         </div>
                     </div>
 
-                    {{-- 6. المصدر (الدرج / الخزينة الرئيسية) --}}
+                    {{-- 6. المصدر --}}
                     <div class="exp-row">
                         <label for="select-source">المصدر:</label>
                         <div class="exp-control-wrap">
@@ -777,7 +754,6 @@
                         <span class="val val-danger en-digit" id="stat-exp-total">0.00 ج.م</span>
                     </div>
                 </div>
-
                 <small class="text-muted fw-bold">
                     <kbd>F2</kbd> حفظ سريع | <kbd>F3</kbd> بحث | <kbd>⬆️</kbd><kbd>⬇️</kbd> تنقل | <kbd>Del</kbd> حذف | <kbd>Esc</kbd> خروج
                 </small>
@@ -786,9 +762,7 @@
 
     </main>
 
-    {{-- ========================================================== --}}
-    {{-- نافذة منبثقة سريعة لإضافة (حساب / قسم / بند) من نفس الصفحة --}}
-    {{-- ========================================================== --}}
+    {{-- نافذة منبثقة سريعة لإضافة (حساب / قسم / بند) --}}
     <div class="quick-modal-backdrop" id="hierarchy-modal">
         <form class="quick-modal-window" id="hierarchy-form" novalidate>
             <div class="quick-modal-bar">
@@ -817,87 +791,18 @@
 
     <script>
     (function() {
-        const treeStorageKey = 'nextstore.expenses.tree.v1';
-        const recordsStorageKey = 'nextstore.expenses.records.v1';
+        'use strict';
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
         const shiftExpensesKey = 'nextstore.shift.expenses.v1';
 
-        // الشجرة الافتراضية المطابقة للبرنامج الأصلي (حساب -> أقسام -> بنود)
-        const defaultExpenseTree = [
-            {
-                id: 'acc-operating',
-                name: 'مصروفات تشغيل',
-                departments: [
-                    {
-                        id: 'dep-general',
-                        name: 'عام',
-                        items: ['أكياس وشنط تعبئة', 'ضيافة وشاي وقهوة', 'منظفات ومطهرات', 'أدوات مكتبية وبكر كاشير', 'إكراميات ونثريات']
-                    },
-                    {
-                        id: 'dep-wages',
-                        name: 'أجور ومرتبات',
-                        items: ['مرتب شهري', 'سلفة عامل', 'يوميات عمال', 'حوافز وإضافي']
-                    },
-                    {
-                        id: 'dep-utilities',
-                        name: 'مرافق وفواتير محل',
-                        items: ['فاتورة كهرباء', 'فاتورة مياه', 'اشتراك إنترنت وتليفون', 'إيجار المحل', 'غاز']
-                    },
-                    {
-                        id: 'dep-maint',
-                        name: 'صيانة ونقل',
-                        items: ['صيانة ثلاجات ومعدات', 'مشال وتعتيق بضاعة', 'مواصلات ونقل']
-                    }
-                ]
-            },
-            {
-                id: 'acc-capital',
-                name: 'مصروفات تأسيس',
-                departments: [
-                    {
-                        id: 'dep-equip',
-                        name: 'تجهيزات ومعدات',
-                        items: ['أرفف واستاندات عرض', 'أجهزة كاشير وباركود', 'ثلاجات وموازين', 'كاميرات مراقبة']
-                    },
-                    {
-                        id: 'dep-decor',
-                        name: 'ديكور وتراخيص',
-                        items: ['تشطيبات ودهانات', 'يفط وإعلانات', 'رسوم وتراخيص حكومية']
-                    }
-                ]
-            }
-        ];
-
-        const seededExpenses = [
-            {
-                id: 'exp-1',
-                date: '2026-10-19',
-                accountName: 'مصروفات تشغيل',
-                departmentName: 'عام',
-                itemName: 'أكياس وشنط تعبئة',
-                description: 'شراء 5 كيلو شنط مطبوعة للمحل',
-                amount: 350,
-                source: 'الدرج'
-            },
-            {
-                id: 'exp-2',
-                date: '2026-10-19',
-                accountName: 'مصروفات تشغيل',
-                departmentName: 'أجور ومرتبات',
-                itemName: 'يوميات عمال',
-                description: 'يومية عامل تنزيل بضاعة',
-                amount: 150,
-                source: 'الدرج'
-            }
-        ];
-
-        let expenseTree = [];
-        let expensesList = [];
-        let currentDateObj = new Date('2026-10-19T12:00:00');
+        let expenseTree = @json($initialTree ?? []);
+        let expensesList = (@json($initialExpenses ?? [])).filter(e => !e.deleted);
+        let currentDateObj = new Date();
         let selectedExpenseId = null;
         let editingExpenseId = null;
-        let currentModalLevel = null; // 'account' | 'department' | 'item'
+        let currentModalLevel = null;
 
-        // عناصر الفورم
         const dateDisplay = document.getElementById('entry-date-display');
         const btnDatePrev = document.getElementById('btn-date-prev');
         const btnDateNext = document.getElementById('btn-date-next');
@@ -913,7 +818,6 @@
         const editingBadge = document.getElementById('editing-badge');
         const saveBtnText = document.getElementById('save-btn-text');
 
-        // عناصر الجدول والفلاتر
         const logSearchInput = document.getElementById('log-search-input');
         const filterLogAccount = document.getElementById('filter-log-account');
         const filterLogSource = document.getElementById('filter-log-source');
@@ -923,7 +827,6 @@
         const statDrawerTotal = document.getElementById('stat-drawer-total');
         const statExpTotal = document.getElementById('stat-exp-total');
 
-        // عناصر المودال السريع لإضافة (حساب / قسم / بند)
         const hierarchyModal = document.getElementById('hierarchy-modal');
         const hierarchyForm = document.getElementById('hierarchy-form');
         const hierarchyModalTitle = document.getElementById('hierarchy-modal-title');
@@ -965,43 +868,43 @@
             return div.innerHTML;
         }
 
-        // تحميل البيانات من LocalStorage
-        function loadStorageData() {
+        function syncDrawerExpensesToCache() {
             try {
-                const rawTree = localStorage.getItem(treeStorageKey);
-                expenseTree = rawTree ? JSON.parse(rawTree) : JSON.parse(JSON.stringify(defaultExpenseTree));
-                if (!Array.isArray(expenseTree) || !expenseTree.length) {
-                    expenseTree = JSON.parse(JSON.stringify(defaultExpenseTree));
+                const todayIso = getIsoDate(new Date());
+                const drawerSum = expensesList
+                    .filter(e => !e.deleted && e.source === 'الدرج' && e.date === todayIso)
+                    .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+                localStorage.setItem(shiftExpensesKey, String(drawerSum));
+            } catch (e) {}
+        }
+
+        async function persistTreeToDatabase() {
+            try {
+                const res = await fetch('/api/expenses/tree/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({ tree: expenseTree })
+                });
+                if (res.ok) {
+                    const out = await res.json();
+                    if (out.bootstrap && Array.isArray(out.bootstrap.initialTree)) {
+                        expenseTree = out.bootstrap.initialTree;
+                    }
                 }
-            } catch (e) {
-                expenseTree = JSON.parse(JSON.stringify(defaultExpenseTree));
-            }
-
-            try {
-                const rawRec = localStorage.getItem(recordsStorageKey);
-                expensesList = rawRec ? JSON.parse(rawRec) : JSON.parse(JSON.stringify(seededExpenses));
-                if (!Array.isArray(expensesList)) expensesList = JSON.parse(JSON.stringify(seededExpenses));
-            } catch (e) {
-                expensesList = JSON.parse(JSON.stringify(seededExpenses));
+            } catch (err) {
+                console.error('تعذر حفظ شجرة المصروفات:', err);
             }
         }
 
-        function saveTree() {
-            localStorage.setItem(treeStorageKey, JSON.stringify(expenseTree));
-        }
-
-        function saveExpenses() {
-            localStorage.setItem(recordsStorageKey, JSON.stringify(expensesList));
-            // تحديث إجمالي مصروفات الدرج ليظهر تلقائياً في شاشة أرشيف الطلبات
-            const drawerSum = expensesList
-                .filter(e => e.source === 'الدرج')
-                .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-            localStorage.setItem(shiftExpensesKey, String(drawerSum));
-        }
-
-        // تحديث التاريخ بالصيغة العربية + الأرقام الإنجليزية
         function getIsoDate(dateObj) {
-            return dateObj.toISOString().slice(0, 10);
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
         }
 
         function updateDateUI() {
@@ -1017,15 +920,11 @@
             currentDateObj.setDate(currentDateObj.getDate() - 1);
             updateDateUI();
         });
-
         btnDateNext.addEventListener('click', function() {
             currentDateObj.setDate(currentDateObj.getDate() + 1);
             updateDateUI();
         });
 
-        // ==========================================================
-        // إدارة الشجرة الثلاثية المترابطة (الحساب -> القسم -> البند)
-        // ==========================================================
         function getActiveAccountObj() {
             return expenseTree.find(a => a.name === selectAccount.value) || expenseTree[0] || null;
         }
@@ -1041,12 +940,10 @@
             selectAccount.innerHTML = expenseTree.map(acc =>
                 `<option value="${escapeHtml(acc.name)}">${escapeHtml(acc.name)}</option>`
             ).join('');
-
             if (currentVal && expenseTree.some(a => a.name === currentVal)) {
                 selectAccount.value = currentVal;
             }
 
-            // تحديث فلتر الحسابات في الجدول أيضاً
             const filterVal = filterLogAccount.value;
             filterLogAccount.innerHTML = `<option value="all">كل الحسابات</option>` +
                 expenseTree.map(acc => `<option value="${escapeHtml(acc.name)}">${escapeHtml(acc.name)}</option>`).join('');
@@ -1093,14 +990,10 @@
         selectAccount.addEventListener('change', () => populateDepartmentsDropdown());
         selectDepartment.addEventListener('change', () => populateItemsDropdown());
 
-        // ==========================================================
-        // نافذة القلم السريعة لإضافة/حذف (حساب أو قسم أو بند)
-        // ==========================================================
         function openHierarchyModal(level) {
             currentModalLevel = level;
             hierarchyNameInput.value = '';
             hierarchyErrorMsg.classList.remove('show');
-
             const acc = getActiveAccountObj();
             const dept = getActiveDeptObj();
 
@@ -1127,7 +1020,6 @@
             const acc = getActiveAccountObj();
             const dept = getActiveDeptObj();
             let list = [];
-
             if (currentModalLevel === 'account') {
                 list = expenseTree.map(a => a.name);
             } else if (currentModalLevel === 'department' && acc) {
@@ -1157,28 +1049,19 @@
             const dept = getActiveDeptObj();
 
             if (currentModalLevel === 'account') {
-                if (expenseTree.length <= 1) {
-                    showToast('يجب الإبقاء على حساب واحد على الأقل');
-                    return;
-                }
+                if (expenseTree.length <= 1) { showToast('يجب الإبقاء على حساب واحد على الأقل'); return; }
                 expenseTree.splice(idx, 1);
-                saveTree();
+                persistTreeToDatabase();
                 populateAccountsDropdown();
             } else if (currentModalLevel === 'department' && acc) {
-                if (acc.departments.length <= 1) {
-                    showToast('يجب الإبقاء على قسم واحد على الأقل');
-                    return;
-                }
+                if (acc.departments.length <= 1) { showToast('يجب الإبقاء على قسم واحد على الأقل'); return; }
                 acc.departments.splice(idx, 1);
-                saveTree();
+                persistTreeToDatabase();
                 populateDepartmentsDropdown();
             } else if (currentModalLevel === 'item' && dept) {
-                if (dept.items.length <= 1) {
-                    showToast('يجب الإبقاء على بند واحد على الأقل');
-                    return;
-                }
+                if (dept.items.length <= 1) { showToast('يجب الإبقاء على بند واحد على الأقل'); return; }
                 dept.items.splice(idx, 1);
-                saveTree();
+                persistTreeToDatabase();
                 populateItemsDropdown();
             }
             renderExistingHierarchyTags();
@@ -1219,7 +1102,7 @@
                     name: rawName,
                     departments: [{ id: `dep-${Date.now()}`, name: 'عام', items: ['مصروف عام'] }]
                 });
-                saveTree();
+                persistTreeToDatabase();
                 populateAccountsDropdown(rawName);
                 showToast(`تمت إضافة الحساب: ${rawName}`);
             } else if (currentModalLevel === 'department' && acc) {
@@ -1228,12 +1111,8 @@
                     hierarchyErrorMsg.classList.add('show');
                     return;
                 }
-                acc.departments.push({
-                    id: `dep-${Date.now()}`,
-                    name: rawName,
-                    items: ['مصروف عام']
-                });
-                saveTree();
+                acc.departments.push({ id: `dep-${Date.now()}`, name: rawName, items: ['مصروف عام'] });
+                persistTreeToDatabase();
                 populateDepartmentsDropdown(rawName);
                 showToast(`تمت إضافة القسم: ${rawName}`);
             } else if (currentModalLevel === 'item' && dept) {
@@ -1243,7 +1122,7 @@
                     return;
                 }
                 dept.items.push(rawName);
-                saveTree();
+                persistTreeToDatabase();
                 populateItemsDropdown(rawName);
                 showToast(`تمت إضافة البند: ${rawName}`);
             }
@@ -1251,9 +1130,6 @@
             closeHierarchyModal();
         });
 
-        // ==========================================================
-        // التحكم في حقل المبلغ والفاليديشن وحفظ المصروف
-        // ==========================================================
         inputAmount.addEventListener('input', function() {
             let val = toEnglishDigits(this.value).replace(/[^0-9.]/g, '');
             const parts = val.split('.');
@@ -1268,7 +1144,6 @@
             inputAmount.value = String(cur + 10);
             amountErrorMsg.classList.remove('show');
         });
-
         document.getElementById('btn-amt-down').addEventListener('click', function() {
             const cur = Number(toEnglishDigits(inputAmount.value)) || 0;
             inputAmount.value = String(Math.max(0, cur - 10));
@@ -1289,7 +1164,7 @@
 
         document.getElementById('btn-cancel-edit').addEventListener('click', resetExpenseForm);
 
-        entryForm.addEventListener('submit', function(e) {
+        entryForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             const amountVal = Number(toEnglishDigits(inputAmount.value));
             if (!Number.isFinite(amountVal) || amountVal <= 0) {
@@ -1300,7 +1175,7 @@
             }
 
             const payload = {
-                id: editingExpenseId || `exp-${Date.now()}`,
+                id: editingExpenseId,
                 date: getIsoDate(currentDateObj),
                 accountName: selectAccount.value || 'مصروفات تشغيل',
                 departmentName: selectDepartment.value || 'عام',
@@ -1310,23 +1185,36 @@
                 source: selectSource.value
             };
 
-            if (editingExpenseId) {
-                expensesList = expensesList.map(item => item.id === editingExpenseId ? payload : item);
-                showToast('تم تعديل المصروف بنجاح');
-            } else {
-                expensesList.unshift(payload);
-                showToast('تم تسجيل المصروف بنجاح');
-            }
+            try {
+                document.getElementById('btn-submit-expense').disabled = true;
+                const res = await fetch('/api/expenses/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const out = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(out.message || 'تعذر حفظ المصروف في قاعدة البيانات');
 
-            selectedExpenseId = payload.id;
-            saveExpenses();
-            renderExpensesTable();
-            resetExpenseForm();
+                if (out.bootstrap && Array.isArray(out.bootstrap.initialExpenses)) {
+                    expensesList = out.bootstrap.initialExpenses.filter(x => !x.deleted);
+                }
+
+                selectedExpenseId = String(out.expense.id);
+                syncDrawerExpensesToCache();
+                renderExpensesTable();
+                showToast(editingExpenseId ? 'تم تعديل المصروف بنجاح' : 'تم تسجيل المصروف في قاعدة البيانات');
+                resetExpenseForm();
+            } catch (err) {
+                showToast(err.message);
+            } finally {
+                document.getElementById('btn-submit-expense').disabled = false;
+            }
         });
 
-        // ==========================================================
-        // عرض وفلترة جدول سجل المصروفات
-        // ==========================================================
         function getFilteredExpenses() {
             const q = normalizeArabic(logSearchInput.value);
             const accFilter = filterLogAccount.value;
@@ -1335,6 +1223,7 @@
             const activeIsoDate = getIsoDate(currentDateObj);
 
             return expensesList.filter(exp => {
+                if (exp.deleted) return false;
                 if (dateScope === 'selected_day' && exp.date !== activeIsoDate) return false;
                 if (accFilter !== 'all' && exp.accountName !== accFilter) return false;
                 if (srcFilter !== 'all' && exp.source !== srcFilter) return false;
@@ -1352,11 +1241,12 @@
             if (!filtered.length) {
                 expensesTbody.innerHTML = '<tr><td colspan="9" class="py-5 text-muted">لا توجد مصروفات مسجلة تطابق الفلتر المحدد.</td></tr>';
             } else {
-                if (!filtered.some(e => e.id === selectedExpenseId)) {
-                    selectedExpenseId = filtered[0].id;
+                if (!filtered.some(e => String(e.id) === String(selectedExpenseId))) {
+                    selectedExpenseId = String(filtered[0].id);
                 }
+
                 expensesTbody.innerHTML = filtered.map((exp, idx) => `
-                    <tr class="exp-table-row ${exp.id === selectedExpenseId ? 'active-row' : ''}" data-id="${escapeHtml(exp.id)}">
+                    <tr class="exp-table-row ${String(exp.id) === String(selectedExpenseId) ? 'active-row' : ''}" data-id="${escapeHtml(exp.id)}">
                         <td class="en-digit text-muted">${idx + 1}</td>
                         <td class="en-digit">${escapeHtml(exp.date.replace(/-/g, '/'))}</td>
                         <td><span class="badge bg-dark">${escapeHtml(exp.accountName)}</span></td>
@@ -1379,7 +1269,6 @@
 
             const totalAll = filtered.reduce((s, e) => s + (Number(e.amount) || 0), 0);
             const totalDrawer = filtered.filter(e => e.source === 'الدرج').reduce((s, e) => s + (Number(e.amount) || 0), 0);
-
             statExpCount.textContent = filtered.length;
             statDrawerTotal.textContent = `${totalDrawer.toFixed(2)} ج.م`;
             statExpTotal.textContent = `${totalAll.toFixed(2)} ج.م`;
@@ -1390,11 +1279,9 @@
             editingExpenseId = exp.id;
             currentDateObj = new Date(exp.date + 'T12:00:00');
             updateDateUI();
-
             populateAccountsDropdown(exp.accountName);
             populateDepartmentsDropdown(exp.departmentName);
             populateItemsDropdown(exp.itemName);
-
             inputDescription.value = exp.description || '';
             inputAmount.value = String(exp.amount);
             selectSource.value = exp.source || 'الدرج';
@@ -1406,11 +1293,25 @@
             inputAmount.select();
         }
 
-        function deleteExpenseRecord(id) {
-            expensesList = expensesList.filter(e => e.id !== id);
-            saveExpenses();
-            renderExpensesTable();
-            showToast('تم حذف المصروف');
+        async function deleteExpenseRecord(id) {
+            try {
+                const res = await fetch(`/api/expenses/${encodeURIComponent(id)}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    }
+                });
+                const out = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(out.message || 'تعذر حذف المصروف');
+
+                expensesList = expensesList.filter(e => String(e.id) !== String(id));
+                syncDrawerExpensesToCache();
+                renderExpensesTable();
+                showToast('تم حذف المصروف من قاعدة البيانات');
+            } catch (err) {
+                showToast(err.message);
+            }
         }
 
         expensesTbody.addEventListener('click', function(e) {
@@ -1420,17 +1321,15 @@
                 const id = editBtn.getAttribute('data-id');
                 selectedExpenseId = id;
                 renderExpensesTable();
-                loadExpenseIntoForm(expensesList.find(x => x.id === id));
+                loadExpenseIntoForm(expensesList.find(x => String(x.id) === String(id)));
                 return;
             }
-
             const delBtn = e.target.closest('.btn-del-row');
             if (delBtn) {
                 e.stopPropagation();
                 deleteExpenseRecord(delBtn.getAttribute('data-id'));
                 return;
             }
-
             const row = e.target.closest('.exp-table-row');
             if (row) {
                 selectedExpenseId = row.getAttribute('data-id');
@@ -1442,7 +1341,7 @@
             const row = e.target.closest('.exp-table-row');
             if (row) {
                 const id = row.getAttribute('data-id');
-                loadExpenseIntoForm(expensesList.find(x => x.id === id));
+                loadExpenseIntoForm(expensesList.find(x => String(x.id) === String(id)));
             }
         });
 
@@ -1451,7 +1350,6 @@
         filterLogSource.addEventListener('change', renderExpensesTable);
         filterDateScope.addEventListener('change', renderExpensesTable);
 
-        // تصدير إلى Excel (CSV)
         document.getElementById('btn-export-csv').addEventListener('click', function() {
             const filtered = getFilteredExpenses();
             const headers = ['م', 'التاريخ', 'الحساب', 'القسم', 'البند', 'الوصف', 'المبلغ', 'المصدر'];
@@ -1463,7 +1361,6 @@
             link.click();
         });
 
-        // دالة الخروج الموحدة (Esc)
         function exitScreen() {
             if (window.history.length > 1 && document.referrer) {
                 window.history.back();
@@ -1473,9 +1370,6 @@
         }
         document.getElementById('btn-exit-page').addEventListener('click', exitScreen);
 
-        // ==========================================================
-        // اختصارات الكيبورد الشاملة (Esc, F2, F3, Del, الأسهم)
-        // ==========================================================
         window.addEventListener('keydown', function(e) {
             if (hierarchyModal.classList.contains('is-open')) {
                 if (e.key === 'Escape') {
@@ -1484,19 +1378,16 @@
                 }
                 return;
             }
-
             if (e.key === 'Escape') {
                 e.preventDefault();
                 exitScreen();
                 return;
             }
-
             if (e.key === 'F2') {
                 e.preventDefault();
                 document.getElementById('btn-submit-expense').click();
                 return;
             }
-
             if (e.key === 'F3') {
                 e.preventDefault();
                 logSearchInput.focus();
@@ -1509,17 +1400,17 @@
 
             const filtered = getFilteredExpenses();
             if (!filtered.length) return;
-            const curIdx = filtered.findIndex(x => x.id === selectedExpenseId);
+            const curIdx = filtered.findIndex(x => String(x.id) === String(selectedExpenseId));
 
             if (e.key === 'ArrowDown') {
                 e.preventDefault();
                 const nextIdx = curIdx < 0 ? 0 : Math.min(curIdx + 1, filtered.length - 1);
-                selectedExpenseId = filtered[nextIdx].id;
+                selectedExpenseId = String(filtered[nextIdx].id);
                 renderExpensesTable();
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 if (curIdx > 0) {
-                    selectedExpenseId = filtered[curIdx - 1].id;
+                    selectedExpenseId = String(filtered[curIdx - 1].id);
                     renderExpensesTable();
                 }
             } else if (e.key === 'Delete' && selectedExpenseId) {
@@ -1528,10 +1419,9 @@
             }
         });
 
-        // تشغيل أولي
-        loadStorageData();
         populateAccountsDropdown();
         updateDateUI();
+        syncDrawerExpensesToCache();
         renderExpensesTable();
     })();
     </script>

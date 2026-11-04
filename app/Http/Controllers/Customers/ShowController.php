@@ -15,483 +15,585 @@ use Illuminate\Support\Str;
 
 class ShowController extends Controller
 {
-    /**
-     * عرض شاشة حساب العميل (resources/views/customers/show.blade.php)
-     */
+    // 1. شاشة حساب العميل بالـ 9 تابات (/customers/show)
     public function show()
     {
         return view('customers.show');
     }
 
-    /**
-     * جلب قائمة العملاء النشطين للبحث الفوري (Autocomplete F3)
-     */
+    // 2. شاشة سند قبض دفعة عميل وتقرير التحصيلات (/customers/payment)
+    public function paymentView()
+    {
+        return view('customers.payment', $this->buildPaymentsBootstrapData());
+    }
+
+    // 3. شاشة تقرير دفعات العملاء الكامل (/customers/payments-report)
+    public function paymentsReportView()
+    {
+        return view('customers.payments-report', $this->buildPaymentsBootstrapData());
+    }
+
+    // =========================================================================
+    // 4. جلب قائمة العملاء للبحث الفوري في شاشة حساب العميل (F3)
+    // =========================================================================
     public function getCustomersList()
     {
-        $customers = Customer::orderBy('id', 'asc')->get()->map(function ($c) {
-            return $this->formatCustomerBasic($c);
-        });
+        $customers = Customer::orderBy('id', 'asc')
+            ->get()
+            ->map(fn (Customer $c) => $this->formatCustomerBasic($c))
+            ->values();
 
         return response()->json([
-            'ok'        => true,
-            'customers' => $customers->values(),
+            'status' => 'success',
+            'customers' => $customers,
         ]);
     }
 
-    /**
-     * جلب كافة تفاصيل حساب العميل والتبويبات الـ 9 مع تطبيق الفلترة بالتاريخ والمعادلة المحاسبية
-     */
+    private function formatCustomerBasic(Customer $c): array
+    {
+        // الرصيد الموقّع: موجب = مدين (عليه فلوس)، سالب = دائن (له رصيد)
+        $signedBalance = ($c->balance_type === 'credit' ? -1 : 1) * (float) $c->balance;
+
+        return [
+            'id' => (string) $c->id,
+            'code' => $c->code ?: str_pad((string) $c->id, 3, '0', STR_PAD_LEFT),
+            'name' => $c->name,
+            'phone' => $c->phone1 ?? '',
+            'phone1' => $c->phone1 ?? '',
+            'phone2' => $c->phone2 ?? '',
+            'area' => $c->primary_zone_name ?: '-',
+            'addr1' => $c->addr1 ?? '',
+            'addr2' => $c->addr2 ?? '',
+            'note' => $c->invoice_note ?: ($c->contact_note ?? ''),
+            'balance' => round($signedBalance, 2),
+            'absBalance' => round((float) $c->balance, 2),
+            'balanceType' => $c->balance_type ?: 'debit',
+        ];
+    }
+
+    // =========================================================================
+    // 5. جلب تفاصيل حساب العميل والتبويبات الـ 9 (/api/customers/{id}/account-details)
+    // =========================================================================
     public function getAccountDetails(Request $request, $id)
     {
         $customer = Customer::findOrFail($id);
 
-        $dateMode = $request->query('date_mode', 'all'); // 'all' | 'range'
+        $dateMode = $request->query('date_mode', 'all');
         $fromDate = $request->query('from_date');
-        $toDate   = $request->query('to_date');
+        $toDate = $request->query('to_date');
 
-        // 1. جلب فواتير المبيعات الخاصة بالعميل (المغلقة والمعلقة للحجوزات)
+        // 1) فواتير المبيعات الخاصة بالعميل
         $invoicesQuery = SalesInvoice::with('items')
-            ->where(function ($q) use ($customer) {
-                $q->where('customer_id', $customer->id)
-                  ->orWhere('customer_name', $customer->name);
-            });
+            ->where('customer_id', $customer->id)
+            ->orderByDesc('invoice_date')
+            ->orderByDesc('id');
 
-        if ($dateMode === 'range' && $fromDate && $toDate) {
-            $start = min($fromDate, $toDate);
-            $end   = max($fromDate, $toDate);
-            $invoicesQuery->whereBetween('invoice_date', [$start, $end]);
+        if ($dateMode === 'range') {
+            if ($fromDate) {
+                $invoicesQuery->whereDate('invoice_date', '>=', $fromDate);
+            }
+            if ($toDate) {
+                $invoicesQuery->whereDate('invoice_date', '<=', $toDate);
+            }
         }
 
-        $allInvoices = $invoicesQuery->orderBy('invoice_date', 'desc')->orderBy('id', 'desc')->get();
+        $invoices = $invoicesQuery->get();
 
-        $closedInvoices    = $allInvoices->where('status', 'closed')->values();
-        $suspendedInvoices = $allInvoices->where('status', 'suspended')->values();
-
-        // 2. جلب سجل المرتجعات المستقل للعميل
+        // 2) مرتجعات المبيعات الخاصة بالعميل
         $returnsQuery = SalesReturn::with('items')
-            ->where(function ($q) use ($customer) {
-                $q->where('customer_id', $customer->id)
-                  ->orWhere('customer_name', $customer->name);
-            });
+            ->where('customer_id', $customer->id)
+            ->orderByDesc('return_date')
+            ->orderByDesc('id');
 
-        if ($dateMode === 'range' && $fromDate && $toDate) {
-            $start = min($fromDate, $toDate);
-            $end   = max($fromDate, $toDate);
-            $returnsQuery->whereBetween('return_date', [$start, $end]);
+        if ($dateMode === 'range') {
+            if ($fromDate) {
+                $returnsQuery->whereDate('return_date', '>=', $fromDate);
+            }
+            if ($toDate) {
+                $returnsQuery->whereDate('return_date', '<=', $toDate);
+            }
         }
 
-        $salesReturns = $returnsQuery->orderBy('return_date', 'desc')->orderBy('id', 'desc')->get();
+        $returns = $returnsQuery->get();
 
-        // 3. جلب حركات العميل المالية (دفعات payment، رد مبالغ refund، تسويات settlement، حجوزات reservation)
-        $transQuery = CustomerTransaction::where('customer_id', $customer->id);
-        if ($dateMode === 'range' && $fromDate && $toDate) {
-            $start = min($fromDate, $toDate);
-            $end   = max($fromDate, $toDate);
-            $transQuery->whereBetween('transaction_date', [$start, $end]);
-        }
-        $transactions = $transQuery->orderBy('transaction_date', 'desc')->orderBy('id', 'desc')->get();
+        // 3) حركات العميل المالية (دفعات / رد مبالغ / تسويات / حجوزات)
+        $txQuery = CustomerTransaction::where('customer_id', $customer->id)
+            ->orderByDesc('transaction_date')
+            ->orderByDesc('id');
 
-        // 4. جلب سجل ملحوظات العميل
-        $notesQuery = CustomerNote::where('customer_id', $customer->id);
-        if ($dateMode === 'range' && $fromDate && $toDate) {
-            $start = min($fromDate, $toDate);
-            $end   = max($fromDate, $toDate);
-            $notesQuery->whereBetween('note_date', [$start, $end]);
-        }
-        $notes = $notesQuery->orderBy('note_date', 'desc')->orderBy('id', 'desc')->get();
-
-        // 5. تطبيق المعادلة المحاسبية المعتمدة في المشروع:
-        // الرصيد النهائي للعميل = opening_balance + (إجمالي المبيعات - المرتجعات) - (المدفوع بالفواتير + دفعات payment - المبالغ المردودة refund)
-        $rawOpening = (float) ($customer->opening_balance ?? 0);
-        $openingSigned = ($customer->balance_type === 'credit') ? -$rawOpening : $rawOpening;
-
-        $totalSales = (float) $closedInvoices->sum(function ($inv) {
-            return (float) ($inv->net_value ?: $inv->gross_total ?: 0);
-        });
-
-        $returnsFromInvoices = (float) $closedInvoices->sum('returns_value');
-        $returnsFromTable    = (float) $salesReturns->sum('total');
-        $totalReturns        = max($returnsFromInvoices, $returnsFromTable);
-
-        $netSales  = $totalSales - $totalReturns;
-        $orderPaid = (float) $closedInvoices->sum('paid_amount');
-
-        $paymentsList    = $transactions->where('type', 'payment')->values();
-        $refundsList     = $transactions->where('type', 'refund')->values();
-        $settlementsList = $transactions->where('type', 'settlement')->values();
-        $resTransList    = $transactions->where('type', 'reservation')->values();
-
-        $extraPayments    = (float) $paymentsList->sum('amount');
-        $totalRefunds     = (float) $refundsList->sum('amount');
-        $totalSettlements = (float) $settlementsList->sum('amount');
-
-        $netPayments  = $orderPaid + $extraPayments - $totalRefunds;
-        $finalBalance = $openingSigned + $netSales - $netPayments - $totalSettlements;
-
-        // حساب صافي الأرباح من العميل
-        $totalCost = (float) $closedInvoices->sum('cost_total');
-        $netProfit = $netSales - $totalCost;
-
-        // تحديث حقل الرصيد في جدول العملاء إذا كنا نعرض كل الفترات
-        if ($dateMode === 'all') {
-            $this->syncCustomerBalanceField($customer, $finalBalance);
+        if ($dateMode === 'range') {
+            if ($fromDate) {
+                $txQuery->whereDate('transaction_date', '>=', $fromDate);
+            }
+            if ($toDate) {
+                $txQuery->whereDate('transaction_date', '<=', $toDate);
+            }
         }
 
-        // تنسيق الطلبات والأصناف للعرض في التبويبات
-        $formattedOrders = $closedInvoices->map(function ($inv) {
-            return [
-                'id'         => $inv->id,
-                'orderNo'    => $inv->order_no ?: $inv->id,
-                'date'       => $inv->invoice_date ?: optional($inv->created_at)->format('Y-m-d'),
-                'type'       => $inv->order_type ?: 'استلام',
-                'itemsCount' => (float) ($inv->total_qty ?: $inv->items->count()),
-                'total'      => (float) ($inv->net_value ?: $inv->gross_total ?: 0),
-                'paid'       => (float) ($inv->paid_amount ?? 0),
-                'cost'       => (float) ($inv->cost_total ?? 0),
-                'returns'    => (float) ($inv->returns_value ?? 0),
-                'items'      => $inv->items->map(function ($item) {
-                    return [
-                        'id'    => $item->id,
-                        'name'  => $item->name,
-                        'qty'   => (float) $item->qty,
-                        'unit'  => $item->unit ?: 'قطعة',
-                        'price' => (float) $item->price,
-                        'total' => (float) $item->total,
-                    ];
-                })->values(),
-            ];
-        })->values();
+        $transactions = $txQuery->get();
 
-        $formattedReservations = $suspendedInvoices->map(function ($inv) {
-            return [
-                'orderNo'    => $inv->order_no ?: $inv->id,
-                'date'       => $inv->invoice_date ?: optional($inv->created_at)->format('Y-m-d'),
-                'type'       => $inv->order_type ?: 'حجز معلق',
-                'itemsCount' => (float) ($inv->total_qty ?: $inv->items->count()),
-                'total'      => (float) ($inv->net_value ?: $inv->gross_total ?: 0),
-                'notes'      => $inv->notes ?: 'طلب معلق / محجوز',
-            ];
-        })->concat($resTransList->map(function ($t) {
-            return [
-                'orderNo'    => $t->ref_no ?: $t->id,
-                'date'       => $t->transaction_date,
-                'type'       => 'حجز',
-                'itemsCount' => 1,
-                'total'      => (float) $t->amount,
-                'notes'      => $t->note ?: '-',
-            ];
-        }))->values();
-
-        $formattedReturns = $salesReturns->map(function ($ret) {
-            return [
-                'returnNumber'  => $ret->return_number ?: $ret->id,
-                'invoiceNumber' => $ret->invoice_number ?: '-',
-                'date'          => $ret->return_date,
-                'itemCount'     => (int) $ret->item_count,
-                'summary'       => $ret->products_summary ?: '-',
-                'total'         => (float) $ret->total,
-                'returnType'    => $ret->return_type === 'full' ? 'مرتجع كلي' : 'مرتجع جزئي',
-            ];
-        })->values();
-
-        $formattedPayments = $paymentsList->map(function ($p) {
-            return [
-                'id'     => $p->id,
-                'date'   => $p->transaction_date,
-                'amount' => (float) $p->amount,
-                'method' => $p->payment_method ?: 'cash',
-                'note'   => $p->note ?: 'تحصيل دفعة نقدية',
-            ];
-        })->values();
-
-        $formattedRefunds = $refundsList->map(function ($r) {
-            return [
-                'id'     => $r->id,
-                'date'   => $r->transaction_date,
-                'amount' => (float) $r->amount,
-                'note'   => $r->note ?: 'رد مبلغ للعميل',
-            ];
-        })->values();
-
-        $formattedSettlements = $settlementsList->map(function ($s) {
-            return [
-                'id'     => $s->id,
-                'date'   => $s->transaction_date,
-                'amount' => (float) $s->amount,
-                'note'   => $s->note ?: 'تسوية حساب',
-            ];
-        })->values();
-
-        $formattedNotes = $notes->map(function ($n) {
-            return [
-                'id'   => $n->id,
-                'date' => $n->note_date,
+        // 4) سجل ملحوظات العميل
+        $notes = CustomerNote::where('customer_id', $customer->id)
+            ->orderByDesc('note_date')
+            ->orderByDesc('id')
+            ->get()
+            ->map(fn (CustomerNote $n) => [
+                'id' => $n->id,
+                'date' => $n->note_date ? $n->note_date->format('Y/m/d') : now()->format('Y/m/d'),
                 'text' => $n->text,
-                'user' => $n->user_name ?: 'مدير الفرع',
+            ])
+            ->values();
+
+        // حساب الملخص المالي الشامل للعميل
+        $summary = $this->recalculateAndSyncCustomerBalance($customer->id);
+
+        // تنسيق الطلبات لتبويب سجل الطلبات وسجل الأصناف
+        $formattedOrders = $invoices->map(function (SalesInvoice $inv) {
+            return [
+                'orderNo' => $inv->order_no,
+                'date' => $inv->invoice_date ? $inv->invoice_date->format('Y-m-d') : now()->format('Y-m-d'),
+                'type' => $inv->order_type ?: 'استلام',
+                'itemsCount' => $inv->items->count(),
+                'total' => (float) $inv->net_value,
+                'paid' => (float) $inv->paid_amount,
+                'cost' => (float) $inv->cost_total,
+                'returns' => (float) $inv->returns_value,
+                'items' => $inv->items->map(fn ($item) => [
+                    'name' => $item->name,
+                    'qty' => (float) $item->qty,
+                    'price' => (float) $item->price,
+                    'total' => (float) $item->total,
+                ])->values()->all(),
             ];
         })->values();
+
+        // تنسيق الحجوزات (الفواتير المعلقة أو حركات الحجز)
+        $reservations = $transactions->where('type', 'reservation')->map(fn (CustomerTransaction $t) => [
+            'orderNo' => $t->ref_no ?: ('RES-' . $t->id),
+            'date' => $t->transaction_date ? $t->transaction_date->format('Y-m-d') : '',
+            'type' => 'حجز مسبق',
+            'total' => (float) $t->amount,
+            'notes' => $t->note ?? '',
+        ])->values();
+
+        // تنسيق المرتجعات
+        $formattedReturns = $returns->map(fn (SalesReturn $r) => [
+            'returnNumber' => $r->return_number,
+            'invoiceNumber' => $r->invoice_number,
+            'date' => $r->return_date ? $r->return_date->format('Y-m-d') : '',
+            'returnType' => $r->return_type === 'full' ? 'مرتجع كلي' : 'مرتجع جزئي',
+            'summary' => $r->products_summary ?: $r->items->pluck('name')->implode('، '),
+            'total' => (float) $r->total,
+        ])->values();
+
+        // تنسيق الدفعات والتسويات
+        $formattedPayments = $transactions->where('type', 'payment')->map(fn (CustomerTransaction $t) => [
+            'id' => $t->id,
+            'date' => $t->transaction_date ? $t->transaction_date->format('Y/m/d') : '',
+            'amount' => (float) $t->amount,
+            'note' => $t->note ?: 'تحصيل دفعة نقدية',
+        ])->values();
+
+        $formattedRefunds = $transactions->where('type', 'refund')->map(fn (CustomerTransaction $t) => [
+            'id' => $t->id,
+            'date' => $t->transaction_date ? $t->transaction_date->format('Y/m/d') : '',
+            'amount' => (float) $t->amount,
+            'note' => $t->note ?: 'رد مبلغ للعميل',
+        ])->values();
+
+        $formattedSettlements = $transactions->where('type', 'settlement')->map(fn (CustomerTransaction $t) => [
+            'id' => $t->id,
+            'date' => $t->transaction_date ? $t->transaction_date->format('Y/m/d') : '',
+            'amount' => (float) $t->amount,
+            'note' => $t->note ?: 'تسوية حساب',
+        ])->values();
 
         return response()->json([
-            'ok'       => true,
+            'status' => 'success',
             'customer' => $this->formatCustomerBasic($customer->fresh()),
-            'summary'  => [
-                'opening'    => round($openingSigned, 2),
-                'totalSales' => round($totalSales, 2),
-                'returns'    => round($totalReturns, 2),
-                'netSales'   => round($netSales, 2),
-                'payments'   => round($netPayments, 2),
-                'balance'    => round($finalBalance, 2),
-                'netProfit'  => round($netProfit, 2),
-            ],
-            'orders'       => $formattedOrders,
-            'reservations' => $formattedReservations,
-            'returns'      => $formattedReturns,
-            'payments'     => $formattedPayments,
-            'refunds'      => $formattedRefunds,
-            'settlements'  => $formattedSettlements,
-            'notes'        => $formattedNotes,
+            'summary' => $summary,
+            'orders' => $formattedOrders,
+            'reservations' => $reservations,
+            'returns' => $formattedReturns,
+            'payments' => $formattedPayments,
+            'refunds' => $formattedRefunds,
+            'settlements' => $formattedSettlements,
+            'notes' => $notes,
         ]);
     }
 
-    /**
-     * التعديل السريع لبيانات العميل من نافذة القلم (F2) في شاشة حساب العميل
-     */
+    // =========================================================================
+    // 6. التعديل السريع لبيانات العميل من شاشة حساب العميل (F2)
+    // =========================================================================
     public function updateCustomerQuick(Request $request, $id)
     {
         $customer = Customer::findOrFail($id);
 
-        $validated = $request->validate([
-            'name'   => 'required|string|max:120',
-            'area'   => 'nullable|string|max:120',
+        $data = $request->validate([
+            'name' => 'required|string|max:150',
+            'area' => 'nullable|string|max:100',
             'phone1' => 'required|string|max:30',
             'phone2' => 'nullable|string|max:30',
-            'addr1'  => 'nullable|string|max:255',
-            'addr2'  => 'nullable|string|max:255',
-            'note'   => 'nullable|string|max:500',
+            'addr1' => 'nullable|string|max:500',
+            'addr2' => 'nullable|string|max:500',
+            'note' => 'nullable|string|max:500',
         ]);
 
-        return DB::transaction(function () use ($customer, $validated) {
-            $areaName = trim((string) ($validated['area'] ?? ''));
-            $zoneObj  = null;
+        $areaName = trim($data['area'] ?? '');
+        $zoneObj = $areaName !== '' ? DeliveryZone::where('name', $areaName)->first() : null;
 
-            if ($areaName !== '' && $areaName !== '-') {
-                $zoneObj = DeliveryZone::where('name', $areaName)->first();
-                if (!$zoneObj) {
-                    $zoneObj = DeliveryZone::create([
-                        'uuid'      => (string) Str::uuid(),
-                        'name'      => $areaName,
-                        'fee'       => 0,
-                        'is_synced' => false,
-                    ]);
-                }
-            }
+        $addresses = is_array($customer->addresses) && count($customer->addresses) === 3
+            ? $customer->addresses
+            : [
+                ['label' => 'العنوان الرئيسي', 'fullAddress' => '', 'location' => '', 'deliveryNote' => '', 'zoneId' => '', 'zoneName' => '', 'fee' => 0],
+                ['label' => 'عنوان بديل', 'fullAddress' => '', 'location' => '', 'deliveryNote' => '', 'zoneId' => '', 'zoneName' => '', 'fee' => 0],
+                ['label' => 'عنوان بديل 2', 'fullAddress' => '', 'location' => '', 'deliveryNote' => '', 'zoneId' => '', 'zoneName' => '', 'fee' => 0],
+            ];
 
-            $rawAddresses = is_array($customer->addresses)
-                ? $customer->addresses
-                : (json_decode($customer->addresses ?? '[]', true) ?: []);
-
-            $defaultLabels = ['العنوان الرئيسي', 'عنوان بديل', 'عنوان بديل 2'];
-            for ($i = 0; $i < 3; $i++) {
-                if (!isset($rawAddresses[$i])) {
-                    $rawAddresses[$i] = [
-                        'label'        => $defaultLabels[$i],
-                        'fullAddress'  => '',
-                        'location'     => '',
-                        'deliveryNote' => '',
-                        'zoneId'       => '',
-                        'zoneName'     => '',
-                        'fee'          => 0,
-                    ];
-                }
-            }
-
-            $rawAddresses[0]['fullAddress'] = trim((string) ($validated['addr1'] ?? ''));
+        $addresses[0]['fullAddress'] = trim($data['addr1'] ?? '');
+        if ($areaName !== '') {
+            $addresses[0]['zoneName'] = $areaName;
             if ($zoneObj) {
-                $rawAddresses[0]['zoneId']   = (string) $zoneObj->id;
-                $rawAddresses[0]['zoneName'] = $zoneObj->name;
-                $rawAddresses[0]['fee']      = (float) $zoneObj->fee;
-            } elseif ($areaName === '') {
-                $rawAddresses[0]['zoneId']   = '';
-                $rawAddresses[0]['zoneName'] = '';
+                $addresses[0]['zoneId'] = (string) $zoneObj->id;
+                $addresses[0]['fee'] = (float) $zoneObj->fee;
             }
+        }
+        $addresses[1]['fullAddress'] = trim($data['addr2'] ?? '');
 
-            $rawAddresses[1]['fullAddress'] = trim((string) ($validated['addr2'] ?? ''));
+        $customer->update([
+            'name' => trim($data['name']),
+            'primary_zone_id' => $zoneObj ? $zoneObj->id : $customer->primary_zone_id,
+            'primary_zone_name' => $areaName !== '' ? $areaName : $customer->primary_zone_name,
+            'phone1' => trim($data['phone1']),
+            'phone2' => trim($data['phone2'] ?? ''),
+            'addr1' => trim($data['addr1'] ?? ''),
+            'addr2' => trim($data['addr2'] ?? ''),
+            'invoice_note' => trim($data['note'] ?? ''),
+            'addresses' => $addresses,
+            'is_synced' => false,
+        ]);
 
-            $customer->update([
-                'name'              => trim($validated['name']),
-                'phone1'            => trim($validated['phone1']),
-                'phone2'            => trim((string) ($validated['phone2'] ?? '')),
-                'primary_zone_id'   => $zoneObj ? $zoneObj->id : $customer->primary_zone_id,
-                'primary_zone_name' => $zoneObj ? $zoneObj->name : ($areaName ?: null),
-                'addr1'             => trim((string) ($validated['addr1'] ?? '')) ?: null,
-                'addr2'             => trim((string) ($validated['addr2'] ?? '')) ?: null,
-                'contact_note'      => trim((string) ($validated['note'] ?? '')) ?: null,
-                'invoice_note'      => trim((string) ($validated['note'] ?? '')) ?: null,
-                'addresses'         => $rawAddresses,
-                'is_synced'         => false,
-            ]);
-
-            return response()->json([
-                'ok'       => true,
-                'customer' => $this->formatCustomerBasic($customer->fresh()),
-            ]);
-        });
+        return response()->json([
+            'status' => 'success',
+            'customer' => $this->formatCustomerBasic($customer->fresh()),
+        ]);
     }
 
-    /**
-     * تسجيل حركة مالية للعميل (تحصيل دفعة payment / رد مبلغ refund / تسوية settlement)
-     */
+    // =========================================================================
+    // 7. تسجيل دفعة سريعة أو رد مبلغ أو ملحوظة من شاشة حساب العميل
+    // =========================================================================
     public function storeTransaction(Request $request, $id)
     {
         $customer = Customer::findOrFail($id);
 
-        $validated = $request->validate([
-            'type'           => 'required|in:payment,refund,settlement,reservation',
-            'amount'         => 'required|numeric|min:0.01',
-            'note'           => 'nullable|string|max:500',
-            'payment_method' => 'nullable|string|max:50',
+        $data = $request->validate([
+            'type' => 'required|in:payment,refund,settlement,reservation',
+            'amount' => 'required|numeric|gt:0',
+            'note' => 'nullable|string|max:500',
         ]);
 
-        return DB::transaction(function () use ($customer, $validated) {
-            $defaultNotes = [
-                'payment'     => 'تحصيل نقدي من العميل',
-                'refund'      => 'رد مبلغ للعميل',
-                'settlement'  => 'تسوية حساب',
-                'reservation' => 'دفعة حجز',
-            ];
+        return DB::transaction(function () use ($customer, $data) {
+            $summaryBefore = $this->recalculateAndSyncCustomerBalance($customer->id);
+            $balBefore = (float) $summaryBefore['balance'];
+            $amt = (float) $data['amount'];
 
-            $transaction = CustomerTransaction::create([
-                'uuid'             => (string) Str::uuid(),
-                'customer_id'      => $customer->id,
-                'type'             => $validated['type'],
-                'transaction_date' => now()->format('Y-m-d'),
-                'amount'           => (float) $validated['amount'],
-                'payment_method'   => $validated['payment_method'] ?? 'cash',
-                'safe_name'        => 'الخزينة الرئيسية',
-                'ref_no'           => strtoupper(substr($validated['type'], 0, 3)) . '-' . time(),
-                'note'             => trim((string) ($validated['note'] ?? '')) ?: $defaultNotes[$validated['type']],
-                'user_name'        => 'مدير الفرع',
-                'is_synced'        => false,
+            $balAfter = $data['type'] === 'refund'
+                ? ($balBefore + $amt)
+                : ($balBefore - $amt);
+
+            $nextNo = (CustomerTransaction::withTrashed()->max('id') ?? 0) + 1;
+            $refNo = 'VCH-' . (1000 + $nextNo);
+
+            CustomerTransaction::create([
+                'uuid' => (string) Str::uuid(),
+                'customer_id' => $customer->id,
+                'type' => $data['type'],
+                'transaction_date' => now()->toDateString(),
+                'amount' => $amt,
+                'balance_before' => $balBefore,
+                'balance_after' => $balAfter,
+                'payment_method' => 'cash',
+                'safe_name' => 'درج الكاشير',
+                'representative' => 'مباشر - الكاشير',
+                'shift' => now()->hour < 16 ? 'الوردية الصباحية' : 'الوردية المسائية',
+                'ref_no' => $refNo,
+                'note' => trim($data['note'] ?? ''),
+                'user_name' => 'مدير الفرع',
+                'is_deferred_customer' => $balBefore > 0,
+                'is_synced' => false,
             ]);
 
-            // إعادة حساب الرصيد النهائي للعميل وتحديثه في جدول customers
-            $this->recalculateAndSaveCustomerBalance($customer);
+            $summaryAfter = $this->recalculateAndSyncCustomerBalance($customer->id);
 
             return response()->json([
-                'ok'          => true,
-                'transaction' => $transaction,
+                'status' => 'success',
+                'summary' => $summaryAfter,
             ]);
         });
     }
 
-    /**
-     * إضافة ملحوظة جديدة في سجل ملحوظات العميل
-     */
     public function storeNote(Request $request, $id)
     {
         $customer = Customer::findOrFail($id);
 
-        $validated = $request->validate([
+        $data = $request->validate([
             'text' => 'required|string|max:1000',
         ]);
 
         $note = CustomerNote::create([
-            'uuid'        => (string) Str::uuid(),
+            'uuid' => (string) Str::uuid(),
             'customer_id' => $customer->id,
-            'note_date'   => now()->format('Y-m-d'),
-            'text'        => trim($validated['text']),
-            'user_name'   => 'مدير الفرع',
-            'is_synced'   => false,
+            'note_date' => now()->toDateString(),
+            'text' => trim($data['text']),
+            'user_name' => 'مدير الفرع',
+            'is_synced' => false,
         ]);
 
         return response()->json([
-            'ok'   => true,
-            'note' => [
-                'id'   => $note->id,
-                'date' => $note->note_date,
-                'text' => $note->text,
-                'user' => $note->user_name,
-            ],
+            'status' => 'success',
+            'note' => $note,
         ]);
     }
 
-    /**
-     * إعادة حساب الرصيد النهائي للعميل حسب المعادلة المحاسبية وحفظه في جدول customers
-     */
-    private function recalculateAndSaveCustomerBalance(Customer $customer)
+    // =========================================================================
+    // 8. دوال شاشات سند القبض وتقرير دفعات العملاء (/customers/payment & /payments-report)
+    // =========================================================================
+    public function paymentsBootstrap()
     {
-        $rawOpening = (float) ($customer->opening_balance ?? 0);
-        $openingSigned = ($customer->balance_type === 'credit') ? -$rawOpening : $rawOpening;
-
-        $closedInvoices = SalesInvoice::where('status', 'closed')
-            ->where(function ($q) use ($customer) {
-                $q->where('customer_id', $customer->id)
-                  ->orWhere('customer_name', $customer->name);
-            })->get();
-
-        $totalSales = (float) $closedInvoices->sum(function ($inv) {
-            return (float) ($inv->net_value ?: $inv->gross_total ?: 0);
-        });
-
-        $returnsFromInvoices = (float) $closedInvoices->sum('returns_value');
-        $returnsFromTable    = (float) SalesReturn::where('customer_id', $customer->id)->sum('total');
-        $totalReturns        = max($returnsFromInvoices, $returnsFromTable);
-
-        $orderPaid = (float) $closedInvoices->sum('paid_amount');
-
-        $extraPayments = (float) CustomerTransaction::where('customer_id', $customer->id)
-            ->where('type', 'payment')->sum('amount');
-
-        $totalRefunds = (float) CustomerTransaction::where('customer_id', $customer->id)
-            ->where('type', 'refund')->sum('amount');
-
-        $totalSettlements = (float) CustomerTransaction::where('customer_id', $customer->id)
-            ->where('type', 'settlement')->sum('amount');
-
-        $finalBalance = $openingSigned + ($totalSales - $totalReturns) - ($orderPaid + $extraPayments - $totalRefunds) - $totalSettlements;
-
-        $this->syncCustomerBalanceField($customer, $finalBalance);
+        return response()->json($this->buildPaymentsBootstrapData());
     }
 
-    private function syncCustomerBalanceField(Customer $customer, float $finalBalance)
+    private function buildPaymentsBootstrapData(): array
     {
-        $newBalanceAbs  = round(abs($finalBalance), 2);
-        $newBalanceType = $finalBalance < 0 ? 'credit' : 'debit';
+        $customers = Customer::orderBy('id', 'asc')
+            ->get()
+            ->map(fn (Customer $c) => $this->formatCustomerBasic($c))
+            ->values()
+            ->all();
 
-        if ((float) $customer->balance !== $newBalanceAbs || $customer->balance_type !== $newBalanceType) {
-            $customer->update([
-                'balance'      => $newBalanceAbs,
-                'balance_type' => $newBalanceType,
-                'is_synced'    => false,
-            ]);
-        }
-    }
+        $custMap = Customer::withTrashed()->get()->keyBy('id');
 
-    private function formatCustomerBasic(Customer $c)
-    {
-        $rawAddresses = is_array($c->addresses)
-            ? $c->addresses
-            : (json_decode($c->addresses ?? '[]', true) ?: []);
-
-        $addr1 = $c->addr1 ?: ($rawAddresses[0]['fullAddress'] ?? '');
-        $addr2 = $c->addr2 ?: ($rawAddresses[1]['fullAddress'] ?? '');
-        $area  = $c->primary_zone_name ?: ($rawAddresses[0]['zoneName'] ?? '');
+        $transactions = CustomerTransaction::whereIn('type', ['payment', 'refund', 'settlement'])
+            ->orderByDesc('transaction_date')
+            ->orderByDesc('id')
+            ->get()
+            ->map(function (CustomerTransaction $tx) use ($custMap) {
+                $cust = $custMap->get($tx->customer_id);
+                return $this->formatVoucherTransaction($tx, $cust);
+            })
+            ->values()
+            ->all();
 
         return [
-            'id'             => (string) $c->id,
-            'uuid'           => $c->uuid,
-            'code'           => (string) ($c->code ?: str_pad((string) $c->id, 3, '0', STR_PAD_LEFT)),
-            'name'           => (string) $c->name,
-            'phone1'         => (string) ($c->phone1 ?? ''),
-            'phone2'         => (string) ($c->phone2 ?? ''),
-            'area'           => (string) $area,
-            'addr1'          => (string) $addr1,
-            'addr2'          => (string) $addr2,
-            'addr3'          => (string) ($c->addr3 ?? ''),
-            'note'           => (string) ($c->invoice_note ?: $c->contact_note ?: ''),
-            'openingBalance' => (float) ($c->opening_balance ?? 0),
-            'balance'        => (float) ($c->balance ?? 0),
-            'balanceType'    => $c->balance_type ?: 'debit',
+            'initialCustomers' => $customers,
+            'initialTransactions' => $transactions,
+        ];
+    }
+
+    private function formatVoucherTransaction(CustomerTransaction $tx, ?Customer $cust = null): array
+    {
+        $cust = $cust ?: Customer::withTrashed()->find($tx->customer_id);
+        $typeLabel = match ($tx->type) {
+            'refund' => 'رد مبلغ',
+            'settlement' => 'تسوية رصيد',
+            default => 'سند قبض',
+        };
+
+        return [
+            'id' => $tx->ref_no ?: ('VCH-' . (1000 + $tx->id)),
+            'dbId' => $tx->id,
+            'type' => $typeLabel,
+            'rawType' => $tx->type,
+            'date' => $tx->transaction_date ? $tx->transaction_date->format('Y-m-d') : now()->format('Y-m-d'),
+            'createdAt' => $tx->created_at ? $tx->created_at->format('Y/m/d h:i A') : now()->format('Y/m/d h:i A'),
+            'customerId' => (string) $tx->customer_id,
+            'customerName' => $cust ? $cust->name : 'عميل',
+            'customerCode' => $cust ? ($cust->code ?: (string) $cust->id) : '',
+            'amount' => (float) $tx->amount,
+            'balanceBefore' => (float) $tx->balance_before,
+            'balanceAfter' => (float) $tx->balance_after,
+            'treasury' => $tx->safe_name ?: 'درج الكاشير',
+            'representative' => $tx->representative ?: 'مباشر - الكاشير',
+            'shift' => $tx->shift ?: 'الوردية الصباحية',
+            'notes' => $tx->note ?? '',
+            'user' => $tx->user_name ?: 'مدير الفرع',
+            'isDeferredCustomer' => (bool) $tx->is_deferred_customer,
+        ];
+    }
+
+    // 9. حفظ أو تعديل سند قبض دفعة عميل وتحديث رصيده فوراً
+    public function savePaymentVoucher(Request $request)
+    {
+        $data = $request->validate([
+            'editingId' => 'nullable|string',
+            'customerId' => 'required',
+            'amount' => 'required|numeric|gt:0',
+            'treasury' => 'nullable|string|max:100',
+            'date' => 'nullable|date',
+            'representative' => 'nullable|string|max:100',
+            'shift' => 'nullable|string|max:60',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        return DB::transaction(function () use ($data) {
+            $customer = Customer::lockForUpdate()->findOrFail($data['customerId']);
+
+            $editingTx = null;
+            if (!empty($data['editingId'])) {
+                $editingTx = CustomerTransaction::where('ref_no', $data['editingId'])
+                    ->orWhere('id', preg_replace('/\D/', '', $data['editingId']))
+                    ->lockForUpdate()
+                    ->first();
+            }
+
+            $oldCustomerId = $editingTx ? $editingTx->customer_id : null;
+
+            // حساب الرصيد الأساسي قبل خصم هذا السند
+            $summaryBefore = $this->recalculateAndSyncCustomerBalance($customer->id);
+            $baseBalance = (float) $summaryBefore['balance'];
+            if ($editingTx && (int) $editingTx->customer_id === (int) $customer->id) {
+                $baseBalance += (float) $editingTx->amount;
+            }
+
+            $amt = round((float) $data['amount'], 2);
+            $balanceAfter = round($baseBalance - $amt, 2);
+            $paymentDate = !empty($data['date']) ? $data['date'] : now()->toDateString();
+
+            if ($editingTx) {
+                $editingTx->update([
+                    'customer_id' => $customer->id,
+                    'transaction_date' => $paymentDate,
+                    'amount' => $amt,
+                    'balance_before' => $baseBalance,
+                    'balance_after' => $balanceAfter,
+                    'safe_name' => $data['treasury'] ?? 'درج الكاشير',
+                    'representative' => $data['representative'] ?? 'مباشر - الكاشير',
+                    'shift' => $data['shift'] ?? 'الوردية الصباحية',
+                    'note' => trim($data['notes'] ?? ''),
+                    'is_synced' => false,
+                ]);
+                $tx = $editingTx;
+            } else {
+                $nextNo = (CustomerTransaction::withTrashed()->max('id') ?? 0) + 1;
+                $refNo = 'VCH-' . (1000 + $nextNo);
+
+                $tx = CustomerTransaction::create([
+                    'uuid' => (string) Str::uuid(),
+                    'customer_id' => $customer->id,
+                    'type' => 'payment',
+                    'transaction_date' => $paymentDate,
+                    'amount' => $amt,
+                    'balance_before' => $baseBalance,
+                    'balance_after' => $balanceAfter,
+                    'payment_method' => str_contains((string) ($data['treasury'] ?? ''), 'تحويل') ? 'instapay' : 'cash',
+                    'safe_name' => $data['treasury'] ?? 'درج الكاشير',
+                    'representative' => $data['representative'] ?? 'مباشر - الكاشير',
+                    'shift' => $data['shift'] ?? 'الوردية الصباحية',
+                    'ref_no' => $refNo,
+                    'note' => trim($data['notes'] ?? ''),
+                    'user_name' => 'مدير الفرع',
+                    'is_deferred_customer' => $baseBalance > 0,
+                    'is_synced' => false,
+                ]);
+            }
+
+            if ($oldCustomerId && (int) $oldCustomerId !== (int) $customer->id) {
+                $this->recalculateAndSyncCustomerBalance($oldCustomerId);
+            }
+            $this->recalculateAndSyncCustomerBalance($customer->id);
+
+            return response()->json([
+                'status' => 'success',
+                'transaction' => $this->formatVoucherTransaction($tx->fresh(), $customer->fresh()),
+                'bootstrap' => $this->buildPaymentsBootstrapData(),
+            ]);
+        });
+    }
+
+    // 10. حذف سند قبض وإعادة المبلغ تلقائياً إلى رصيد مديونية العميل
+    public function deletePaymentVoucher($id)
+    {
+        return DB::transaction(function () use ($id) {
+            $tx = CustomerTransaction::where('ref_no', $id)
+                ->orWhere('id', preg_replace('/\D/', '', (string) $id))
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $customerId = $tx->customer_id;
+            $tx->update(['is_synced' => false]);
+            $tx->delete();
+
+            $this->recalculateAndSyncCustomerBalance($customerId);
+
+            return response()->json([
+                'status' => 'success',
+                'bootstrap' => $this->buildPaymentsBootstrapData(),
+            ]);
+        });
+    }
+
+    // =========================================================================
+    // 11. المعادلة المحاسبية الموحدة لحساب وتحديث رصيد العميل في الداتابيز
+    // =========================================================================
+    public function recalculateAndSyncCustomerBalance($customerId): array
+    {
+        $customer = Customer::find($customerId);
+        if (!$customer) {
+            return [
+                'opening' => 0,
+                'totalSales' => 0,
+                'returns' => 0,
+                'netSales' => 0,
+                'payments' => 0,
+                'balance' => 0,
+                'netProfit' => 0,
+            ];
+        }
+
+        $opening = (float) $customer->opening_balance;
+
+        $invoices = SalesInvoice::where('customer_id', $customer->id)->get();
+        $totalSales = (float) $invoices->sum('net_value');
+        $invoicePaid = (float) $invoices->sum('paid_amount');
+        $totalCost = (float) $invoices->sum('cost_total');
+        $externalTotal = (float) $invoices->sum('external_sub_total');
+        $serviceTotal = (float) $invoices->sum('service_fee');
+
+        // المرتجعات التي خُصمت من حساب العميل أو إجمالي المرتجعات
+        $returnsRecords = SalesReturn::where('customer_id', $customer->id)->get();
+        $returnsTotal = (float) $returnsRecords->sum('total');
+        $cashRefundedInReturns = (float) $returnsRecords->sum('cash_refund');
+
+        $txs = CustomerTransaction::where('customer_id', $customer->id)->get();
+        $extraPayments = (float) $txs->where('type', 'payment')->sum('amount');
+        $refunds = (float) $txs->where('type', 'refund')->sum('amount');
+        $settlements = (float) $txs->where('type', 'settlement')->sum('amount');
+
+        $netSales = $totalSales - $returnsTotal;
+        // صافي المسدد = المدفوع بالفواتير + سندات القبض + التسويات - (المبالغ المردودة نقداً للعميل)
+        $totalPayments = $invoicePaid + $extraPayments + $settlements - $refunds - $cashRefundedInReturns;
+
+        // الرصيد النهائي: موجب = مدين (عليه)، سالب = دائن (له)
+        $balance = round($opening + $netSales - $totalPayments, 2);
+
+        // صافي الربح من العميل (بدون الخوارج وخدمة التوصيل)
+        $netStoreSales = max(0, $netSales - $externalTotal - $serviceTotal);
+        $netProfit = round($netStoreSales - $totalCost, 2);
+
+        $customer->update([
+            'balance' => abs($balance),
+            'balance_type' => $balance < -0.001 ? 'credit' : 'debit',
+            'is_synced' => false,
+        ]);
+
+        return [
+            'opening' => round($opening, 2),
+            'totalSales' => round($totalSales, 2),
+            'returns' => round($returnsTotal, 2),
+            'netSales' => round($netSales, 2),
+            'payments' => round($totalPayments, 2),
+            'balance' => $balance,
+            'netProfit' => $netProfit,
         ];
     }
 }

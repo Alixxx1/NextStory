@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>حساب مورد | NextStore SaaS</title>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
@@ -32,7 +33,6 @@
             gap: 12px;
         }
 
-        /* توحيد الأرقام باللغة الإنجليزية */
         .en-digit, .numeric-input {
             font-family: Arial, Helvetica, sans-serif !important;
             direction: ltr !important;
@@ -54,7 +54,6 @@
             border-right: 5px solid var(--primary);
             box-shadow: 0 2px 6px rgba(0,0,0,0.03);
         }
-
         .account-title {
             font-weight: 900;
             color: var(--dark);
@@ -65,7 +64,6 @@
             gap: 10px;
             white-space: nowrap;
         }
-
         .account-header-actions {
             display: flex;
             align-items: center;
@@ -75,477 +73,186 @@
             flex-wrap: wrap;
         }
 
-        /* شريط البحث السريع عن مورد في الهيدر */
-        .account-search-wrap {
-            position: relative;
-            width: 100%;
-            max-width: 440px;
-        }
-
+        .account-search-wrap { position: relative; width: 100%; max-width: 440px; }
         .account-search {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 4px 10px;
-            border: 2px solid #ced4da;
-            border-radius: 7px;
-            background: #fff;
-            transition: 0.2s;
+            display: flex; align-items: center; gap: 8px; padding: 4px 10px;
+            border: 2px solid #ced4da; border-radius: 7px; background: #fff; transition: 0.2s;
         }
-        .account-search:focus-within {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(17,151,68,0.12);
-        }
-        .account-search input {
-            width: 100%;
-            border: 0;
-            outline: 0;
-            font-weight: 700;
-            font-size: 14px;
-            padding: 4px;
-        }
+        .account-search:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(17,151,68,0.12); }
+        .account-search input { width: 100%; border: 0; outline: 0; font-weight: 700; font-size: 14px; padding: 4px; }
         .shortcut-badge {
-            background: #e9ecef;
-            color: #495057;
-            font-size: 12px;
-            font-weight: 800;
-            padding: 2px 7px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            white-space: nowrap;
+            background: #e9ecef; color: #495057; font-size: 12px; font-weight: 800;
+            padding: 2px 7px; border-radius: 4px; border: 1px solid #ccc; white-space: nowrap;
         }
-
         .account-search-results {
-            display: none;
-            position: absolute;
-            top: calc(100% + 5px);
-            right: 0;
-            left: 0;
-            z-index: 50;
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background: #fff;
-            box-shadow: 0 12px 28px rgba(23,40,61,0.18);
+            display: none; position: absolute; top: calc(100% + 5px); right: 0; left: 0; z-index: 50;
+            max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color);
+            border-radius: 8px; background: #fff; box-shadow: 0 12px 28px rgba(23,40,61,0.18);
         }
-
         .account-search-result {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 14px;
-            cursor: pointer;
-            border-bottom: 1px solid #f1f5f9;
-            transition: 0.12s;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: 0.12s;
         }
         .account-search-result:last-child { border-bottom: 0; }
-        .account-search-result:hover, .account-search-result.active {
-            background: #eaf6ee;
-            color: #14532d;
-        }
+        .account-search-result:hover, .account-search-result.active { background: #eaf6ee; color: #14532d; }
 
         .exit-btn {
-            background-color: var(--danger);
-            color: white;
-            font-weight: bold;
-            padding: 7px 18px;
-            border-radius: 6px;
-            border: none;
-            transition: 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            white-space: nowrap;
+            background-color: var(--danger); color: white; font-weight: bold;
+            padding: 7px 18px; border-radius: 6px; border: none; transition: 0.2s;
+            display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
         }
         .exit-btn:hover { background-color: #bb2d3b; color: white; }
 
         /* 2. كارت بيانات المورد العلوية */
         .supplier-info-card {
             background: linear-gradient(to left, #eaf6ee, #f4fbf7);
-            border: 1px solid #c3e6cb;
-            border-radius: 10px;
-            padding: 12px 18px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-            flex-wrap: wrap;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            border: 1px solid #c3e6cb; border-radius: 10px; padding: 12px 18px;
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 16px; flex-wrap: wrap; box-shadow: 0 2px 6px rgba(0,0,0,0.02);
         }
-
         .supplier-info-grid {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(180px, 1fr));
-            gap: 10px 16px;
-            flex: 1;
+            display: grid; grid-template-columns: repeat(4, minmax(180px, 1fr));
+            gap: 10px 16px; flex: 1;
         }
-
-        .info-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .info-group label {
-            width: 65px;
-            flex: 0 0 65px;
-            font-size: 13px;
-            font-weight: 800;
-            color: #334155;
-            margin: 0;
-        }
+        .info-group { display: flex; align-items: center; gap: 8px; }
+        .info-group label { width: 65px; flex: 0 0 65px; font-size: 13px; font-weight: 800; color: #334155; margin: 0; }
         .info-group input {
-            width: 100%;
-            border: 1px solid #cbd5e1;
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-weight: 800;
-            font-size: 14px;
-            background-color: #fff;
-            color: var(--dark);
+            width: 100%; border: 1px solid #cbd5e1; padding: 6px 10px;
+            border-radius: 6px; font-weight: 800; font-size: 14px; background-color: #fff; color: var(--dark);
         }
 
-        .supplier-card-side {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
+        .supplier-card-side { display: flex; align-items: center; gap: 12px; }
         .supplier-balance-badge {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            min-width: 195px;
-            padding: 7px 18px;
-            border: 2px solid #b9d8c4;
-            border-radius: 8px;
-            background: #ffffff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            min-width: 195px; padding: 7px 18px; border: 2px solid #b9d8c4;
+            border-radius: 8px; background: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.03);
         }
-        .supplier-balance-badge span {
-            font-size: 12px;
-            font-weight: 800;
-            color: #64748b;
-        }
-        .supplier-balance-badge strong {
-            font-size: 20px;
-            font-weight: 900;
-        }
+        .supplier-balance-badge span { font-size: 12px; font-weight: 800; color: #64748b; }
+        .supplier-balance-badge strong { font-size: 20px; font-weight: 900; }
 
-        /* 3. الحاوية الرئيسية (الفلاتر + التابات + الجداول + الملخص الجانبي) */
+        /* 3. الحاوية الرئيسية */
         .filters-tabs-container {
-            background: #ffffff;
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-            overflow: hidden;
-            min-height: 0;
+            background: #ffffff; border-radius: 10px; border: 1px solid var(--border-color);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04); display: flex; flex-direction: column;
+            flex-grow: 1; overflow: hidden; min-height: 0;
         }
 
-        /* شريط التاريخ والفلاتر */
         .date-filter-bar {
-            padding: 10px 16px;
-            background: #f8f9fa;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
+            padding: 10px 16px; background: #f8f9fa; border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
         }
-
         .date-input-group {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: #fff;
-            padding: 4px 10px;
-            border: 1px solid #ced4da;
-            border-radius: 6px;
+            display: flex; align-items: center; gap: 6px; background: #fff;
+            padding: 4px 10px; border: 1px solid #ced4da; border-radius: 6px;
         }
-        .date-input-group input {
-            border: none;
-            outline: none;
-            font-weight: 800;
-            width: 125px;
-            font-size: 14px;
-        }
+        .date-input-group input { border: none; outline: none; font-weight: 800; width: 125px; font-size: 14px; }
 
         .inner-table-search {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: #fff;
-            border: 1px solid #ced4da;
-            border-radius: 6px;
-            padding: 4px 10px;
-            min-width: 240px;
+            display: flex; align-items: center; gap: 6px; background: #fff;
+            border: 1px solid #ced4da; border-radius: 6px; padding: 4px 10px; min-width: 240px;
         }
-        .inner-table-search input {
-            border: 0;
-            outline: 0;
-            width: 100%;
-            font-size: 13.5px;
-            font-weight: 700;
-        }
+        .inner-table-search input { border: 0; outline: 0; width: 100%; font-size: 13.5px; font-weight: 700; }
 
-        /* شريط التابات الاحترافي */
         .custom-tabs {
-            display: flex;
-            gap: 4px;
-            padding: 6px 12px 0;
-            border-bottom: 2px solid var(--primary);
-            background: #f1f5f9;
-            overflow-x: auto;
+            display: flex; gap: 4px; padding: 6px 12px 0;
+            border-bottom: 2px solid var(--primary); background: #f1f5f9; overflow-x: auto;
         }
-
         .custom-tab {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            padding: 10px 15px;
-            font-weight: 800;
-            font-size: 13.5px;
-            color: #475569;
-            background: transparent;
-            border: 1px solid transparent;
-            border-bottom: none;
-            border-radius: 8px 8px 0 0;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: 0.18s ease;
+            display: inline-flex; align-items: center; gap: 7px; padding: 10px 15px;
+            font-weight: 800; font-size: 13.5px; color: #475569; background: transparent;
+            border: 1px solid transparent; border-bottom: none; border-radius: 8px 8px 0 0;
+            cursor: pointer; white-space: nowrap; transition: 0.18s ease;
         }
-        .custom-tab:hover {
-            background: #e2e8f0;
-            color: var(--dark);
-        }
+        .custom-tab:hover { background: #e2e8f0; color: var(--dark); }
         .custom-tab.active {
-            color: var(--primary);
-            background: #ffffff;
-            border-color: var(--border-color);
-            box-shadow: 0 -2px 6px rgba(0,0,0,0.03);
-            position: relative;
-            top: 2px;
-            padding-bottom: 12px;
+            color: var(--primary); background: #ffffff; border-color: var(--border-color);
+            box-shadow: 0 -2px 6px rgba(0,0,0,0.03); position: relative; top: 2px; padding-bottom: 12px;
         }
         .tab-count-badge {
-            font-size: 11px;
-            padding: 1px 6px;
-            border-radius: 10px;
-            background: #e2e8f0;
-            color: #334155;
+            font-size: 11px; padding: 1px 6px; border-radius: 10px; background: #e2e8f0; color: #334155;
         }
-        .custom-tab.active .tab-count-badge {
-            background: #dcfce7;
-            color: var(--primary-dark);
-        }
+        .custom-tab.active .tab-count-badge { background: #dcfce7; color: var(--primary-dark); }
 
         /* 4. منطقة المحتوى والملخص الجانبي */
-        .tab-content-area {
-            display: flex;
-            flex-grow: 1;
-            overflow: hidden;
-            min-height: 0;
-        }
+        .tab-content-area { display: flex; flex-grow: 1; overflow: hidden; min-height: 0; }
+        .data-grid-section { flex-grow: 1; overflow-y: auto; padding: 14px; background: #fff; }
 
-        .data-grid-section {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 14px;
-            background: #fff;
-        }
-
-        /* الجداول داخل التابات بهوية NextStore */
-        .account-table-wrap {
-            overflow: auto;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-        }
-
-        .account-table {
-            width: 100%;
-            margin: 0;
-            border-collapse: separate;
-            border-spacing: 0;
-            min-width: 780px;
-        }
+        .account-table-wrap { overflow: auto; border: 1px solid var(--border-color); border-radius: 8px; }
+        .account-table { width: 100%; margin: 0; border-collapse: separate; border-spacing: 0; min-width: 780px; }
         .account-table th {
             background: linear-gradient(115deg, var(--dark) 0%, var(--dark-2) 100%);
-            color: #ffffff;
-            position: sticky;
-            top: 0;
-            padding: 11px 10px;
-            font-size: 13px;
-            font-weight: 700;
-            text-align: center;
-            border-left: 1px solid #334e68;
-            z-index: 5;
+            color: #ffffff; position: sticky; top: 0; padding: 11px 10px;
+            font-size: 13px; font-weight: 700; text-align: center; border-left: 1px solid #334e68; z-index: 5;
         }
         .account-table td {
-            padding: 10px;
-            text-align: center;
-            vertical-align: middle;
-            border-bottom: 1px solid #e9ecef;
-            border-left: 1px solid #e9ecef;
-            font-size: 14px;
-            font-weight: 700;
-            color: #2c3e50;
+            padding: 10px; text-align: center; vertical-align: middle;
+            border-bottom: 1px solid #e9ecef; border-left: 1px solid #e9ecef;
+            font-size: 14px; font-weight: 700; color: #2c3e50;
         }
         .account-table tbody tr:nth-child(even) > td { background: #f8fafb; }
         .account-table tbody tr:hover > td { background: #eaf6ee; }
         .account-table tbody tr.purchase-invoice-row { cursor: pointer; }
 
-        /* كروت تبويب الملخص */
-        .summary-cards {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(170px, 1fr));
-            gap: 12px;
-        }
+        .summary-cards { display: grid; grid-template-columns: repeat(3, minmax(170px, 1fr)); gap: 12px; }
         .summary-card {
-            padding: 14px 16px;
-            border: 1px solid #dce1e6;
-            border-right: 4px solid var(--primary);
-            border-radius: 8px;
-            background: #f8fafb;
+            padding: 14px 16px; border: 1px solid #dce1e6;
+            border-right: 4px solid var(--primary); border-radius: 8px; background: #f8fafb;
         }
         .summary-card.card-danger { border-right-color: var(--danger); }
         .summary-card.card-dark { border-right-color: var(--dark); }
-        .summary-card span {
-            display: block;
-            color: #64748b;
-            font-size: 13px;
-            font-weight: 800;
-        }
-        .summary-card strong {
-            display: block;
-            margin-top: 6px;
-            font-size: 21px;
-            color: var(--dark);
-        }
+        .summary-card span { display: block; color: #64748b; font-size: 13px; font-weight: 800; }
+        .summary-card strong { display: block; margin-top: 6px; font-size: 21px; color: var(--dark); }
 
-        /* کروز الإحصائيات الخاصة بالصنف والمخزون (مثل الصورة الأصلية) */
         .extra-inventory-metrics {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(160px, 1fr));
-            gap: 12px;
-            margin-top: 12px;
-            padding: 12px;
-            background: #fffbeb;
-            border: 1px dashed #f59e0b;
-            border-radius: 8px;
+            display: grid; grid-template-columns: repeat(3, minmax(160px, 1fr));
+            gap: 12px; margin-top: 12px; padding: 12px;
+            background: #fffbeb; border: 1px dashed #f59e0b; border-radius: 8px;
         }
         .extra-metric-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #fff;
-            padding: 8px 12px;
-            border-radius: 6px;
-            border: 1px solid #fde68a;
-            font-size: 13px;
-            font-weight: 800;
+            display: flex; justify-content: space-between; align-items: center;
+            background: #fff; padding: 8px 12px; border-radius: 6px;
+            border: 1px solid #fde68a; font-size: 13px; font-weight: 800;
         }
 
-        /* الملخص الجانبي الثابت (Side Summary) */
+        /* الملخص الجانبي الثابت */
         .side-summary {
-            width: 310px;
-            flex: 0 0 310px;
-            background: #f8fafb;
-            border-right: 2px solid var(--border-color);
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            overflow-y: auto;
+            width: 310px; flex: 0 0 310px; background: #f8fafb;
+            border-right: 2px solid var(--border-color); padding: 15px;
+            display: flex; flex-direction: column; gap: 10px; overflow-y: auto;
         }
-
         .side-summary-title {
-            font-weight: 900;
-            color: var(--dark);
-            font-size: 15px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid var(--primary);
-            margin-bottom: 2px;
+            font-weight: 900; color: var(--dark); font-size: 15px;
+            padding-bottom: 8px; border-bottom: 2px solid var(--primary); margin-bottom: 2px;
         }
-
-        .summary-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-        }
-        .summary-row label {
-            font-size: 13px;
-            font-weight: 800;
-            color: #334155;
-            margin: 0;
-        }
+        .summary-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .summary-row label { font-size: 13px; font-weight: 800; color: #334155; margin: 0; }
         .summary-row input {
-            width: 135px;
-            text-align: center;
-            font-weight: 900;
-            font-size: 15px;
-            border: 1px solid #cbd5e1;
-            background: #fff;
-            padding: 5px 8px;
-            border-radius: 6px;
-            color: var(--dark);
+            width: 135px; text-align: center; font-weight: 900; font-size: 15px;
+            border: 1px solid #cbd5e1; background: #fff; padding: 5px 8px; border-radius: 6px; color: var(--dark);
         }
-
-        .summary-row.final-balance {
-            padding-top: 8px;
-            border-top: 2px dashed #cbd5e1;
-        }
+        .summary-row.final-balance { padding-top: 8px; border-top: 2px dashed #cbd5e1; }
         .summary-row.final-balance input {
-            background-color: #fff3cd;
-            color: #b45309;
-            border: 2px solid #f59e0b;
-            font-size: 17px;
+            background-color: #fff3cd; color: #b45309; border: 2px solid #f59e0b; font-size: 17px;
         }
 
         .btn-pay {
-            background-color: var(--primary);
-            color: white;
-            font-weight: 800;
-            border: none;
-            padding: 10px 14px;
-            border-radius: 7px;
-            width: 100%;
-            transition: 0.2s;
+            background-color: var(--primary); color: white; font-weight: 800;
+            border: none; padding: 10px 14px; border-radius: 7px; width: 100%; transition: 0.2s;
         }
         .btn-pay:hover { background-color: var(--primary-dark); color: #fff; }
 
         .account-note {
-            margin-top: auto;
-            padding: 10px;
-            border: 1px solid #cbd5e1;
-            border-radius: 7px;
-            background: #fff;
-            color: #475569;
-            font-size: 11.5px;
-            font-weight: 700;
-            line-height: 1.5;
+            margin-top: auto; padding: 10px; border: 1px solid #cbd5e1;
+            border-radius: 7px; background: #fff; color: #475569; font-size: 11.5px; font-weight: 700; line-height: 1.5;
         }
-
         .account-empty {
-            display: grid;
-            min-height: 220px;
-            place-content: center;
-            gap: 8px;
-            color: #64748b;
-            text-align: center;
+            display: grid; min-height: 220px; place-content: center; gap: 8px; color: #64748b; text-align: center;
         }
         .account-empty i { font-size: 36px; color: #94a3b8; }
 
-        /* قائمة اختيار المورد في المودال (F2) */
         .supplier-picker-row { cursor: pointer; transition: 0.12s; }
         .supplier-picker-row:hover > td, .supplier-picker-row.active-picker-row > td {
-            background-color: #c9f0d5 !important;
-            color: #14532d;
-            font-weight: 800;
+            background-color: #c9f0d5 !important; color: #14532d; font-weight: 800;
         }
 
         @media (max-width: 992px) {
@@ -581,13 +288,12 @@
             <button type="button" class="btn btn-info text-white fw-bold" id="btn-record-collection-top">
                 <i class="fas fa-arrow-down me-1"></i> تحصيل من المورد
             </button>
-            {{-- زر نافذة اختيار الموردين (F2) --}}
+
             <button type="button" class="btn btn-warning fw-bold d-flex align-items-center gap-2" id="btn-open-supplier-picker" title="اختيار مورد من القائمة (F2)">
                 <i class="fas fa-truck-field"></i>
                 <span>اختيار مورد (F2)</span>
             </button>
 
-            {{-- البحث السريع (F3) --}}
             <div class="account-search-wrap">
                 <div class="account-search">
                     <i class="fas fa-search text-muted"></i>
@@ -597,14 +303,11 @@
                 <div class="account-search-results" id="account-supplier-results"></div>
             </div>
 
-            {{-- زر تقرير دفعات الموردين الكامل --}}
-            <button type="button" class="btn btn-primary fw-bold d-flex align-items-center gap-2" id="btn-open-payments-report"
-                    title="فتح تقرير دفعات الموردين الكامل">
+            <button type="button" class="btn btn-primary fw-bold d-flex align-items-center gap-2" id="btn-open-payments-report" title="فتح تقرير دفعات الموردين الكامل">
                 <i class="fas fa-money-bill-transfer"></i>
                 <span>تقرير الدفعات</span>
             </button>
 
-            {{-- زر الخروج للصفحة السابقة (Esc) --}}
             <button class="exit-btn" id="btn-close-account" type="button" title="الرجوع للصفحة السابقة (Esc)">
                 <i class="fas fa-arrow-right-from-bracket"></i>
                 <span>خروج (Esc)</span>
@@ -637,7 +340,6 @@
             <button class="btn btn-outline-success bg-white fw-bold px-3 py-2" id="btn-edit-supplier" type="button">
                 <i class="fas fa-pen-to-square me-1"></i> تعديل البيانات
             </button>
-
             <div class="supplier-balance-badge">
                 <span id="supplier-balance-label">قيمة الحساب (دائن)</span>
                 <strong class="en-digit text-success" id="supplier-balance-display">0.00 ج.م</strong>
@@ -647,21 +349,16 @@
 
     {{-- 3. شريط الفلاتر والتابات والبيانات --}}
     <div class="filters-tabs-container">
-
-        {{-- شريط التاريخ والبحث داخل الجدول --}}
         <div class="date-filter-bar">
             <span class="fw-bold text-dark"><i class="fas fa-calendar-days text-success me-1"></i> تحديد التاريخ:</span>
-
             <div class="date-input-group">
                 <span class="text-muted small fw-bold">من</span>
                 <input type="date" class="en-digit" id="account-date-from">
             </div>
-
             <div class="date-input-group">
                 <span class="text-muted small fw-bold">إلى</span>
                 <input type="date" class="en-digit" id="account-date-to">
             </div>
-
             <button class="btn btn-sm btn-success fw-bold px-3" id="btn-apply-account-filter">
                 <i class="fas fa-filter me-1"></i> بحث بالتاريخ
             </button>
@@ -679,7 +376,6 @@
             </button>
         </div>
 
-        {{-- التبويبات (Tabs) مطابقة للصورة --}}
         <div class="custom-tabs" role="tablist">
             <button class="custom-tab active" type="button" data-tab="summary">
                 <i class="fas fa-chart-pie"></i> ملخص
@@ -707,13 +403,11 @@
             </button>
         </div>
 
-        {{-- مساحة المحتوى والملخص الجانبي --}}
         <div class="tab-content-area">
             <main class="data-grid-section">
                 <div id="account-tab-content"></div>
             </main>
 
-            {{-- الملخص الجانبي الثابت (Side Summary) --}}
             <aside class="side-summary">
                 <div class="side-summary-title">
                     <i class="fas fa-calculator text-success me-1"></i> ملخص حساب المورد
@@ -771,9 +465,7 @@
         </div>
     </div>
 
-    {{-- ========================================================== --}}
-    {{-- مودال 1: نافذة اختيار الموردين (F2) بالأسهم + Enter --}}
-    {{-- ========================================================== --}}
+    {{-- مودال 1: نافذة اختيار الموردين (F2) --}}
     <div class="modal fade" id="supplierPickerModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow-lg">
@@ -810,9 +502,7 @@
         </div>
     </div>
 
-    {{-- ========================================================== --}}
     {{-- مودال 2: تسجيل حركة نقدية للمورد --}}
-    {{-- ========================================================== --}}
     <div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <form class="modal-content border-0 shadow-lg" id="payment-form">
@@ -853,9 +543,7 @@
         </div>
     </div>
 
-    {{-- ========================================================== --}}
     {{-- مودال 3: تعديل بيانات المورد --}}
-    {{-- ========================================================== --}}
     <div class="modal fade" id="editSupplierModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <form class="modal-content border-0 shadow-lg" id="edit-supplier-form">
@@ -889,9 +577,7 @@
         </div>
     </div>
 
-    {{-- ========================================================== --}}
     {{-- مودال 4: تسوية رصيد المورد --}}
-    {{-- ========================================================== --}}
     <div class="modal fade" id="settlementModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <form class="modal-content border-0 shadow-lg" id="settlement-form">
@@ -924,12 +610,11 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
     <script>
     $(document).ready(function() {
-        const suppliersStorageKey = 'nextstore.suppliers.v1';
-        const accountStorageKey = 'nextstore.supplier-transactions.v1';
-        const purchaseInvoicesStorageKey = 'nexstore-purchase-invoices';
+        'use strict';
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
         const currentShiftStorageKey = 'nexstore-current-purchase-shift';
         const currentShiftId = localStorage.getItem(currentShiftStorageKey) || 'current';
 
@@ -939,19 +624,23 @@
         const settlementModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('settlementModal'));
 
         const cashSupplier = {
-            id: 'cash-supplier', code: '000', company: 'مورد نقدي', contact: 'مورد نقدي',
-            phone: '-', address: '-', balance: 0, balanceType: 'credit', purchases: 0, isCash: true
+            id: 'cash-supplier',
+            code: '000',
+            company: 'مورد نقدي',
+            contact: 'مورد نقدي',
+            phone: '-',
+            address: '-',
+            openingBalance: 0,
+            balance: 0,
+            balanceType: 'credit',
+            purchases: 0,
+            isCash: true
         };
 
-        const defaultSuppliers = [
-            { id: 'seed-001', code: '001', company: 'شركة محمود النوبي', contact: 'محمود النوبي', phone: '01009116903', address: 'شارع 285 د', balance: 16000.58, balanceType: 'credit', purchases: 319127.58 },
-            { id: 'seed-003', code: '003', company: 'أحمد هاني للإستيراد', contact: 'أحمد هاني', phone: '01028973552', address: 'المنطقة الصناعية - أكتوبر', balance: 89720.32, balanceType: 'credit', purchases: 1483874.32 },
-            { id: 'seed-004', code: '004', company: 'شركة النمر', contact: 'الحاج عبد الدايم', phone: '01022255935', address: 'أكتوبر', balance: 0, balanceType: 'credit', purchases: 0 },
-            { id: 'seed-005', code: '005', company: 'محمد طارق سكر', contact: 'محمد طارق', phone: '01118442190', address: 'الجيزة', balance: 6000.24, balanceType: 'credit', purchases: 134377.96 }
-        ];
+        let suppliers = @json($initialSuppliers ?? []);
+        let purchaseInvoices = @json($initialPurchaseInvoices ?? []);
+        let accountData = @json($initialAccountData ?? []);
 
-        let suppliers = [];
-        let accountData = {};
         let activeSupplier = null;
         let currentTab = 'summary';
         let dateFrom = '';
@@ -961,9 +650,7 @@
         let activeSearchIndex = -1;
         let pickerMatches = [];
         let activePickerIndex = 0;
-        let purchaseInvoices = [];
         let activePaymentType = 'payment';
-        let supplierSeedMigrationPending = false;
 
         function digits(value) {
             return String(value == null ? '' : value)
@@ -982,11 +669,19 @@
         }
 
         function money(value) {
-            return Math.abs(amount(value)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            return Math.abs(amount(value)).toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
         }
 
         function today() {
-            return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+            return new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'Africa/Cairo',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).format(new Date());
         }
 
         function displayDate(value) {
@@ -1003,53 +698,45 @@
             }
         });
 
-        // قراءة البيانات أو تهيئة بيانات افتراضية
-        try {
-            let savedSups = localStorage.getItem(suppliersStorageKey);
-            suppliers = savedSups ? JSON.parse(savedSups) : defaultSuppliers;
-            if (!Array.isArray(suppliers) || !suppliers.length) suppliers = defaultSuppliers;
-
-            let savedAcc = localStorage.getItem(accountStorageKey);
-            accountData = savedAcc ? JSON.parse(savedAcc) : {};
-            if (!accountData || typeof accountData !== 'object') accountData = {};
-        } catch (e) {
-            suppliers = defaultSuppliers;
-            accountData = {};
-        }
-
-        try {
-            let savedInvoices = localStorage.getItem(purchaseInvoicesStorageKey);
-            if (savedInvoices !== null) {
-                purchaseInvoices = JSON.parse(savedInvoices);
-                if (!Array.isArray(purchaseInvoices) || !purchaseInvoices.every(invoice =>
-                    invoice && typeof invoice.id === 'string' && typeof invoice.date === 'string' &&
-                    typeof invoice.total === 'number' && typeof invoice.paid === 'number' &&
-                    Array.isArray(invoice.items)
-                )) throw new Error('بيانات فواتير الشراء المحفوظة غير صالحة.');
-            }
-        } catch (error) {
-            console.error('تعذر تحميل فواتير المورد.', error);
-            Swal.fire('تعذر تحميل سجل الطلبات', error.message, 'error');
-        }
-
         let allSuppliers = [cashSupplier, ...suppliers];
         const urlParams = new URLSearchParams(window.location.search);
         const reqId = urlParams.get('supplier') || urlParams.get('supplierId');
         const reqCode = urlParams.get('code');
 
-        activeSupplier = allSuppliers.find(s => (reqId && s.id === reqId) || (reqCode && s.code === reqCode)) || suppliers[0] || cashSupplier;
+        activeSupplier = allSuppliers.find(s => (reqId && String(s.id) === String(reqId)) || (reqCode && String(s.code) === String(reqCode))) || suppliers[0] || cashSupplier;
+
+        async function refreshDataFromDB() {
+            try {
+                const res = await fetch('/api/suppliers/show-bootstrap', { headers: { 'Accept': 'application/json' } });
+                if (res.ok) {
+                    const out = await res.json();
+                    suppliers = Array.isArray(out.initialSuppliers) ? out.initialSuppliers : [];
+                    purchaseInvoices = Array.isArray(out.initialPurchaseInvoices) ? out.initialPurchaseInvoices : [];
+                    accountData = out.initialAccountData || {};
+                    allSuppliers = [cashSupplier, ...suppliers];
+                    if (activeSupplier) {
+                        activeSupplier = allSuppliers.find(s => String(s.id) === String(activeSupplier.id)) || activeSupplier;
+                    }
+                    renderCurrentTab();
+                }
+            } catch (e) {
+                console.error('تعذر تحديث بيانات حساب المورد:', e);
+            }
+        }
+
+        function ensureSupplierAccountState(supplier) {
+            const key = String(supplier.id);
+            if (!accountData[key]) {
+                accountData[key] = {
+                    openingBalance: Number(supplier.openingBalance) || 0,
+                    entries: []
+                };
+            }
+            return accountData[key];
+        }
 
         function invoicesForSupplier(supplier) {
-            const names = [supplier.company, supplier.contact]
-                .filter(Boolean)
-                .map(name => String(name).trim().toLocaleLowerCase('ar'));
-            return purchaseInvoices.filter(invoice => {
-                if (String(invoice.supplierId || invoice.supplierData?.id || '') === String(supplier.id)) return true;
-                const invoiceNames = [invoice.supplier, invoice.supplierData?.company, invoice.supplierData?.contact]
-                    .filter(Boolean)
-                    .map(name => String(name).trim().toLocaleLowerCase('ar'));
-                return invoiceNames.some(name => names.includes(name));
-            });
+            return purchaseInvoices.filter(invoice => String(invoice.supplierId) === String(supplier.id));
         }
 
         function invoiceAccountEntry(invoice) {
@@ -1061,10 +748,10 @@
                 date: invoice.date,
                 amount: amount(invoice.total),
                 paid: amount(invoice.paid),
-                itemCount: amount(invoice.productCount || invoice.items.length),
+                itemCount: amount(invoice.productCount || (invoice.items || []).length),
                 user: invoice.user || 'مدير الفرع',
                 note: invoice.notes || '',
-                items: invoice.items.map(item => ({
+                items: (invoice.items || []).map(item => ({
                     name: item.product?.name || item.name || 'صنف',
                     quantity: amount(item.quantity),
                     unit: item.product?.unit || item.unit || 'قطعة',
@@ -1078,74 +765,10 @@
         }
 
         function accountEntriesFor(supplier) {
-            const state = ensureSeededTransactions(supplier);
+            const state = ensureSupplierAccountState(supplier);
             const supplierInvoices = invoicesForSupplier(supplier);
-            if (!supplierInvoices.length) return state.entries;
-
-            const hasSeedEntries = state.entries.some(entry => String(entry.id || '').startsWith('seed-'));
-            if (hasSeedEntries) {
-                const manualEntries = state.entries.filter(entry => !String(entry.id || '').startsWith('seed-'));
-                const manualDelta = manualEntries.reduce((total, entry) => total + entryDelta(entry), 0);
-                const supplierBalance = amount(supplier.balance) * (supplier.balanceType === 'debit' ? -1 : 1);
-                state.openingBalance = supplierBalance - manualDelta;
-                state.entries = manualEntries;
-            }
-            return [...state.entries, ...supplierInvoices.map(invoiceAccountEntry)];
-        }
-
-        // توليد حركات افتراضية واقعية للمورد إذا لم تكن له حركات محفوظة بعد
-        function ensureSeededTransactions(supplier) {
-            if (!accountData[supplier.id]) {
-                let targetBal = amount(supplier.balance) * (supplier.balanceType === 'debit' ? -1 : 1);
-                if (supplier.isCash || targetBal === 0) {
-                    accountData[supplier.id] = { openingBalance: 0, entries: [] };
-                } else {
-                    accountData[supplier.id] = {
-                        openingBalance: 5000,
-                        entries: [
-                            {
-                                id: `seed-pur-1-${supplier.id}`,
-                                type: 'purchase',
-                                reference: 'INV-9021',
-                                date: '2026-10-05',
-                                amount: targetBal + 12000,
-                                paid: 10000,
-                                itemCount: 2,
-                                user: 'أحمد كاشير',
-                                note: 'توريد بضاعة شهر أكتوبر',
-                                items: [
-                                    { name: 'فلفل أسود حصى هندي', quantity: 20, unit: 'كيلو', unitPrice: 400, total: 8000 },
-                                    { name: 'زيت كريستال عباد 1 لتر', quantity: 50, unit: 'قطعة', unitPrice: 80, total: 4000 }
-                                ]
-                            },
-                            {
-                                id: `seed-ret-1-${supplier.id}`,
-                                type: 'return',
-                                reference: 'SRET-105',
-                                date: '2026-10-09',
-                                amount: 2000,
-                                note: 'مرتجع 5 كيلو فلفل أسود'
-                            },
-                            {
-                                id: `seed-pay-1-${supplier.id}`,
-                                type: 'payment',
-                                reference: 'PAY-0001',
-                                date: '2026-10-12',
-                                amount: 5000,
-                                method: 'نقدي - الخزينة الرئيسية',
-                                note: 'دفعة نقدية تحت الحساب'
-                            }
-                        ]
-                    };
-                }
-            }
-            const state = accountData[supplier.id];
-            const seededPayment = state.entries.find(entry => entry.id === `seed-pay-1-${supplier.id}`);
-            if (seededPayment && amount(seededPayment.amount) === 15000) {
-                seededPayment.amount = 5000;
-                supplierSeedMigrationPending = true;
-            }
-            return state;
+            return [...state.entries, ...supplierInvoices.map(invoiceAccountEntry)]
+                .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
         }
 
         function entryDelta(entry) {
@@ -1158,7 +781,7 @@
         }
 
         function totalsFor(supplier, entries) {
-            let state = ensureSeededTransactions(supplier);
+            let state = ensureSupplierAccountState(supplier);
             let opening = amount(state.openingBalance);
             let purchases = entries.filter(e => e.type === 'purchase').reduce((s, e) => s + amount(e.amount), 0);
             let paidInInvoices = entries.filter(e => e.type === 'purchase').reduce((s, e) => s + amount(e.paid || 0), 0);
@@ -1216,7 +839,6 @@
             $('#summary-settlements').val(money(totals.settlements));
             $('#summary-balance').val(`${isCredit ? 'دائن / ' : 'مدين / '}${money(totals.balance)}`);
 
-            // تحديث عدادات التابات
             let all = accountEntriesFor(activeSupplier);
             $('#count-orders').text(all.filter(e => e.type === 'purchase').length);
             $('#count-items').text(all.filter(e => e.type === 'purchase').reduce((s, e) => s + ((e.items || []).length), 0));
@@ -1285,16 +907,16 @@
 
                 <div class="extra-inventory-metrics">
                     <div class="extra-metric-item">
-                        <span class="text-muted">قيمة المبيع من وارداته:</span>
-                        <span class="en-digit text-dark">${money(totals.netPurchases * 0.65)} ج.م</span>
+                        <span class="text-muted">صافي مسحوبات المورد:</span>
+                        <span class="en-digit text-dark">${money(totals.netPurchases)} ج.م</span>
                     </div>
                     <div class="extra-metric-item">
                         <span class="text-muted">قيمة تسوية الأرصدة:</span>
                         <span class="en-digit text-warning">${money(totals.settlements)} ج.م</span>
                     </div>
                     <div class="extra-metric-item">
-                        <span class="text-muted">المخزون الحالي من أصنافه:</span>
-                        <span class="en-digit text-success">${money(totals.netPurchases * 0.35)} ج.م</span>
+                        <span class="text-muted">إجمالي المسدد للمورد:</span>
+                        <span class="en-digit text-success">${money(totals.payments)} ج.م</span>
                     </div>
                 </div>
 
@@ -1400,7 +1022,7 @@
         }
 
         function renderStatementTab(entries) {
-            let state = ensureSeededTransactions(activeSupplier);
+            let state = ensureSupplierAccountState(activeSupplier);
             let running = amount(state.openingBalance);
             let rows = [`
                 <tr class="table-warning">
@@ -1449,7 +1071,7 @@
 
         $('#account-tab-content').on('dblclick', '.purchase-invoice-row', function() {
             const invoiceId = String($(this).attr('data-invoice-id') || '');
-            const invoice = purchaseInvoices.find(item => item.id === invoiceId);
+            const invoice = purchaseInvoices.find(item => String(item.id) === invoiceId);
             if (!invoice) {
                 Swal.fire('الفاتورة غير موجودة', 'تعذر العثور على بيانات الفاتورة في سجل المشتريات.', 'error');
                 return;
@@ -1458,7 +1080,7 @@
                 Swal.fire('التعديل غير متاح', 'الفاتورة المحذوفة للعرض فقط.', 'warning');
                 return;
             }
-            if (!invoice.shiftOpen || invoice.shiftId !== currentShiftId) {
+            if (!invoice.shiftOpen) {
                 Swal.fire('التعديل غير متاح', 'لا يمكن تعديل الفاتورة بعد إغلاق الوردية التي سُجلت فيها.', 'warning');
                 return;
             }
@@ -1475,23 +1097,21 @@
             renderCurrentTab();
         }
 
-        // زر فتح تقرير دفعات الموردين الكامل
         $('#btn-open-payments-report').on('click', function() {
             if (!activeSupplier) {
                 Swal.fire({ icon:'warning', title:'اختر مورداً أولاً', text:'قم باختيار مورد لعرض تقرير دفعاته', confirmButtonText:'حسناً' });
                 return;
             }
-            window.location.href = `/suppliers/payments?supplier=${activeSupplier.id}&from=show`;
+            window.location.href = `/suppliers/payments?supplier=${encodeURIComponent(activeSupplier.id)}&from=show`;
         });
 
-        // تبديل التابات
         $('.custom-tab').on('click', function() {
             currentTab = $(this).attr('data-tab');
-            $('.custom-tab').removeClass('active');$(this).addClass('active');
+            $('.custom-tab').removeClass('active');
+            $(this).addClass('active');
             renderCurrentTab();
         });
 
-        // البحث الداخلي والفترة
         $('#inner-record-search').on('input', function() {
             innerSearchQuery = $(this).val();
             renderCurrentTab();
@@ -1521,14 +1141,14 @@
             );
             activePickerIndex = 0;
 
-            let $tbody =$('#picker-modal-tbody');
+            let $tbody = $('#picker-modal-tbody');
             if (!pickerMatches.length) {
                 $tbody.html('<tr><td colspan="5" class="py-4 text-muted">لا يوجد مورد مطابق</td></tr>');
                 return;
             }
 
             $tbody.html(pickerMatches.map((s, idx) => {
-                let t = totalsFor(s, ensureSeededTransactions(s).entries);
+                let t = totalsFor(s, accountEntriesFor(s));
                 return `
                     <tr class="supplier-picker-row ${idx === 0 ? 'active-picker-row' : ''}" data-index="${idx}">
                         <td class="en-digit text-primary">${escapeHtml(s.code)}</td>
@@ -1549,17 +1169,15 @@
         }
 
         $('#btn-open-supplier-picker').on('click', openSupplierPickerModal);
-        $('#picker-modal-search').on('input', function() {
-            renderPickerModalRows($(this).val());
-        });
+        $('#picker-modal-search').on('input', function() { renderPickerModalRows($(this).val()); });
 
         $('#supplierPickerModal').on('keydown', function(e) {
-            let $rows =$('#picker-modal-tbody .supplier-picker-row');
+            let $rows = $('#picker-modal-tbody .supplier-picker-row');
             if (!$rows.length) return;
-
             if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                activePickerIndex = Math.min(activePickerIndex + 1, $rows.length - 1);$rows.removeClass('active-picker-row').eq(activePickerIndex).addClass('active-picker-row')[0].scrollIntoView({ block: 'nearest' });
+                activePickerIndex = Math.min(activePickerIndex + 1, $rows.length - 1);
+                $rows.removeClass('active-picker-row').eq(activePickerIndex).addClass('active-picker-row')[0].scrollIntoView({ block: 'nearest' });
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 activePickerIndex = Math.max(activePickerIndex - 1, 0);
@@ -1594,6 +1212,7 @@
                 $('#account-supplier-results').html('<div class="p-3 text-center text-muted">لا توجد نتائج</div>').show();
                 return;
             }
+
             $('#account-supplier-results').html(searchMatches.map((s, i) => `
                 <div class="account-search-result ${i === 0 ? 'active' : ''}" data-index="${i}">
                     <strong>${escapeHtml(s.company || s.contact)}</strong>
@@ -1601,11 +1220,12 @@
                 </div>
             `).join('')).show();
         }).on('keydown', function(e) {
-            let $items =$('#account-supplier-results .account-search-result');
+            let $items = $('#account-supplier-results .account-search-result');
             if (!$items.length) return;
             if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                activeSearchIndex = Math.min(activeSearchIndex + 1, $items.length - 1);$items.removeClass('active').eq(activeSearchIndex).addClass('active');
+                activeSearchIndex = Math.min(activeSearchIndex + 1, $items.length - 1);
+                $items.removeClass('active').eq(activeSearchIndex).addClass('active');
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 activeSearchIndex = Math.max(activeSearchIndex - 1, 0);
@@ -1621,11 +1241,16 @@
         });
 
         $(document).on('mousedown', function(e) {
-            if (!$(e.target).closest('.account-search-wrap').length) {$('#account-supplier-results').hide();
+            if (!$(e.target).closest('.account-search-wrap').length) {
+                $('#account-supplier-results').hide();
             }
         });
 
         function openPaymentModal(type = 'payment') {
+            if (activeSupplier.isCash) {
+                Swal.fire('تنبيه', 'اختر مورداً مسجلاً أولاً (F2) لتسجيل دفعات أو تحصيلات على حسابه.', 'info');
+                return;
+            }
             activePaymentType = type;
             $('#payment-form')[0].reset();
             $('#pay-date').val(today());
@@ -1646,10 +1271,12 @@
             paymentModal.show();
             setTimeout(() => $('#pay-amount').trigger('focus'), 220);
         }
+
         $('#btn-record-payment, #btn-record-payment-top').on('click', () => openPaymentModal('payment'));
         $('#btn-record-collection, #btn-record-collection-top').on('click', () => openPaymentModal('collection'));
 
-        $('#payment-form').on('submit', function(e) {
+        // حفظ دفعة أو تحصيل في قاعدة البيانات الحقيقية
+        $('#payment-form').on('submit', async function(e) {
             e.preventDefault();
             let val = amount($('#pay-amount').val());
             if (val <= 0) {
@@ -1658,73 +1285,95 @@
                 return;
             }
 
-            let state = ensureSeededTransactions(activeSupplier);
             const isCollection = activePaymentType === 'collection';
             const entryType = isCollection ? 'collection' : 'payment';
-            const prefix = isCollection ? 'COL' : 'PAY';
-            state.entries.push({
-                id: `${entryType}-${Date.now()}`,
-                type: entryType,
-                reference: `${prefix}-${String(state.entries.filter(entry => entry.type === entryType).length + 1).padStart(4, '0')}`,
-                date: $('#pay-date').val() || today(),
-                amount: val,
-                method: $('#pay-method').val(),
-                note: $('#pay-note').val().trim() || (isCollection ? 'تحصيل نقدي من المورد' : 'سداد نقدي للمورد')
-            });
 
-            const balance = totalsFor(activeSupplier, accountEntriesFor(activeSupplier)).balance;
-            const updatedSupplier = {
-                ...activeSupplier,
-                balance: Math.abs(balance),
-                balanceType: balance < 0 ? 'debit' : 'credit'
-            };
             try {
-                localStorage.setItem(accountStorageKey, JSON.stringify(accountData));
-                if (!updatedSupplier.isCash) {
-                    suppliers = suppliers.map(supplier => supplier.id === updatedSupplier.id ? updatedSupplier : supplier);
-                    localStorage.setItem(suppliersStorageKey, JSON.stringify(suppliers));
-                    allSuppliers = [cashSupplier, ...suppliers];
-                    activeSupplier = updatedSupplier;
-                }
+                $('#payment-submit-button').prop('disabled', true);
+                const res = await fetch('/api/suppliers/transactions/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({
+                        supplierId: activeSupplier.id,
+                        type: entryType,
+                        amount: val,
+                        method: $('#pay-method').val(),
+                        date: $('#pay-date').val() || today(),
+                        note: $('#pay-note').val().trim()
+                    })
+                });
+                const out = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(out.message || 'تعذر حفظ الحركة في قاعدة البيانات');
+
+                let state = ensureSupplierAccountState(activeSupplier);
+                state.entries.push(out.entry);
+                activeSupplier.balance = out.supplierBalance;
+                activeSupplier.balanceType = out.supplierBalanceType;
+
+                paymentModal.hide();
+                renderCurrentTab();
+                Swal.fire({ title: isCollection ? 'تم تسجيل التحصيل بنجاح' : 'تم تسجيل الدفعة بنجاح', icon: 'success', timer: 1200, showConfirmButton: false });
             } catch (error) {
-                console.error('تعذر حفظ حركة المورد أو تحديث رصيده.', error);
                 Swal.fire('تعذر حفظ الحركة', error.message, 'error');
-                return;
+            } finally {
+                $('#payment-submit-button').prop('disabled', false);
             }
-            paymentModal.hide();
-            renderCurrentTab();
-            Swal.fire({ title: isCollection ? 'تم تسجيل التحصيل بنجاح' : 'تم تسجيل الدفعة بنجاح', icon: 'success', timer: 1200, showConfirmButton: false });
         });
 
-        // تسوية الحساب
+        // تسوية الحساب في قاعدة البيانات
         $('#btn-open-settlement').on('click', function() {
+            if (activeSupplier.isCash) {
+                Swal.fire('تنبيه', 'اختر مورداً مسجلاً أولاً (F2) لتسوية حسابه.', 'info');
+                return;
+            }
             $('#settlement-form')[0].reset();
             settlementModal.show();
             setTimeout(() => $('#settle-amount').trigger('focus'), 220);
         });
 
-        $('#settlement-form').on('submit', function(e) {
+        $('#settlement-form').on('submit', async function(e) {
             e.preventDefault();
             let val = amount($('#settle-amount').val());
             if (val <= 0) return;
 
-            let state = ensureSeededTransactions(activeSupplier);
-            state.entries.push({
-                id: `settle-${Date.now()}`,
-                type: 'settlement',
-                reference: `SET-${Date.now().toString().slice(-4)}`,
-                date: today(),
-                amount: val,
-                direction: $('#settle-direction').val(),
-                note: $('#settle-note').val().trim()
-            });
-            localStorage.setItem(accountStorageKey, JSON.stringify(accountData));
-            settlementModal.hide();
-            renderCurrentTab();
-            Swal.fire({ title: 'تم حفظ التسوية', icon: 'success', timer: 1200, showConfirmButton: false });
+            try {
+                const res = await fetch('/api/suppliers/transactions/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({
+                        supplierId: activeSupplier.id,
+                        type: 'settlement',
+                        direction: $('#settle-direction').val(),
+                        amount: val,
+                        date: today(),
+                        note: $('#settle-note').val().trim()
+                    })
+                });
+                const out = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(out.message || 'تعذر حفظ التسوية');
+
+                let state = ensureSupplierAccountState(activeSupplier);
+                state.entries.push(out.entry);
+                activeSupplier.balance = out.supplierBalance;
+                activeSupplier.balanceType = out.supplierBalanceType;
+
+                settlementModal.hide();
+                renderCurrentTab();
+                Swal.fire({ title: 'تم حفظ التسوية في قاعدة البيانات', icon: 'success', timer: 1200, showConfirmButton: false });
+            } catch (error) {
+                Swal.fire('خطأ', error.message, 'error');
+            }
         });
 
-        // تعديل بيانات المورد
+        // تعديل بيانات المورد في قاعدة البيانات
         $('#btn-edit-supplier').on('click', function() {
             if (activeSupplier.isCash) return;
             $('#edit-sup-company').val(activeSupplier.company || '');
@@ -1734,23 +1383,44 @@
             editModal.show();
         });
 
-        $('#edit-supplier-form').on('submit', function(e) {
+        $('#edit-supplier-form').on('submit', async function(e) {
             e.preventDefault();
-            activeSupplier.company = $('#edit-sup-company').val().trim();
-            activeSupplier.contact = $('#edit-sup-contact').val().trim();
-            activeSupplier.phone = digits($('#edit-sup-phone').val().trim());
-            activeSupplier.address = $('#edit-sup-address').val().trim();
+            try {
+                const res = await fetch('/api/suppliers/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({
+                        id: activeSupplier.id,
+                        code: activeSupplier.code,
+                        company: $('#edit-sup-company').val().trim(),
+                        contact: $('#edit-sup-contact').val().trim(),
+                        phone: digits($('#edit-sup-phone').val().trim()),
+                        address: $('#edit-sup-address').val().trim()
+                    })
+                });
+                const out = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(out.message || 'تعذر تحديث بيانات المورد');
 
-            suppliers = suppliers.map(s => s.id === activeSupplier.id ? activeSupplier : s);
-            allSuppliers = [cashSupplier, ...suppliers];
-            localStorage.setItem(suppliersStorageKey, JSON.stringify(suppliers));
-            editModal.hide();
-            updateHeaderAndSummary();
-            Swal.fire({ title: 'تم التحديث', icon: 'success', timer: 1100, showConfirmButton: false });
+                if (out.supplier) {
+                    activeSupplier = out.supplier;
+                    suppliers = suppliers.map(s => String(s.id) === String(activeSupplier.id) ? activeSupplier : s);
+                    allSuppliers = [cashSupplier, ...suppliers];
+                }
+                editModal.hide();
+                updateHeaderAndSummary();
+                Swal.fire({ title: 'تم التحديث بنجاح', icon: 'success', timer: 1100, showConfirmButton: false });
+            } catch (error) {
+                Swal.fire('خطأ', error.message, 'error');
+            }
         });
 
-        // إضافة ملحوظة
+        // إضافة ملحوظة في قاعدة البيانات
         $('#account-tab-content').on('click', '#btn-add-account-note', function() {
+            if (activeSupplier.isCash) return;
             Swal.fire({
                 title: 'إضافة ملحوظة على حساب المورد',
                 input: 'textarea',
@@ -1758,22 +1428,34 @@
                 showCancelButton: true,
                 confirmButtonText: 'حفظ',
                 cancelButtonText: 'إلغاء'
-            }).then(res => {
+            }).then(async res => {
                 if (!res.isConfirmed || !String(res.value || '').trim()) return;
-                let state = ensureSeededTransactions(activeSupplier);
-                state.entries.push({
-                    id: `note-${Date.now()}`,
-                    type: 'note',
-                    date: today(),
-                    note: String(res.value).trim(),
-                    user: 'مدير الفرع'
-                });
-                localStorage.setItem(accountStorageKey, JSON.stringify(accountData));
-                renderCurrentTab();
+                try {
+                    const r = await fetch('/api/suppliers/transactions/save', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({
+                            supplierId: activeSupplier.id,
+                            type: 'note',
+                            amount: 0,
+                            date: today(),
+                            note: String(res.value).trim()
+                        })
+                    });
+                    const out = await r.json().catch(() => ({}));
+                    if (r.ok && out.entry) {
+                        let state = ensureSupplierAccountState(activeSupplier);
+                        state.entries.push(out.entry);
+                        renderCurrentTab();
+                    }
+                } catch (e) {}
             });
         });
 
-        // الخروج للصفحة السابقة (Esc)
         function returnToPreviousPage() {
             if (window.history.length > 1 && document.referrer) {
                 window.history.back();
@@ -1785,10 +1467,8 @@
         $('#btn-close-account').on('click', returnToPreviousPage);
         $('#btn-print-account').on('click', () => window.print());
 
-        // اختصارات الكيبورد الشاملة
         $(document).on('keydown', function(e) {
             if ($('.modal.show').length || Swal.isVisible()) return;
-
             if (e.key === 'Escape') {
                 e.preventDefault();
                 returnToPreviousPage();
@@ -1800,20 +1480,13 @@
                 $('#account-supplier-search').trigger('focus').trigger('select');
             } else if (e.key === 'F4') {
                 e.preventDefault();
-                openPaymentModal();
+                openPaymentModal('payment');
             }
         });
 
         $('#account-date-to').val(today());
         renderCurrentTab();
-        if (supplierSeedMigrationPending) {
-            try {
-                localStorage.setItem(accountStorageKey, JSON.stringify(accountData));
-            } catch (error) {
-                console.error('تعذر تحديث رصيد الحركات التجريبية للمورد.', error);
-                Swal.fire('تعذر تحديث الحركات التجريبية', error.message, 'error');
-            }
-        }
+
         const requestedAction = new URLSearchParams(window.location.search).get('action');
         if (requestedAction === 'payment' || requestedAction === 'collection') {
             window.setTimeout(() => openPaymentModal(requestedAction), 250);

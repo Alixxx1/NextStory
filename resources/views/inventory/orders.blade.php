@@ -3,17 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>المخزن | إذن مخزن (أمر توريد / أمر صرف) - NextStore SaaS</title>
-
-    <!-- خط Cairo المعتمد -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-
-    <!-- أيقونات FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-    <!-- مكتبة SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
@@ -23,8 +18,8 @@
             --ns-green-soft: #ecfdf5;
             --ns-navy: #17283d;
             --ns-navy-dark: #0f1c2c;
-            --ns-supply-blue: #004578;   /* لون بانر أمر توريد في الصورة 2 */
-            --ns-issue-olive: #564a16;   /* لون بانر أمر صرف في الصورة 1 */
+            --ns-supply-blue: #004578;
+            --ns-issue-olive: #564a16;
             --ns-bg: #eef2f5;
             --ns-card: #ffffff;
             --ns-border: #cbd5e1;
@@ -160,7 +155,7 @@
             gap: 6px;
         }
 
-        /* ================= 2. البانر العلوي لنوع الإذن (أمر توريد / أمر صرف) ================= */
+        /* ================= 2. البانر العلوي لنوع الإذن ================= */
         .order-type-banner {
             background: var(--ns-supply-blue);
             color: #fff;
@@ -214,7 +209,7 @@
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
         }
 
-        /* ================= 3. قسم بيانات الإذن العلوية (مطابق للصورة 1 و 2) ================= */
+        /* ================= 3. قسم بيانات الإذن العلوية ================= */
         .order-meta-panel {
             background: #e3eaf2;
             border-bottom: 1.5px solid var(--ns-border);
@@ -246,8 +241,7 @@
             white-space: nowrap;
         }
 
-        .ns-input,
-        .ns-select {
+        .ns-input, .ns-select {
             height: 33px;
             padding: 0 10px;
             border: 1.5px solid #94a3b8;
@@ -259,14 +253,12 @@
             width: 100%;
         }
 
-        .ns-input:focus,
-        .ns-select:focus {
+        .ns-input:focus, .ns-select:focus {
             outline: none;
             border-color: var(--ns-green);
             box-shadow: 0 0 0 3px rgba(17, 151, 68, 0.15);
         }
 
-        /* صندوق التاريخ بأسهم يمين وشمال + تقويم */
         .stepper-date-widget {
             display: flex;
             align-items: center;
@@ -291,9 +283,7 @@
             justify-content: center;
         }
 
-        .stepper-date-display:hover {
-            background: var(--ns-green-soft);
-        }
+        .stepper-date-display:hover { background: var(--ns-green-soft); }
 
         .hidden-native-date {
             position: absolute;
@@ -318,7 +308,6 @@
             color: #fff;
         }
 
-        /* حقل المورد + زر اختيار */
         .supplier-select-group {
             display: flex;
             align-items: center;
@@ -358,7 +347,6 @@
             color: #fff;
         }
 
-        /* شريط البحث السريع لإدراج صنف (يبدأ بعد أول حرف) */
         .quick-item-search-bar {
             position: relative;
             margin-top: 2px;
@@ -409,12 +397,11 @@
             font-weight: 700;
         }
 
-        .item-drop-row:hover,
-        .item-drop-row.active {
+        .item-drop-row:hover, .item-drop-row.active {
             background: var(--ns-green-soft);
         }
 
-        /* ================= 4. جدول الأصناف الرئيسي (التصنيف / اسم الصنف / باركود / الوحدة / التكلفة / الكمية) ================= */
+        /* ================= 4. جدول الأصناف الرئيسي ================= */
         .table-workspace {
             flex: 1;
             margin: 8px 18px;
@@ -450,14 +437,8 @@
             transition: background 0.08s;
         }
 
-        .ns-order-table tbody tr:nth-child(even) {
-            background: #f8fafc;
-        }
-
-        .ns-order-table tbody tr:hover {
-            background: #e0f2fe;
-        }
-
+        .ns-order-table tbody tr:nth-child(even) { background: #f8fafc; }
+        .ns-order-table tbody tr:hover { background: #e0f2fe; }
         .ns-order-table tbody tr.selected-row {
             background: #dcfce7 !important;
             outline: 2px solid var(--ns-green);
@@ -498,7 +479,7 @@
             background: var(--ns-green-soft);
         }
 
-        /* ================= 5. الشريط السفلي (الأزرار وقائمة الأصناف F6/F7/F8 + إجمالي الكمية + حفظ) ================= */
+        /* ================= 5. الشريط السفلي ================= */
         .bottom-dock {
             background: #e2e8f0;
             border-top: 2px solid var(--ns-border);
@@ -509,8 +490,7 @@
             flex-shrink: 0;
         }
 
-        .dock-upper-row,
-        .dock-lower-row {
+        .dock-upper-row, .dock-lower-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -551,10 +531,7 @@
             cursor: not-allowed;
         }
 
-        /* القائمة المنبثقة لزر "الأصناف ▾" (صنف جديد F6 / تعديل بيانات وسعر صنف F7 / قائمة الأصناف F8) */
-        .items-menu-wrapper {
-            position: relative;
-        }
+        .items-menu-wrapper { position: relative; }
 
         .items-popup-menu {
             position: absolute;
@@ -570,9 +547,7 @@
             padding: 5px 0;
         }
 
-        .items-popup-menu.open {
-            display: block;
-        }
+        .items-popup-menu.open { display: block; }
 
         .popup-menu-item {
             padding: 8px 14px;
@@ -586,10 +561,7 @@
             border-bottom: 1px solid #f1f5f9;
         }
 
-        .popup-menu-item:last-child {
-            border-bottom: none;
-        }
-
+        .popup-menu-item:last-child { border-bottom: none; }
         .popup-menu-item:hover {
             background: var(--ns-green-soft);
             color: var(--ns-green-hover);
@@ -631,9 +603,7 @@
             box-shadow: 0 3px 10px rgba(17, 151, 68, 0.3);
         }
 
-        .btn-save-order:hover {
-            background: var(--ns-green-hover);
-        }
+        .btn-save-order:hover { background: var(--ns-green-hover); }
 
         @media print {
             body { height: auto; overflow: visible; background: #fff; }
@@ -644,7 +614,6 @@
 </head>
 <body>
 
-    <!-- ==================== 1. الهيدر العلوي ==================== -->
     <header class="ns-header">
         <div class="ns-header-right">
             <div class="ns-logo-icon">
@@ -654,7 +623,6 @@
                 <span class="module-pill">المخزن</span>
                 <span>إذن مخزن (أوامر التوريد والصرف)</span>
             </h1>
-
             <div class="top-nav-links">
                 <a href="/inventory/orders-log?tab=log" class="btn-top-link">
                     <i class="fa-solid fa-clipboard-list"></i> سجل التوريد والصرف
@@ -683,10 +651,9 @@
         </button>
     </header>
 
-    <!-- ==================== 2. البانر العلوي لنوع الإذن (أمر توريد الكحلي / أمر صرف الزيتي) ==================== -->
     <div class="order-type-banner" id="orderTypeBanner">
         <div style="font-size: 12px; font-weight: 700; opacity: 0.9;">
-            رقم الإذن: <strong id="lblOrderNumber">#1</strong>
+            رقم الإذن: <strong id="lblOrderNumber">#{{ $initialNextOrderNumber ?? 1 }}</strong>
         </div>
 
         <div class="banner-title-center" id="lblBannerTitle">
@@ -704,13 +671,11 @@
         </div>
     </div>
 
-    <!-- ==================== 3. بيانات الإذن العلوية (مطابقة للصورة 1 و 2) ==================== -->
     <section class="order-meta-panel">
         <input type="hidden" id="editingOrderId" value="">
         <input type="hidden" id="currentOrderType" value="supply">
 
         <div class="meta-grid-2cols">
-            <!-- العمود الأيمن: التاريخ + رقم إذن العميل + رقم المركبة + اسم السائق -->
             <div style="display: flex; flex-direction: column; gap: 6px;">
                 <div class="meta-field-row">
                     <label>التاريخ:</label>
@@ -719,9 +684,9 @@
                             <i class="fa-solid fa-arrow-right"></i>
                         </button>
                         <div class="stepper-date-display" id="lblDateDisplay" title="اضغط لاختيار التاريخ من التقويم">
-                            <span id="txtDateArabic">الأحد ٢٠٢٦/١٠/٢٥</span>
+                            <span id="txtDateArabic"></span>
                         </div>
-                        <input type="date" id="nativeDateInput" class="hidden-native-date" value="2026-10-25">
+                        <input type="date" id="nativeDateInput" class="hidden-native-date">
                         <button type="button" class="btn-step-day" id="btnNextDay" title="اليوم التالي">
                             <i class="fa-solid fa-arrow-left"></i>
                         </button>
@@ -744,7 +709,6 @@
                 </div>
             </div>
 
-            <!-- العمود الأيسر: ملاحظة الاستلام + المورد (مع زر اختيار) -->
             <div style="display: flex; flex-direction: column; gap: 10px; align-self: start;">
                 <div class="meta-field-row">
                     <label id="lblReceiptNoteTitle">ملاحظة الاستلام:</label>
@@ -754,7 +718,7 @@
                 <div class="meta-field-row">
                     <label>المورد:</label>
                     <div class="supplier-select-group">
-                        <div class="supplier-display-box" id="selectedSupplierDisplay">احمد هاني</div>
+                        <div class="supplier-display-box" id="selectedSupplierDisplay">مورد عام</div>
                         <button type="button" class="btn-choose-supplier" id="btnChooseSupplier">
                             <i class="fa-solid fa-address-book"></i>
                             <span>اختيار</span>
@@ -764,16 +728,13 @@
             </div>
         </div>
 
-        <!-- شريط البحث الفوري لإضافة صنف للجدول (يبدأ بعد أول حرف) -->
         <div class="quick-item-search-bar">
             <i class="fa-solid fa-magnifying-glass search-ico"></i>
-            <input type="text" id="orderItemSearchInput" class="quick-item-search-input"
-                   placeholder="اكتب أول حرف من اسم الصنف أو الباركود لإدراجه في الإذن (اضغط F3)..." autocomplete="off">
+            <input type="text" id="orderItemSearchInput" class="quick-item-search-input" placeholder="اكتب أول حرف من اسم الصنف أو الباركود لإدراجه في الإذن (اضغط F3)..." autocomplete="off">
             <div class="item-search-dropdown" id="itemSearchDropdown"></div>
         </div>
     </section>
 
-    <!-- ==================== 4. جدول أصناف الإذن (التصنيف / اسم الصنف / باركود / الوحدة / التكلفة / الكمية) ==================== -->
     <main class="table-workspace">
         <table class="ns-order-table">
             <thead>
@@ -787,13 +748,10 @@
                     <th>الكمية</th>
                 </tr>
             </thead>
-            <tbody id="orderItemsTableBody">
-                <!-- يملأ ديناميكياً عبر JavaScript -->
-            </tbody>
+            <tbody id="orderItemsTableBody"></tbody>
         </table>
     </main>
 
-    <!-- ==================== 5. الشريط السفلي (مطابق للصورة 1 و 2 شاملة قائمة الأصناف F6/F7/F8) ==================== -->
     <footer class="bottom-dock">
         <div class="dock-upper-row">
             <div class="btns-cluster">
@@ -802,7 +760,6 @@
                     <span>إدراج أصناف</span>
                 </button>
 
-                <!-- زر "الأصناف ▾" مع القائمة المنبثقة في الصورة 2 -->
                 <div class="items-menu-wrapper">
                     <button type="button" class="ns-btn" id="btnItemsPopupTrigger">
                         <i class="fa-solid fa-boxes-stacked" style="color: var(--ns-info);"></i>
@@ -848,12 +805,10 @@
                     <i class="fa-solid fa-print"></i>
                     <span>طباعة</span>
                 </button>
-
                 <button type="button" class="ns-btn" id="btnExportOrderExcel">
                     <i class="fa-solid fa-file-excel" style="color: var(--ns-green);"></i>
                     <span>تصدير</span>
                 </button>
-
                 <button type="button" class="ns-btn" id="btnImportOrderExcel">
                     <i class="fa-solid fa-file-import" style="color: var(--ns-info);"></i>
                     <span>استيراد</span>
@@ -865,7 +820,6 @@
                     <i class="fa-solid fa-floppy-disk"></i>
                     <span>حفظ (F2)</span>
                 </button>
-
                 <button type="button" class="ns-btn" id="btnBottomClose">
                     <i class="fa-solid fa-circle-xmark" style="color: var(--ns-danger);"></i>
                     <span>إغلاق</span>
@@ -874,454 +828,327 @@
         </div>
     </footer>
 
-    <!-- ==================== 6. الكود البرمجي الكامل (JavaScript) ==================== -->
     <script>
-        (function () {
-            'use strict';
+    (function () {
+        'use strict';
 
-            const CATEGORIES_KEY = 'nextstore_inventory_categories_v1';
-            const PRODUCTS_KEY = 'nextstore_inventory_products_v1';
-            const MOVEMENTS_KEY = 'nextstore_inventory_movements_v1';
-            const WAREHOUSE_ORDERS_KEY = 'nextstore_inventory_warehouse_orders_v1';
-            const SUPPLIERS_KEY = 'nextstore_suppliers_list_v1';
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
-            let categories = [];
-            let products = [];
-            let movementsSummary = [];
-            let warehouseOrders = [];
-            let suppliers = [];
+        let categories = @json($initialCategories ?? []);
+        let products = @json($initialProducts ?? []);
+        let suppliers = @json($initialSuppliers ?? []);
+        let warehouseOrders = @json($initialOrders ?? []);
+        let nextOrderNumber = Number(@json($initialNextOrderNumber ?? 1)) || 1;
 
-            let orderRows = [];
-            let selectedRowIndex = -1;
-            let currentOrderDate = new Date('2026-10-25T00:00:00');
-            let currentSupplierName = 'احمد هاني';
-            let dropdownMatches = [];
-            let dropdownIndex = -1;
+        let orderRows = [];
+        let selectedRowIndex = -1;
+        let currentOrderDate = new Date();
+        let currentSupplierName = suppliers.length > 0 ? suppliers[0].name : 'مورد عام';
 
-            function toEnglishDigits(str) {
-                if (str === null || str === undefined) return '';
-                return String(str)
-                    .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
-                    .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+        let dropdownMatches = [];
+        let dropdownIndex = -1;
+
+        function toEnglishDigits(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+                .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+        }
+
+        function toArabicDigits(str) {
+            const ar = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+            return String(str).replace(/[0-9]/g, d => ar[Number(d)]);
+        }
+
+        function formatNum(val) {
+            const n = parseFloat(val) || 0;
+            return Number(n.toFixed(3)).toString();
+        }
+
+        function toISODate(dObj) {
+            const y = dObj.getFullYear();
+            const m = String(dObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function formatArabicDateBox(dObj) {
+            const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            const y = dObj.getFullYear();
+            const m = String(dObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dObj.getDate()).padStart(2, '0');
+            return `${days[dObj.getDay()]} ${toArabicDigits(`${y}/${m}/${d}`)}`;
+        }
+
+        function setOrderTypeMode(type) {
+            const isSupply = type !== 'issue';
+            document.getElementById('currentOrderType').value = isSupply ? 'supply' : 'issue';
+
+            const banner = document.getElementById('orderTypeBanner');
+            const titleEl = document.getElementById('lblBannerTitle');
+
+            banner.classList.toggle('issue-mode', !isSupply);
+            if (isSupply) {
+                titleEl.innerHTML = `<i class="fa-solid fa-arrow-down-to-bracket"></i> <span>أمر توريد</span>`;
+                document.getElementById('lblReceiptNoteTitle').textContent = 'ملاحظة الاستلام:';
+            } else {
+                titleEl.innerHTML = `<i class="fa-solid fa-arrow-up-from-bracket"></i> <span>أمر صرف</span>`;
+                document.getElementById('lblReceiptNoteTitle').textContent = 'ملاحظة الصرف:';
             }
 
-            function toArabicDigits(str) {
-                const ar = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
-                return String(str).replace(/[0-9]/g, d => ar[Number(d)]);
+            document.getElementById('btnModeSupply').classList.toggle('active', isSupply);
+            document.getElementById('btnModeIssue').classList.toggle('active', !isSupply);
+
+            if (!document.getElementById('editingOrderId').value) {
+                document.getElementById('lblOrderNumber').textContent = `#${nextOrderNumber}`;
             }
+        }
 
-            function formatNum(val) {
-                const n = parseFloat(val) || 0;
-                return Number(n.toFixed(3)).toString();
-            }
+        document.getElementById('btnModeSupply').addEventListener('click', () => setOrderTypeMode('supply'));
+        document.getElementById('btnModeIssue').addEventListener('click', () => setOrderTypeMode('issue'));
 
-            function toISODate(dObj) {
-                const y = dObj.getFullYear();
-                const m = String(dObj.getMonth() + 1).padStart(2, '0');
-                const d = String(dObj.getDate()).padStart(2, '0');
-                return `${y}-${m}-${d}`;
-            }
+        const searchInput = document.getElementById('orderItemSearchInput');
+        const searchDropdown = document.getElementById('itemSearchDropdown');
 
-            function formatArabicDateBox(dObj) {
-                const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-                const y = dObj.getFullYear();
-                const m = String(dObj.getMonth() + 1).padStart(2, '0');
-                const d = String(dObj.getDate()).padStart(2, '0');
-                return `${days[dObj.getDay()]} ${toArabicDigits(`${y}/${m}/${d}`)}`;
-            }
-
-            // ==================== 1. تحميل البيانات وتجهيز الصنف والمورد الظاهرين في الصور ====================
-            function loadAllData() {
-                try { categories = JSON.parse(localStorage.getItem(CATEGORIES_KEY)) || []; } catch (e) { categories = []; }
-                try { products = JSON.parse(localStorage.getItem(PRODUCTS_KEY)) || []; } catch (e) { products = []; }
-
-                // التأكد من وجود الصنف الظاهر في الصورة 2 و 4 (كاتشب ظرف 7 ج باركود k1)
-                if (!products.some(p => p.barcode === 'k1' || p.name === 'كاتشب ظرف 7 ج')) {
-                    products.unshift({
-                        id: 'PRD-K1',
-                        itemType: 'صنف مخزني',
-                        categoryId: 'CAT-01',
-                        categoryName: 'بقالة',
-                        name: 'كاتشب ظرف 7 ج',
-                        description: '',
-                        barcode: 'k1',
-                        unit: 'قطعة',
-                        qty: 0,
-                        supplier: 'احمد هاني',
-                        lastBuyPrice: 0,
-                        avgCost: 0,
-                        lastBuyDate: '2026/10/25',
-                        retailPrice: 2,
-                        minStock: 0,
-                        maxStock: 0,
-                        isPinned: false,
-                        isDisabled: false,
-                        isDeleted: false
-                    });
-                    localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
-                }
-
-                try { suppliers = JSON.parse(localStorage.getItem(SUPPLIERS_KEY)) || []; } catch (e) { suppliers = []; }
-                if (suppliers.length === 0) {
-                    suppliers = [
-                        { id: 'SUP-1', name: 'احمد هاني', company: 'شركة التوريدات الغذائية', phone: '01011223344' },
-                        { id: 'SUP-2', name: 'الحج ربيع الفيومي', company: 'الفيومي للتجارة', phone: '01122334455' },
-                        { id: 'SUP-3', name: 'شركة النور للتوريدات', company: 'مجموعة النور', phone: '01233445566' }
-                    ];
-                    localStorage.setItem(SUPPLIERS_KEY, JSON.stringify(suppliers));
-                }
-
-                try { movementsSummary = JSON.parse(localStorage.getItem(MOVEMENTS_KEY)) || []; } catch (e) { movementsSummary = []; }
-                try { warehouseOrders = JSON.parse(localStorage.getItem(WAREHOUSE_ORDERS_KEY)) || []; } catch (e) { warehouseOrders = []; }
-
-                // تجهيز الإذن رقم 2 الظاهر في الصورة 3 و 4 إذا كان السجل فارغاً
-                if (warehouseOrders.length === 0) {
-                    warehouseOrders = [
-                        {
-                            id: 'ORD-2',
-                            orderNumber: 2,
-                            orderType: 'supply',
-                            orderTypeArabic: 'أمر توريد',
-                            date: '2026/10/25',
-                            registeredAt: '2026/10/25 07:59AM',
-                            supplierName: 'احمد هاني',
-                            companyName: 'شركة التوريدات الغذائية',
-                            clientPermitNo: '',
-                            vehicleNo: '',
-                            driverName: '',
-                            receiptNote: '',
-                            itemsCount: 1,
-                            totalQty: 0,
-                            user: 'مدير الفرع',
-                            isDeleted: false,
-                            rows: [
-                                { productId: 'PRD-K1', categoryName: 'بقالة', name: 'كاتشب ظرف 7 ج', barcode: 'k1', unit: 'قطعة', cost: 0, qty: 0 }
-                            ]
-                        }
-                    ];
-                    localStorage.setItem(WAREHOUSE_ORDERS_KEY, JSON.stringify(warehouseOrders));
-                }
-            }
-
-            // ==================== 2. التبديل بين (أمر توريد) الكحلي و (أمر صرف) الزيتي ====================
-            function setOrderTypeMode(type) {
-                const isSupply = type !== 'issue';
-                document.getElementById('currentOrderType').value = isSupply ? 'supply' : 'issue';
-
-                const banner = document.getElementById('orderTypeBanner');
-                const titleEl = document.getElementById('lblBannerTitle');
-                banner.classList.toggle('issue-mode', !isSupply);
-
-                if (isSupply) {
-                    titleEl.innerHTML = `<i class="fa-solid fa-arrow-down-to-bracket"></i> <span>أمر توريد</span>`;
-                    document.getElementById('lblReceiptNoteTitle').textContent = 'ملاحظة الاستلام:';
-                } else {
-                    titleEl.innerHTML = `<i class="fa-solid fa-arrow-up-from-bracket"></i> <span>أمر صرف</span>`;
-                    document.getElementById('lblReceiptNoteTitle').textContent = 'ملاحظة الصرف:';
-                }
-
-                document.getElementById('btnModeSupply').classList.toggle('active', isSupply);
-                document.getElementById('btnModeIssue').classList.toggle('active', !isSupply);
-
-                const nextNo = warehouseOrders.length + 1;
-                document.getElementById('lblOrderNumber').textContent = `#${nextNo}`;
-            }
-
-            document.getElementById('btnModeSupply').addEventListener('click', () => setOrderTypeMode('supply'));
-            document.getElementById('btnModeIssue').addEventListener('click', () => setOrderTypeMode('issue'));
-
-            // ==================== 3. البحث عن الأصناف وإضافتها للجدول (يبدأ بعد أول حرف) ====================
-            const searchInput = document.getElementById('orderItemSearchInput');
-            const searchDropdown = document.getElementById('itemSearchDropdown');
-
-            function renderItemDropdown(query = '') {
-                const cleanQ = toEnglishDigits(query).trim().toLowerCase();
-                if (!cleanQ) {
-                    dropdownMatches = [];
-                    searchDropdown.style.display = 'none';
-                    return;
-                }
-
-                dropdownMatches = products.filter(p => !p.isDeleted && !p.isDisabled).filter(p => {
-                    return (p.name || '').toLowerCase().includes(cleanQ) ||
-                           String(p.barcode || '').toLowerCase().includes(cleanQ);
-                });
-
-                if (dropdownMatches.length === 0) {
-                    searchDropdown.innerHTML = `<div style="padding:10px; text-align:center; color:var(--ns-muted);">لا توجد أصناف مطابقة</div>`;
-                    searchDropdown.style.display = 'block';
-                    return;
-                }
-
-                if (dropdownIndex < 0 || dropdownIndex >= dropdownMatches.length) dropdownIndex = 0;
-
-                searchDropdown.innerHTML = dropdownMatches.map((item, idx) => `
-                    <div class="item-drop-row ${idx === dropdownIndex ? 'active' : ''}" data-index="${idx}">
-                        <div>
-                            <strong style="color:var(--ns-navy);">${item.name}</strong>
-                            <small style="color:var(--ns-muted); margin-right:6px;">(${item.categoryName || 'عام'} | باركود: ${item.barcode})</small>
-                        </div>
-                        <span style="background:var(--ns-green-soft); color:var(--ns-green-hover); padding:2px 8px; border-radius:6px; font-size:12px;">
-                            الرصيد: ${item.qty} ${item.unit} | تكلفة: ${item.lastBuyPrice} ج.م
-                        </span>
-                    </div>
-                `).join('');
-
-                searchDropdown.style.display = 'block';
-
-                searchDropdown.querySelectorAll('.item-drop-row').forEach(el => {
-                    el.addEventListener('mousedown', function (e) {
-                        e.preventDefault();
-                        const i = parseInt(this.getAttribute('data-index'), 10);
-                        addProductToOrderTable(dropdownMatches[i]);
-                    });
-                });
-            }
-
-            function addProductToOrderTable(prod) {
-                if (!prod) return;
-                const existingIdx = orderRows.findIndex(r => r.productId === prod.id);
-                if (existingIdx !== -1) {
-                    orderRows[existingIdx].qty = Number(((parseFloat(orderRows[existingIdx].qty) || 0) + 1).toFixed(3));
-                    selectedRowIndex = existingIdx;
-                } else {
-                    orderRows.push({
-                        productId: prod.id,
-                        categoryName: prod.categoryName || 'بقالة',
-                        name: prod.name,
-                        barcode: prod.barcode || '',
-                        unit: prod.unit || 'قطعة',
-                        cost: parseFloat(prod.lastBuyPrice) || 0,
-                        qty: 1
-                    });
-                    selectedRowIndex = orderRows.length - 1;
-                }
-
+        function renderItemDropdown(query = '') {
+            const cleanQ = toEnglishDigits(query).trim().toLowerCase();
+            if (!cleanQ) {
+                dropdownMatches = [];
                 searchDropdown.style.display = 'none';
-                searchInput.value = '';
-                renderOrderTable();
+                return;
             }
 
-            // ==================== 4. رسم جدول أصناف الإذن ====================
-            function renderOrderTable() {
-                const tbody = document.getElementById('orderItemsTableBody');
-                let totalQtySum = 0;
+            dropdownMatches = products.filter(p => !p.isDeleted && !p.isDisabled).filter(p => {
+                return (p.name || '').toLowerCase().includes(cleanQ) ||
+                       String(p.barcode || '').toLowerCase().includes(cleanQ);
+            });
 
-                if (orderRows.length === 0) {
-                    tbody.innerHTML = `
-                        <tr>
-                            <td colspan="7" style="padding: 55px 20px; text-align: center; color: var(--ns-muted);">
-                                <i class="fa-solid fa-boxes-packing" style="font-size: 38px; color: #cbd5e1; margin-bottom: 8px; display: block;"></i>
-                                <div style="font-weight: 800; font-size: 14px;">لا توجد أصناف مدرجة في الإذن — ابحث بالأعلى (F3) أو اضغط "إدراج أصناف"</div>
-                            </td>
-                        </tr>
-                    `;
-                    selectedRowIndex = -1;
-                    document.getElementById('lblTotalOrderQty').textContent = '0';
-                    updateButtonsState();
-                    return;
-                }
+            if (dropdownMatches.length === 0) {
+                searchDropdown.innerHTML = `<div style="padding:10px; text-align:center; color:var(--ns-muted);">لا توجد أصناف مطابقة في المخزن</div>`;
+                searchDropdown.style.display = 'block';
+                return;
+            }
 
-                if (selectedRowIndex < 0 || selectedRowIndex >= orderRows.length) {
-                    selectedRowIndex = 0;
-                }
+            if (dropdownIndex < 0 || dropdownIndex >= dropdownMatches.length) dropdownIndex = 0;
 
-                tbody.innerHTML = orderRows.map((row, idx) => {
-                    const q = parseFloat(row.qty) || 0;
-                    totalQtySum += q;
-                    const isSelected = idx === selectedRowIndex;
+            searchDropdown.innerHTML = dropdownMatches.map((item, idx) => `
+                <div class="item-drop-row ${idx === dropdownIndex ? 'active' : ''}" data-index="${idx}">
+                    <div>
+                        <strong style="color:var(--ns-navy);">${item.name}</strong>
+                        <small style="color:var(--ns-muted); margin-right:6px;">(${item.categoryName || 'عام'} | باركود: ${item.barcode})</small>
+                    </div>
+                    <span style="background:var(--ns-green-soft); color:var(--ns-green-hover); padding:2px 8px; border-radius:6px; font-size:12px;">
+                        الرصيد: ${item.qty} ${item.unit} | تكلفة: ${item.lastBuyPrice} ج.م
+                    </span>
+                </div>
+            `).join('');
 
-                    return `
-                        <tr data-index="${idx}" class="${isSelected ? 'selected-row' : ''}">
-                            <td class="td-idx">${idx + 1}</td>
-                            <td>${row.categoryName}</td>
-                            <td style="font-weight: 900; color: var(--ns-navy);">${row.name}</td>
-                            <td style="font-family: monospace; direction: ltr;">${row.barcode}</td>
-                            <td>${row.unit}</td>
-                            <td>
-                                <input type="text" class="inline-num-input row-cost-input" data-index="${idx}" value="${row.cost}">
-                            </td>
-                            <td>
-                                <input type="text" class="inline-num-input row-qty-input" data-index="${idx}" value="${row.qty}">
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
+            searchDropdown.style.display = 'block';
 
-                document.getElementById('lblTotalOrderQty').textContent = formatNum(totalQtySum);
-
-                tbody.querySelectorAll('tr[data-index]').forEach(tr => {
-                    tr.addEventListener('click', function (e) {
-                        if (e.target.classList.contains('inline-num-input')) return;
-                        selectedRowIndex = parseInt(this.getAttribute('data-index'), 10);
-                        highlightSelectedRow();
-                    });
+            searchDropdown.querySelectorAll('.item-drop-row').forEach(el => {
+                el.addEventListener('mousedown', function (e) {
+                    e.preventDefault();
+                    const i = parseInt(this.getAttribute('data-index'), 10);
+                    addProductToOrderTable(dropdownMatches[i]);
                 });
+            });
+        }
 
-                tbody.querySelectorAll('.row-cost-input').forEach(inp => {
-                    inp.addEventListener('input', function () {
-                        const i = parseInt(this.getAttribute('data-index'), 10);
-                        this.value = toEnglishDigits(this.value).replace(/[^0-9.]/g, '');
-                        orderRows[i].cost = parseFloat(this.value) || 0;
-                    });
+        function addProductToOrderTable(prod) {
+            if (!prod) return;
+            const existingIdx = orderRows.findIndex(r => String(r.productId) === String(prod.id));
+            if (existingIdx !== -1) {
+                orderRows[existingIdx].qty = Number(((parseFloat(orderRows[existingIdx].qty) || 0) + 1).toFixed(3));
+                selectedRowIndex = existingIdx;
+            } else {
+                orderRows.push({
+                    productId: String(prod.id),
+                    categoryName: prod.categoryName || 'عام',
+                    name: prod.name,
+                    barcode: prod.barcode || '',
+                    unit: prod.unit || 'قطعة',
+                    cost: parseFloat(prod.lastBuyPrice) || 0,
+                    qty: 1
                 });
+                selectedRowIndex = orderRows.length - 1;
+            }
 
-                tbody.querySelectorAll('.row-qty-input').forEach(inp => {
-                    inp.addEventListener('input', function () {
-                        const i = parseInt(this.getAttribute('data-index'), 10);
-                        this.value = toEnglishDigits(this.value).replace(/[^0-9.]/g, '');
-                        orderRows[i].qty = parseFloat(this.value) || 0;
-                        const sum = orderRows.reduce((acc, r) => acc + (parseFloat(r.qty) || 0), 0);
-                        document.getElementById('lblTotalOrderQty').textContent = formatNum(sum);
-                    });
-                });
+            searchDropdown.style.display = 'none';
+            searchInput.value = '';
+            renderOrderTable();
+        }
 
+        function renderOrderTable() {
+            const tbody = document.getElementById('orderItemsTableBody');
+            let totalQtySum = 0;
+
+            if (orderRows.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="padding: 55px 20px; text-align: center; color: var(--ns-muted);">
+                            <i class="fa-solid fa-boxes-packing" style="font-size: 38px; color: #cbd5e1; margin-bottom: 8px; display: block;"></i>
+                            <div style="font-weight: 800; font-size: 14px;">لا توجد أصناف مدرجة في الإذن — ابحث بالأعلى (F3) أو اضغط "إدراج أصناف"</div>
+                        </td>
+                    </tr>
+                `;
+                selectedRowIndex = -1;
+                document.getElementById('lblTotalOrderQty').textContent = '0';
                 updateButtonsState();
+                return;
             }
 
-            function highlightSelectedRow() {
-                document.querySelectorAll('#orderItemsTableBody tr[data-index]').forEach((tr, idx) => {
-                    tr.classList.toggle('selected-row', idx === selectedRowIndex);
-                });
-                updateButtonsState();
+            if (selectedRowIndex < 0 || selectedRowIndex >= orderRows.length) {
+                selectedRowIndex = 0;
             }
 
-            function updateButtonsState() {
-                const hasRows = orderRows.length > 0;
-                const hasSel = selectedRowIndex >= 0 && selectedRowIndex < orderRows.length;
-                document.getElementById('btnDeleteSelectedRow').disabled = !hasSel;
-                document.getElementById('btnClearAllRows').disabled = !hasRows;
-            }
+            tbody.innerHTML = orderRows.map((row, idx) => {
+                const q = parseFloat(row.qty) || 0;
+                totalQtySum += q;
+                const isSelected = idx === selectedRowIndex;
 
-            // ==================== 5. اختيار المورد ====================
-            document.getElementById('btnChooseSupplier').addEventListener('click', () => {
-                const opts = suppliers.map(s => `<option value="${s.name}" ${s.name === currentSupplierName ? 'selected' : ''}>${s.name} (${s.company || ''})</option>`).join('');
-                Swal.fire({
-                    title: 'اختيار المورد / الجهة',
-                    html: `
-                        <select id="swalSupplierSelect" class="ns-select" style="width:100%; height:40px; margin-bottom:10px;">${opts}</select>
-                        <input type="text" id="swalNewSupplierInput" class="ns-input" placeholder="أو اكتب اسم مورد جديد هنا...">
-                    `,
-                    showCancelButton: true,
-                    confirmButtonText: 'اختيار',
-                    cancelButtonText: 'إلغاء',
-                    confirmButtonColor: '#119744'
-                }).then(res => {
-                    if (!res.isConfirmed) return;
-                    const newSup = document.getElementById('swalNewSupplierInput').value.trim();
-                    const chosen = newSup || document.getElementById('swalSupplierSelect').value;
-                    if (newSup && !suppliers.some(s => s.name === newSup)) {
-                        suppliers.push({ id: 'SUP-' + Date.now(), name: newSup, company: 'عام', phone: '' });
-                        localStorage.setItem(SUPPLIERS_KEY, JSON.stringify(suppliers));
-                    }
-                    currentSupplierName = chosen;
-                    document.getElementById('selectedSupplierDisplay').textContent = chosen;
+                return `
+                    <tr data-index="${idx}" class="${isSelected ? 'selected-row' : ''}">
+                        <td class="td-idx">${idx + 1}</td>
+                        <td>${row.categoryName}</td>
+                        <td style="font-weight: 900; color: var(--ns-navy);">${row.name}</td>
+                        <td style="font-family: monospace; direction: ltr;">${row.barcode}</td>
+                        <td>${row.unit}</td>
+                        <td>
+                            <input type="text" class="inline-num-input row-cost-input" data-index="${idx}" value="${row.cost}">
+                        </td>
+                        <td>
+                            <input type="text" class="inline-num-input row-qty-input" data-index="${idx}" value="${row.qty}">
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('lblTotalOrderQty').textContent = formatNum(totalQtySum);
+
+            tbody.querySelectorAll('tr[data-index]').forEach(tr => {
+                tr.addEventListener('click', function (e) {
+                    if (e.target.classList.contains('inline-num-input')) return;
+                    selectedRowIndex = parseInt(this.getAttribute('data-index'), 10);
+                    highlightSelectedRow();
                 });
             });
 
-            // ==================== 6. حفظ إذن التوريد / الصرف وتحديث المخزن وحركة الأصناف ====================
-            function saveWarehouseOrder() {
-                if (orderRows.length === 0) {
-                    Swal.fire({ icon: 'warning', title: 'الإذن فارغ', text: 'يرجى إدراج صنف واحد على الأقل قبل حفظ الإذن.', confirmButtonColor: '#119744' });
-                    return;
+            tbody.querySelectorAll('.row-cost-input').forEach(inp => {
+                inp.addEventListener('input', function () {
+                    const i = parseInt(this.getAttribute('data-index'), 10);
+                    this.value = toEnglishDigits(this.value).replace(/[^0-9.]/g, '');
+                    orderRows[i].cost = parseFloat(this.value) || 0;
+                });
+            });
+
+            tbody.querySelectorAll('.row-qty-input').forEach(inp => {
+                inp.addEventListener('input', function () {
+                    const i = parseInt(this.getAttribute('data-index'), 10);
+                    this.value = toEnglishDigits(this.value).replace(/[^0-9.]/g, '');
+                    orderRows[i].qty = parseFloat(this.value) || 0;
+                    const sum = orderRows.reduce((acc, r) => acc + (parseFloat(r.qty) || 0), 0);
+                    document.getElementById('lblTotalOrderQty').textContent = formatNum(sum);
+                });
+            });
+
+            updateButtonsState();
+        }
+
+        function highlightSelectedRow() {
+            document.querySelectorAll('#orderItemsTableBody tr[data-index]').forEach((tr, idx) => {
+                tr.classList.toggle('selected-row', idx === selectedRowIndex);
+            });
+            updateButtonsState();
+        }
+
+        function updateButtonsState() {
+            const hasRows = orderRows.length > 0;
+            const hasSel = selectedRowIndex >= 0 && selectedRowIndex < orderRows.length;
+            document.getElementById('btnDeleteSelectedRow').disabled = !hasSel;
+            document.getElementById('btnClearAllRows').disabled = !hasRows;
+        }
+
+        document.getElementById('btnChooseSupplier').addEventListener('click', () => {
+            const opts = `<option value="مورد عام">مورد عام</option>` +
+                suppliers.map(s => `<option value="${s.name}" ${s.name === currentSupplierName ? 'selected' : ''}>${s.name} (${s.company || ''})</option>`).join('');
+
+            Swal.fire({
+                title: 'اختيار المورد / الجهة',
+                html: `
+                    <select id="swalSupplierSelect" class="ns-select" style="width:100%; height:40px; margin-bottom:10px;">${opts}</select>
+                    <input type="text" id="swalNewSupplierInput" class="ns-input" placeholder="أو اكتب اسم مورد جديد هنا...">
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'اختيار',
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: '#119744'
+            }).then(res => {
+                if (!res.isConfirmed) return;
+                const newSup = document.getElementById('swalNewSupplierInput').value.trim();
+                const chosen = newSup || document.getElementById('swalSupplierSelect').value || 'مورد عام';
+                if (newSup && !suppliers.some(s => s.name === newSup)) {
+                    suppliers.push({ id: 'NEW-' + Date.now(), name: newSup, company: newSup, phone: '' });
                 }
+                currentSupplierName = chosen;
+                document.getElementById('selectedSupplierDisplay').textContent = chosen;
+            });
+        });
 
-                const orderType = document.getElementById('currentOrderType').value;
-                const isSupply = orderType === 'supply';
-                const isoDate = toISODate(currentOrderDate);
-                const now = new Date();
-                const registeredAt = `${isoDate.replace(/-/g, '/')} ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
-                const editingId = document.getElementById('editingOrderId').value;
+        async function saveWarehouseOrder() {
+            if (orderRows.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'الإذن فارغ',
+                    text: 'يرجى إدراج صنف واحد على الأقل قبل حفظ الإذن.',
+                    confirmButtonColor: '#119744'
+                });
+                return;
+            }
 
-                // تحديث كميات المخزن وحركة الأصناف (عمود توريد supplyIn أو عمود صرف issueOut)
-                orderRows.forEach(row => {
-                    const q = parseFloat(row.qty) || 0;
-                    const pIdx = products.findIndex(p => p.id === row.productId);
-                    let oldBal = 0, newBal = 0;
+            const orderType = document.getElementById('currentOrderType').value;
+            const isoDate = toISODate(currentOrderDate);
+            const editingId = document.getElementById('editingOrderId').value;
+            const supObj = suppliers.find(s => s.name === currentSupplierName);
 
-                    if (pIdx !== -1) {
-                        oldBal = parseFloat(products[pIdx].qty) || 0;
-                        newBal = isSupply ? Number((oldBal + q).toFixed(3)) : Number((oldBal - q).toFixed(3));
-                        products[pIdx].qty = newBal;
-                        if (row.cost > 0) products[pIdx].lastBuyPrice = row.cost;
-                        products[pIdx].supplier = currentSupplierName;
-                    }
-
-                    let movRow = movementsSummary.find(m => m.barcode === row.barcode || m.name === row.name);
-                    if (!movRow) {
-                        movRow = {
-                            id: 'MOV-' + row.productId,
-                            categoryName: row.categoryName,
-                            name: row.name,
-                            barcode: row.barcode,
-                            purchases: 0, purchaseReturns: 0, sales: 0, salesReturns: 0,
-                            adjustment: 0, supplyIn: 0, issueOut: 0, openingBalance: oldBal,
-                            unitCost: row.cost, retailPrice: 0, unit: row.unit, isDeleted: false, lastDate: isoDate, ledger: []
-                        };
-                        movementsSummary.unshift(movRow);
-                    }
-
-                    if (isSupply) {
-                        movRow.supplyIn = Number(((parseFloat(movRow.supplyIn) || 0) + q).toFixed(3));
-                    } else {
-                        movRow.issueOut = Number(((parseFloat(movRow.issueOut) || 0) + q).toFixed(3));
-                    }
-
-                    if (!Array.isArray(movRow.ledger)) movRow.ledger = [];
-                    movRow.ledger.unshift({
-                        date: registeredAt,
-                        type: isSupply ? 'أمر توريد مخزني' : 'أمر صرف مخزني',
-                        refNo: 'ORD-' + (warehouseOrders.length + 1),
-                        party: currentSupplierName,
-                        user: 'مدير الفرع',
-                        before: oldBal,
-                        inQty: isSupply ? q : 0,
-                        outQty: !isSupply ? q : 0,
-                        after: newBal,
-                        price: row.cost
-                    });
+            try {
+                document.getElementById('btnSaveOrderDoc').disabled = true;
+                const res = await fetch('/api/inventory/orders/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({
+                        editingId: editingId || null,
+                        orderType: orderType,
+                        date: isoDate,
+                        supplierName: currentSupplierName,
+                        companyName: supObj ? supObj.company : 'عام',
+                        clientPermitNo: toEnglishDigits(document.getElementById('clientPermitNoInput').value).trim(),
+                        vehicleNo: toEnglishDigits(document.getElementById('vehicleNoInput').value).trim(),
+                        driverName: document.getElementById('driverNameInput').value.trim(),
+                        receiptNote: document.getElementById('receiptNoteInput').value.trim(),
+                        rows: orderRows
+                    })
                 });
 
-                const totalQty = orderRows.reduce((acc, r) => acc + (parseFloat(r.qty) || 0), 0);
-                const supObj = suppliers.find(s => s.name === currentSupplierName);
+                const out = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(out.message || 'تعذر حفظ الإذن المخزني في قاعدة البيانات');
 
-                const orderDoc = {
-                    id: editingId || ('ORD-' + Date.now()),
-                    orderNumber: editingId ? (warehouseOrders.find(o => o.id === editingId)?.orderNumber || 1) : (warehouseOrders.length + 1),
-                    orderType: orderType,
-                    orderTypeArabic: isSupply ? 'أمر توريد' : 'أمر صرف',
-                    date: isoDate.replace(/-/g, '/'),
-                    registeredAt: registeredAt,
-                    supplierName: currentSupplierName,
-                    companyName: supObj ? supObj.company : 'عام',
-                    clientPermitNo: toEnglishDigits(document.getElementById('clientPermitNoInput').value).trim(),
-                    vehicleNo: toEnglishDigits(document.getElementById('vehicleNoInput').value).trim(),
-                    driverName: document.getElementById('driverNameInput').value.trim(),
-                    receiptNote: document.getElementById('receiptNoteInput').value.trim(),
-                    itemsCount: orderRows.length,
-                    totalQty: totalQty,
-                    user: 'مدير الفرع',
-                    isDeleted: false,
-                    rows: JSON.parse(JSON.stringify(orderRows))
-                };
-
-                if (editingId) {
-                    const idx = warehouseOrders.findIndex(o => o.id === editingId);
-                    if (idx !== -1) warehouseOrders[idx] = orderDoc;
-                } else {
-                    warehouseOrders.unshift(orderDoc);
+                if (out.bootstrap) {
+                    products = out.bootstrap.initialProducts || products;
+                    suppliers = out.bootstrap.initialSuppliers || suppliers;
+                    warehouseOrders = out.bootstrap.initialOrders || warehouseOrders;
+                    nextOrderNumber = Number(out.bootstrap.initialNextOrderNumber) || (nextOrderNumber + 1);
                 }
 
-                localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
-                localStorage.setItem(MOVEMENTS_KEY, JSON.stringify(movementsSummary));
-                localStorage.setItem(WAREHOUSE_ORDERS_KEY, JSON.stringify(warehouseOrders));
-
-                Swal.fire({
+                await Swal.fire({
                     icon: 'success',
-                    title: `تم حفظ (${orderDoc.orderTypeArabic}) رقم #${orderDoc.orderNumber}`,
+                    title: `تم حفظ (${out.orderTypeArabic}) رقم #${out.orderNumber} في قاعدة البيانات`,
                     text: 'تم تحديث أرصدة الأصناف في المخزن وتسجيل الحركة بنجاح.',
                     confirmButtonColor: '#119744',
-                    timer: 2300
+                    timer: 2200
                 });
 
                 document.getElementById('editingOrderId').value = '';
@@ -1332,223 +1159,243 @@
                 orderRows = [];
                 renderOrderTable();
                 setOrderTypeMode(orderType);
+            } catch (err) {
+                Swal.fire('خطأ', err.message, 'error');
+            } finally {
+                document.getElementById('btnSaveOrderDoc').disabled = false;
             }
+        }
 
-            // ==================== 7. قائمة "الأصناف ▾" (F6 / F7 / F8) والأزرار السفلية ====================
-            const itemsPopupMenu = document.getElementById('itemsPopupMenu');
-            document.getElementById('btnItemsPopupTrigger').addEventListener('click', (e) => {
-                e.stopPropagation();
-                itemsPopupMenu.classList.toggle('open');
-            });
+        const itemsPopupMenu = document.getElementById('itemsPopupMenu');
+        document.getElementById('btnItemsPopupTrigger').addEventListener('click', (e) => {
+            e.stopPropagation();
+            itemsPopupMenu.classList.toggle('open');
+        });
 
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('.items-menu-wrapper')) itemsPopupMenu.classList.remove('open');
-                if (!e.target.closest('.quick-item-search-bar')) searchDropdown.style.display = 'none';
-            });
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.items-menu-wrapper')) itemsPopupMenu.classList.remove('open');
+            if (!e.target.closest('.quick-item-search-bar')) searchDropdown.style.display = 'none';
+        });
 
-            function openQuickNewItemModalF6() {
-                itemsPopupMenu.classList.remove('open');
-                Swal.fire({
-                    title: 'تعريف صنف جديد سريع (F6)',
-                    html: `
-                        <div style="text-align:right; display:flex; flex-direction:column; gap:8px;">
-                            <input type="text" id="swalNewProdName" class="ns-input" placeholder="اسم الصنف الجديد *">
-                            <input type="text" id="swalNewProdBarcode" class="ns-input" placeholder="الباركود / الكود *">
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                                <input type="text" id="swalNewProdCost" class="ns-input" placeholder="سعر التكلفة" value="0">
-                                <input type="text" id="swalNewProdPrice" class="ns-input" placeholder="سعر البيع" value="0">
-                            </div>
+        function openQuickNewItemModalF6() {
+            itemsPopupMenu.classList.remove('open');
+            Swal.fire({
+                title: 'تعريف صنف جديد سريع (F6)',
+                html: `
+                    <div style="text-align:right; display:flex; flex-direction:column; gap:8px;">
+                        <input type="text" id="swalNewProdName" class="ns-input" placeholder="اسم الصنف الجديد *">
+                        <input type="text" id="swalNewProdBarcode" class="ns-input" placeholder="الباركود / الكود *">
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                            <input type="text" id="swalNewProdCost" class="ns-input" placeholder="سعر التكلفة" value="0">
+                            <input type="text" id="swalNewProdPrice" class="ns-input" placeholder="سعر البيع" value="0">
                         </div>
-                    `,
-                    showCancelButton: true,
-                    confirmButtonText: 'حفظ وإدراج في الإذن',
-                    cancelButtonText: 'إلغاء',
-                    confirmButtonColor: '#119744'
-                }).then(res => {
-                    if (!res.isConfirmed) return;
-                    const name = document.getElementById('swalNewProdName').value.trim();
-                    const bar = toEnglishDigits(document.getElementById('swalNewProdBarcode').value).trim() || String(Date.now()).slice(-6);
-                    if (!name) return;
-                    const newP = {
-                        id: 'PRD-' + Date.now(),
-                        itemType: 'صنف مخزني',
-                        categoryId: 'CAT-01',
-                        categoryName: 'بقالة',
-                        name: name,
-                        barcode: bar,
-                        unit: 'قطعة',
-                        qty: 0,
-                        supplier: currentSupplierName,
-                        lastBuyPrice: parseFloat(toEnglishDigits(document.getElementById('swalNewProdCost').value)) || 0,
-                        retailPrice: parseFloat(toEnglishDigits(document.getElementById('swalNewProdPrice').value)) || 0,
-                        isDeleted: false,
-                        isDisabled: false
-                    };
-                    products.unshift(newP);
-                    localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
-                    addProductToOrderTable(newP);
-                });
-            }
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'حفظ في المخزن وإدراج في الإذن',
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: '#119744'
+            }).then(async res => {
+                if (!res.isConfirmed) return;
+                const name = document.getElementById('swalNewProdName').value.trim();
+                const bar = toEnglishDigits(document.getElementById('swalNewProdBarcode').value).trim();
+                if (!name) return;
 
-            document.getElementById('menuNewItemF6').addEventListener('click', openQuickNewItemModalF6);
-            document.getElementById('menuEditItemF7').addEventListener('click', () => {
-                window.location.href = '/inventory/items';
-            });
-            document.getElementById('menuItemsListF8').addEventListener('click', () => {
-                window.location.href = '/inventory/items';
-            });
+                try {
+                    const r = await fetch('/api/inventory/orders/quick-item', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({
+                            name: name,
+                            barcode: bar,
+                            cost: parseFloat(toEnglishDigits(document.getElementById('swalNewProdCost').value)) || 0,
+                            price: parseFloat(toEnglishDigits(document.getElementById('swalNewProdPrice').value)) || 0,
+                            supplierName: currentSupplierName
+                        })
+                    });
+                    const out = await r.json().catch(() => ({}));
+                    if (!r.ok) throw new Error(out.message || 'تعذر حفظ الصنف');
 
-            document.getElementById('btnInsertItemsBatch').addEventListener('click', () => {
-                products.filter(p => !p.isDeleted).slice(0, 6).forEach(p => {
-                    if (!orderRows.some(r => r.productId === p.id)) {
-                        orderRows.push({
-                            productId: p.id, categoryName: p.categoryName || 'بقالة',
-                            name: p.name, barcode: p.barcode || '', unit: p.unit || 'قطعة',
-                            cost: parseFloat(p.lastBuyPrice) || 0, qty: 0
-                        });
+                    if (out.product) {
+                        products.unshift(out.product);
+                        addProductToOrderTable(out.product);
                     }
-                });
-                renderOrderTable();
+                } catch (err) {
+                    Swal.fire('خطأ', err.message, 'error');
+                }
             });
+        }
 
-            document.getElementById('btnDeleteSelectedRow').addEventListener('click', () => {
-                if (selectedRowIndex < 0) return;
-                orderRows.splice(selectedRowIndex, 1);
-                selectedRowIndex = Math.max(0, selectedRowIndex - 1);
-                renderOrderTable();
+        document.getElementById('menuNewItemF6').addEventListener('click', openQuickNewItemModalF6);
+        document.getElementById('menuEditItemF7').addEventListener('click', () => {
+            window.location.href = '/inventory/items';
+        });
+        document.getElementById('menuItemsListF8').addEventListener('click', () => {
+            window.location.href = '/inventory/items';
+        });
+
+        document.getElementById('btnInsertItemsBatch').addEventListener('click', () => {
+            products.filter(p => !p.isDeleted).slice(0, 8).forEach(p => {
+                if (!orderRows.some(r => String(r.productId) === String(p.id))) {
+                    orderRows.push({
+                        productId: String(p.id),
+                        categoryName: p.categoryName || 'عام',
+                        name: p.name,
+                        barcode: p.barcode || '',
+                        unit: p.unit || 'قطعة',
+                        cost: parseFloat(p.lastBuyPrice) || 0,
+                        qty: 1
+                    });
+                }
             });
+            renderOrderTable();
+        });
 
-            document.getElementById('btnClearAllRows').addEventListener('click', () => {
-                orderRows = [];
-                selectedRowIndex = -1;
-                renderOrderTable();
-            });
+        document.getElementById('btnDeleteSelectedRow').addEventListener('click', () => {
+            if (selectedRowIndex < 0) return;
+            orderRows.splice(selectedRowIndex, 1);
+            selectedRowIndex = Math.max(0, selectedRowIndex - 1);
+            renderOrderTable();
+        });
 
-            // ==================== 8. التحكم في التاريخ واختصارات الكيبورد ====================
-            function updateDateUI() {
-                document.getElementById('txtDateArabic').textContent = formatArabicDateBox(currentOrderDate);
-                document.getElementById('nativeDateInput').value = toISODate(currentOrderDate);
+        document.getElementById('btnClearAllRows').addEventListener('click', () => {
+            orderRows = [];
+            selectedRowIndex = -1;
+            renderOrderTable();
+        });
+
+        function updateDateUI() {
+            document.getElementById('txtDateArabic').textContent = formatArabicDateBox(currentOrderDate);
+            document.getElementById('nativeDateInput').value = toISODate(currentOrderDate);
+        }
+
+        document.getElementById('btnPrevDay').addEventListener('click', () => {
+            currentOrderDate.setDate(currentOrderDate.getDate() - 1);
+            updateDateUI();
+        });
+
+        document.getElementById('btnNextDay').addEventListener('click', () => {
+            currentOrderDate.setDate(currentOrderDate.getDate() + 1);
+            updateDateUI();
+        });
+
+        document.getElementById('lblDateDisplay').addEventListener('click', () => {
+            const inp = document.getElementById('nativeDateInput');
+            if (inp.showPicker) inp.showPicker();
+            else inp.click();
+        });
+
+        document.getElementById('nativeDateInput').addEventListener('change', function () {
+            if (this.value) {
+                currentOrderDate = new Date(this.value + 'T00:00:00');
+                updateDateUI();
             }
+        });
 
-            document.getElementById('btnPrevDay').addEventListener('click', () => {
-                currentOrderDate.setDate(currentOrderDate.getDate() - 1);
-                updateDateUI();
-            });
+        searchInput.addEventListener('input', function () {
+            this.value = toEnglishDigits(this.value);
+            dropdownIndex = 0;
+            renderItemDropdown(this.value);
+        });
 
-            document.getElementById('btnNextDay').addEventListener('click', () => {
-                currentOrderDate.setDate(currentOrderDate.getDate() + 1);
-                updateDateUI();
-            });
-
-            document.getElementById('lblDateDisplay').addEventListener('click', () => {
-                const inp = document.getElementById('nativeDateInput');
-                if (inp.showPicker) inp.showPicker();
-                else inp.click();
-            });
-
-            document.getElementById('nativeDateInput').addEventListener('change', function () {
-                if (this.value) {
-                    currentOrderDate = new Date(this.value + 'T00:00:00');
-                    updateDateUI();
-                }
-            });
-
-            searchInput.addEventListener('input', function () {
-                this.value = toEnglishDigits(this.value);
-                dropdownIndex = 0;
-                renderItemDropdown(this.value);
-            });
-
-            searchInput.addEventListener('keydown', (e) => {
-                if (searchDropdown.style.display !== 'block' || dropdownMatches.length === 0) return;
-                if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    dropdownIndex = (dropdownIndex + 1) % dropdownMatches.length;
-                    renderItemDropdown(searchInput.value);
-                } else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    dropdownIndex = (dropdownIndex - 1 + dropdownMatches.length) % dropdownMatches.length;
-                    renderItemDropdown(searchInput.value);
-                } else if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const chosen = dropdownMatches[dropdownIndex >= 0 ? dropdownIndex : 0];
-                    if (chosen) addProductToOrderTable(chosen);
-                }
-            });
-
-            document.getElementById('btnSaveOrderDoc').addEventListener('click', saveWarehouseOrder);
-            document.getElementById('btnPrintOrder').addEventListener('click', () => window.print());
-
-            document.getElementById('btnExportOrderExcel').addEventListener('click', () => {
-                if (orderRows.length === 0) return;
-                const headers = ['#', 'التصنيف', 'اسم الصنف', 'باركود', 'الوحدة', 'التكلفة', 'الكمية'];
-                const rows = orderRows.map((r, i) => [i + 1, `"${r.categoryName}"`, `"${r.name}"`, `"${r.barcode}"`, `"${r.unit}"`, r.cost, r.qty].join(','));
-                const blob = new Blob(['\uFEFF' + [headers.join(','), ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = `إذن_مخزن_${toISODate(currentOrderDate)}.csv`;
-                a.click();
-            });
-
-            function handleExit() {
-                if (window.history.length > 1) window.history.back();
-                else window.location.href = '/inventory/items';
+        searchInput.addEventListener('keydown', (e) => {
+            if (searchDropdown.style.display !== 'block' || dropdownMatches.length === 0) return;
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                dropdownIndex = (dropdownIndex + 1) % dropdownMatches.length;
+                renderItemDropdown(searchInput.value);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                dropdownIndex = (dropdownIndex - 1 + dropdownMatches.length) % dropdownMatches.length;
+                renderItemDropdown(searchInput.value);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                const chosen = dropdownMatches[dropdownIndex >= 0 ? dropdownIndex : 0];
+                if (chosen) addProductToOrderTable(chosen);
             }
-            document.getElementById('btnExitPage').addEventListener('click', handleExit);
-            document.getElementById('btnBottomClose').addEventListener('click', handleExit);
+        });
 
-            document.addEventListener('keydown', (e) => {
-                if (Swal.isVisible()) return;
-                if (e.key === 'Escape') {
-                    e.preventDefault();
-                    handleExit();
-                } else if (e.key === 'F3') {
-                    e.preventDefault();
-                    searchInput.focus();
-                    searchInput.select();
-                } else if (e.key === 'F2') {
-                    e.preventDefault();
-                    saveWarehouseOrder();
-                } else if (e.key === 'F6') {
-                    e.preventDefault();
-                    openQuickNewItemModalF6();
-                } else if (e.key === 'F7' || e.key === 'F8') {
-                    e.preventDefault();
-                    window.location.href = '/inventory/items';
-                }
-            });
+        document.getElementById('btnSaveOrderDoc').addEventListener('click', saveWarehouseOrder);
+        document.getElementById('btnPrintOrder').addEventListener('click', () => window.print());
 
-            function init() {
-                loadAllData();
-                updateDateUI();
+        document.getElementById('btnExportOrderExcel').addEventListener('click', () => {
+            if (orderRows.length === 0) return;
+            const headers = ['#', 'التصنيف', 'اسم الصنف', 'باركود', 'الوحدة', 'التكلفة', 'الكمية'];
+            const rows = orderRows.map((r, i) => [i + 1, `"${r.categoryName}"`, `"${r.name}"`, `"${r.barcode}"`, `"${r.unit}"`, r.cost, r.qty].join(','));
+            const blob = new Blob(['\uFEFF' + [headers.join(','), ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `إذن_مخزن_${toISODate(currentOrderDate)}.csv`;
+            a.click();
+        });
 
-                const params = new URLSearchParams(window.location.search);
-                const typeParam = params.get('type') || 'supply';
-                const editIdParam = params.get('id');
+        function handleExit() {
+            if (window.history.length > 1) window.history.back();
+            else window.location.href = '/inventory/items';
+        }
+        document.getElementById('btnExitPage').addEventListener('click', handleExit);
+        document.getElementById('btnBottomClose').addEventListener('click', handleExit);
 
-                setOrderTypeMode(typeParam);
+        document.addEventListener('keydown', (e) => {
+            if (Swal.isVisible()) return;
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                handleExit();
+            } else if (e.key === 'F3') {
+                e.preventDefault();
+                searchInput.focus();
+                searchInput.select();
+            } else if (e.key === 'F2') {
+                e.preventDefault();
+                saveWarehouseOrder();
+            } else if (e.key === 'F6') {
+                e.preventDefault();
+                openQuickNewItemModalF6();
+            } else if (e.key === 'F7' || e.key === 'F8') {
+                e.preventDefault();
+                window.location.href = '/inventory/items';
+            }
+        });
 
-                if (editIdParam) {
-                    const existing = warehouseOrders.find(o => o.id === editIdParam);
-                    if (existing) {
-                        document.getElementById('editingOrderId').value = existing.id;
-                        setOrderTypeMode(existing.orderType);
-                        document.getElementById('lblOrderNumber').textContent = `#${existing.orderNumber}`;
-                        currentSupplierName = existing.supplierName || 'احمد هاني';
-                        document.getElementById('selectedSupplierDisplay').textContent = currentSupplierName;
-                        document.getElementById('clientPermitNoInput').value = existing.clientPermitNo || '';
-                        document.getElementById('vehicleNoInput').value = existing.vehicleNo || '';
-                        document.getElementById('driverNameInput').value = existing.driverName || '';
-                        document.getElementById('receiptNoteInput').value = existing.receiptNote || '';
-                        orderRows = JSON.parse(JSON.stringify(existing.rows || []));
+        function init() {
+            document.getElementById('selectedSupplierDisplay').textContent = currentSupplierName;
+            updateDateUI();
+
+            const params = new URLSearchParams(window.location.search);
+            const typeParam = params.get('type') || 'supply';
+            const editIdParam = params.get('id');
+
+            setOrderTypeMode(typeParam);
+
+            if (editIdParam) {
+                const existing = warehouseOrders.find(o => String(o.id) === String(editIdParam));
+                if (existing) {
+                    document.getElementById('editingOrderId').value = existing.id;
+                    setOrderTypeMode(existing.orderType);
+                    document.getElementById('lblOrderNumber').textContent = `#${existing.orderNumber}`;
+                    currentSupplierName = existing.supplierName || 'مورد عام';
+                    document.getElementById('selectedSupplierDisplay').textContent = currentSupplierName;
+                    document.getElementById('clientPermitNoInput').value = existing.clientPermitNo || '';
+                    document.getElementById('vehicleNoInput').value = existing.vehicleNo || '';
+                    document.getElementById('driverNameInput').value = existing.driverName || '';
+                    document.getElementById('receiptNoteInput').value = existing.receiptNote || '';
+                    if (existing.isoDate) {
+                        currentOrderDate = new Date(existing.isoDate + 'T00:00:00');
+                        updateDateUI();
                     }
+                    orderRows = JSON.parse(JSON.stringify(existing.rows || []));
                 }
-
-                renderOrderTable();
             }
 
-            init();
-        })();
+            renderOrderTable();
+        }
+
+        init();
+    })();
     </script>
 </body>
 </html>

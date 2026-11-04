@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>تقارير المصروفات | NextStore SaaS</title>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
@@ -34,7 +35,6 @@
             gap: 8px;
         }
 
-        /* إجبار الأرقام والتواريخ على الإنجليزية */
         .en-digit, .numeric-input, .manual-date-input {
             font-family: Arial, Helvetica, sans-serif !important;
             direction: ltr !important;
@@ -43,7 +43,7 @@
             font-weight: 800;
         }
 
-        /* 1. الشريط العلوي (التاريخ + البحث بالوردية + المحذوفات + الخروج) */
+        /* 1. الشريط العلوي */
         .top-report-bar {
             background: #ffffff;
             border: 1px solid var(--border-color);
@@ -57,7 +57,6 @@
             flex-wrap: wrap;
             box-shadow: 0 2px 5px rgba(0,0,0,0.03);
         }
-
         .report-title {
             margin: 0;
             font-size: 18px;
@@ -68,14 +67,12 @@
             gap: 8px;
             white-space: nowrap;
         }
-
         .date-controls-group {
             display: flex;
             align-items: center;
             gap: 8px;
             flex-wrap: wrap;
         }
-
         .date-stepper {
             display: flex;
             align-items: center;
@@ -85,7 +82,6 @@
             padding: 2px 4px;
             gap: 4px;
         }
-
         .step-arrow {
             width: 28px;
             height: 28px;
@@ -100,7 +96,6 @@
             transition: 0.15s;
         }
         .step-arrow:hover { background: #e2e8f0; }
-
         .manual-date-input {
             width: 118px;
             height: 28px;
@@ -117,7 +112,6 @@
             border-color: var(--primary);
             box-shadow: 0 0 0 2px rgba(17,151,68,0.15);
         }
-
         .day-name-badge {
             font-size: 13px;
             font-weight: 900;
@@ -126,7 +120,6 @@
             min-width: 55px;
             text-align: center;
         }
-
         .exit-btn {
             background-color: var(--danger);
             color: #ffffff;
@@ -142,7 +135,7 @@
         }
         .exit-btn:hover { background-color: #bb2d3b; }
 
-        /* 2. لوحة الفلاتر العلوية (مطابقة لتقسيمة الصورة) */
+        /* 2. لوحة الفلاتر العلوية */
         .filters-panel {
             background: #e6eef8;
             border: 1px solid #b8c9de;
@@ -152,14 +145,12 @@
             flex-direction: column;
             gap: 8px;
         }
-
         .filter-line {
             display: flex;
             align-items: center;
             gap: 12px;
             flex-wrap: wrap;
         }
-
         .filter-item {
             display: flex;
             align-items: center;
@@ -172,8 +163,7 @@
             margin: 0;
             white-space: nowrap;
         }
-        .filter-item select,
-        .filter-item input[type="text"] {
+        .filter-item select, .filter-item input[type="text"] {
             height: 31px;
             border: 1px solid #94a3b8;
             border-radius: 5px;
@@ -184,13 +174,12 @@
             background-color: #ffffff;
             outline: none;
         }
-        .filter-item select:focus,
-        .filter-item input[type="text"]:focus {
+        .filter-item select:focus, .filter-item input[type="text"]:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 2px rgba(17,151,68,0.15);
         }
 
-        /* 3. الشريط البياني المدمج (أعلى المصروفات والأقسام) */
+        /* 3. الشريط البياني المدمج */
         .analytics-strip {
             background: #ffffff;
             border: 1px solid var(--border-color);
@@ -201,10 +190,7 @@
             gap: 16px;
             box-shadow: 0 1px 4px rgba(0,0,0,0.02);
         }
-        .analytics-strip.is-collapsed {
-            display: none;
-        }
-
+        .analytics-strip.is-collapsed { display: none; }
         .chart-card {
             display: flex;
             flex-direction: column;
@@ -220,7 +206,6 @@
             border-bottom: 1px dashed #cbd5e1;
             padding-bottom: 4px;
         }
-
         .bars-list {
             display: flex;
             flex-direction: column;
@@ -270,7 +255,6 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.03);
             min-height: 0;
         }
-
         .report-table {
             width: 100%;
             margin: 0;
@@ -316,7 +300,6 @@
             color: #9f1239;
             text-decoration: line-through;
         }
-
         .shift-open-pill {
             display: inline-block;
             padding: 2px 7px;
@@ -336,7 +319,7 @@
             border: 1px solid #cbd5e1;
         }
 
-        /* 5. الشريط السفلي (الإجمالي + طباعة وتصدير وحذف) */
+        /* 5. الشريط السفلي */
         .bottom-report-bar {
             background: #f1f5f9;
             border: 1px solid var(--border-color);
@@ -348,7 +331,6 @@
             gap: 15px;
             flex-wrap: wrap;
         }
-
         .total-box-group {
             display: flex;
             align-items: center;
@@ -374,14 +356,12 @@
             font-weight: 900;
             padding: 0 12px;
         }
-
         .bottom-btn-group {
             display: flex;
             align-items: center;
             gap: 8px;
             flex-wrap: wrap;
         }
-
         .btn-report-action {
             font-weight: 800;
             font-size: 13px;
@@ -393,7 +373,7 @@
             gap: 6px;
         }
 
-        /* 6. النوافذ المنبثقة (تعديل المصروف + إضافة حساب/قسم/بند) */
+        /* 6. النوافذ المنبثقة */
         .custom-modal-backdrop {
             display: none;
             position: fixed;
@@ -405,7 +385,6 @@
             padding: 15px;
         }
         .custom-modal-backdrop.is-open { display: flex; }
-
         .custom-modal-window {
             background: #ffffff;
             border: 2px solid var(--dark);
@@ -420,7 +399,6 @@
             from { transform: scale(0.95); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
         }
-
         .custom-modal-header {
             background: var(--dark);
             color: #ffffff;
@@ -438,14 +416,12 @@
             cursor: pointer;
             line-height: 1;
         }
-
         .custom-modal-body {
             padding: 16px;
             display: flex;
             flex-direction: column;
             gap: 10px;
         }
-
         .modal-row {
             display: flex;
             align-items: center;
@@ -459,8 +435,7 @@
             color: #1e293b;
             margin: 0;
         }
-        .modal-row select,
-        .modal-row input {
+        .modal-row select, .modal-row input {
             flex-grow: 1;
             height: 36px;
             border: 1px solid #94a3b8;
@@ -471,7 +446,6 @@
             background: #e6f0fa;
         }
         .modal-row input { background: #ffffff; }
-
         .btn-mini-pen {
             width: 36px;
             height: 36px;
@@ -485,7 +459,6 @@
             justify-content: center;
         }
         .btn-mini-pen:hover { background: var(--dark); color: #fff; }
-
         .custom-modal-footer {
             background: #f1f5f9;
             border-top: 1px solid #cbd5e1;
@@ -517,9 +490,7 @@
         }
 
         @media print {
-            .top-report-bar, .filters-panel, .bottom-btn-group, .custom-modal-backdrop {
-                display: none !important;
-            }
+            .top-report-bar, .filters-panel, .bottom-btn-group, .custom-modal-backdrop { display: none !important; }
             body { height: auto; overflow: visible; background: #fff; padding: 0; }
             .table-panel { overflow: visible; border: 0; }
             .report-table { min-width: 0; }
@@ -528,45 +499,41 @@
 </head>
 <body>
 
-    {{-- 1. الشريط العلوي (اختيار الفترة والتاريخ اليدوي + البحث بالوردية + المحذوفات) --}}
+    {{-- 1. الشريط العلوي --}}
     <header class="top-report-bar">
         <div class="date-controls-group">
             <h1 class="report-title me-2">
-                <i class="fas fa-chart-Pie text-success"></i>
+                <i class="fas fa-chart-pie text-success"></i>
                 <span>تقارير وسجل المصروفات</span>
             </h1>
 
             <label class="fw-bold small text-dark m-0">التاريخ:</label>
             <select class="form-select form-select-sm fw-bold w-auto" id="date-mode-select">
-                <option value="day" selected>تاريخ محدد</option>
+                <option value="all" selected>كل الفترات (منذ البداية)</option>
+                <option value="day">تاريخ محدد</option>
                 <option value="range">في فترة (من - إلى)</option>
                 <option value="before">ما قبل تاريخ</option>
                 <option value="after">ما بعد تاريخ</option>
-                <option value="all">كل الفترات (منذ البداية)</option>
             </select>
 
-            {{-- التاريخ الأساسي (أو بداية الفترة) بكتابة يدوية سهلة YYYY/MM/DD + أسهم --}}
-            <div class="date-stepper" id="primary-date-box">
+            <div class="date-stepper d-none" id="primary-date-box">
                 <button type="button" class="step-arrow" id="btn-date1-next" title="اليوم التالي">
                     <i class="fas fa-arrow-right"></i>
                 </button>
-                <span class="day-name-badge" id="date1-day-name">الاثنين</span>
-                <input type="text" class="manual-date-input" id="date1-manual-input"
-                       value="2026/10/19" maxlength="10" placeholder="YYYY/MM/DD" title="اكتب التاريخ يدوياً بصيغة YYYY/MM/DD">
+                <span class="day-name-badge" id="date1-day-name"></span>
+                <input type="text" class="manual-date-input" id="date1-manual-input" value="{{ now()->format('Y/m/d') }}" maxlength="10" placeholder="YYYY/MM/DD" title="اكتب التاريخ يدوياً بصيغة YYYY/MM/DD">
                 <button type="button" class="step-arrow" id="btn-date1-prev" title="اليوم السابق">
                     <i class="fas fa-arrow-left"></i>
                 </button>
             </div>
 
-            {{-- التاريخ الثاني (يظهر فقط عند اختيار "في فترة من - إلى") --}}
             <div class="date-stepper d-none" id="secondary-date-box">
                 <span class="fw-bold small text-muted px-1">إلى:</span>
                 <button type="button" class="step-arrow" id="btn-date2-next" title="اليوم التالي">
                     <i class="fas fa-arrow-right"></i>
                 </button>
-                <span class="day-name-badge" id="date2-day-name">الاثنين</span>
-                <input type="text" class="manual-date-input" id="date2-manual-input"
-                       value="2026/10/19" maxlength="10" placeholder="YYYY/MM/DD">
+                <span class="day-name-badge" id="date2-day-name"></span>
+                <input type="text" class="manual-date-input" id="date2-manual-input" value="{{ now()->format('Y/m/d') }}" maxlength="10" placeholder="YYYY/MM/DD">
                 <button type="button" class="step-arrow" id="btn-date2-prev" title="اليوم السابق">
                     <i class="fas fa-arrow-left"></i>
                 </button>
@@ -598,9 +565,8 @@
         </div>
     </header>
 
-    {{-- 2. لوحة الفلاتر العلوية (مطابقة لتقسيمة الصورة) --}}
+    {{-- 2. لوحة الفلاتر العلوية --}}
     <section class="filters-panel">
-        {{-- السطر الأول: الوردية --}}
         <div class="filter-line">
             <div class="filter-item" style="min-width: 340px;">
                 <label for="filter-shift-name">الوردية:</label>
@@ -610,13 +576,11 @@
                     <option value="كاشير 1 // 02:00PM">كاشير 1 // 02:00PM (مغلقة)</option>
                 </select>
             </div>
-
             <small class="text-muted fw-bold ms-auto">
                 <i class="fas fa-bolt text-warning me-1"></i> اضغط مرتين (Double Click) أو <kbd>Enter</kbd> على أي مصروف في الوردية المفتوحة لتعديله فوراً.
             </small>
         </div>
 
-        {{-- السطر الثاني: القسم + الحساب + المصدر + المستخدم + إظهار التفاصيل --}}
         <div class="filter-line">
             <div class="filter-item" style="min-width: 210px;">
                 <label for="filter-department">القسم:</label>
@@ -659,7 +623,6 @@
             </div>
         </div>
 
-        {{-- السطر الثالث: البند + الوصف --}}
         <div class="filter-line">
             <div class="filter-item" style="min-width: 260px; flex: 1;">
                 <label for="filter-item-text">البند:</label>
@@ -677,7 +640,7 @@
         </div>
     </section>
 
-    {{-- 3. الرسم البياني المدمج (أكثر الأقسام والبنود استهلاكاً للمصاريف) --}}
+    {{-- 3. الرسم البياني المدمج --}}
     <section class="analytics-strip" id="analytics-strip">
         <div class="chart-card">
             <div class="chart-card-title">
@@ -686,7 +649,6 @@
             </div>
             <div class="bars-list" id="dept-bars-container"></div>
         </div>
-
         <div class="chart-card">
             <div class="chart-card-title">
                 <span><i class="fas fa-fire text-warning me-1"></i> أعلى بنود المصروفات تكلفة</span>
@@ -696,7 +658,7 @@
         </div>
     </section>
 
-    {{-- 4. جدول التقرير الرئيسي (مطابق لأعمدة الصورة) --}}
+    {{-- 4. جدول التقرير الرئيسي --}}
     <main class="table-panel">
         <table class="report-table">
             <thead>
@@ -720,7 +682,7 @@
         </table>
     </main>
 
-    {{-- 5. الشريط السفلي (الإجمالي + أزرار الطباعة والتصدير والحذف) --}}
+    {{-- 5. الشريط السفلي --}}
     <footer class="bottom-report-bar">
         <div class="bottom-btn-group">
             <button type="button" class="btn btn-success btn-report-action shadow-sm" onclick="window.location.href='/expenses'">
@@ -746,22 +708,18 @@
         </div>
     </footer>
 
-    {{-- ========================================================== --}}
-    {{-- نافذة تعديل المصروف (تفتح عند الضغط على مصروف في الوردية المفتوحة) --}}
-    {{-- ========================================================== --}}
+    {{-- نافذة تعديل المصروف --}}
     <div class="custom-modal-backdrop" id="edit-expense-modal">
         <form class="custom-modal-window" id="edit-expense-form" novalidate>
             <div class="custom-modal-header">
                 <h6><i class="fas fa-pen-to-square text-warning me-2"></i> تعديل مصروف (الوردية الحالية)</h6>
                 <button type="button" class="custom-modal-close" id="btn-close-edit-modal">&times;</button>
             </div>
-
             <div class="custom-modal-body">
                 <div class="modal-row">
                     <label>التاريخ:</label>
                     <input type="text" class="en-digit" id="modal-edit-date" maxlength="10" placeholder="YYYY/MM/DD">
                 </div>
-
                 <div class="modal-row">
                     <label>الحساب:</label>
                     <select id="modal-edit-account"></select>
@@ -769,7 +727,6 @@
                         <i class="fas fa-pen"></i>
                     </button>
                 </div>
-
                 <div class="modal-row">
                     <label>القسم:</label>
                     <select id="modal-edit-dept"></select>
@@ -777,7 +734,6 @@
                         <i class="fas fa-pen"></i>
                     </button>
                 </div>
-
                 <div class="modal-row">
                     <label>البند:</label>
                     <select id="modal-edit-item"></select>
@@ -785,17 +741,14 @@
                         <i class="fas fa-pen"></i>
                     </button>
                 </div>
-
                 <div class="modal-row">
                     <label>وصف:</label>
                     <input type="text" id="modal-edit-desc" placeholder="وصف أو ملاحظة...">
                 </div>
-
                 <div class="modal-row">
                     <label>المبلغ:</label>
                     <input type="text" inputmode="decimal" class="numeric-input text-danger text-center fs-5" id="modal-edit-amount" required>
                 </div>
-
                 <div class="modal-row">
                     <label>المصدر:</label>
                     <select id="modal-edit-source">
@@ -805,7 +758,6 @@
                     </select>
                 </div>
             </div>
-
             <div class="custom-modal-footer">
                 <button type="button" class="btn btn-sm btn-outline-secondary fw-bold px-3" id="btn-cancel-edit-modal">إلغاء الأمر (Esc)</button>
                 <button type="submit" class="btn btn-sm btn-success fw-bold px-4">
@@ -837,91 +789,17 @@
 
     <script>
     (function() {
-        const treeStorageKey = 'nextstore.expenses.tree.v1';
-        const recordsStorageKey = 'nextstore.expenses.records.v1';
+        'use strict';
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
         const shiftExpensesKey = 'nextstore.shift.expenses.v1';
 
-        const defaultExpenseTree = [
-            {
-                id: 'acc-operating',
-                name: 'مصروفات تشغيل',
-                departments: [
-                    { id: 'dep-wages', name: 'أجور', items: ['كريم', 'مرتب شهري', 'سلفة عامل', 'يوميات عمال'] },
-                    { id: 'dep-general', name: 'عام', items: ['أكياس وشنط تعبئة', 'ضيافة وشاي وقهوة', 'منظفات ومطهرات'] },
-                    { id: 'dep-utilities', name: 'مرافق وفواتير محل', items: ['فاتورة كهرباء', 'فاتورة مياه', 'إنترنت', 'إيجار المحل'] }
-                ]
-            },
-            {
-                id: 'acc-capital',
-                name: 'مصروفات تأسيس',
-                departments: [
-                    { id: 'dep-equip', name: 'تجهيزات ومعدات', items: ['أرفف واستاندات', 'أجهزة كاشير', 'ثلاجات'] }
-                ]
-            }
-        ];
-
-        // بيانات افتراضية شاملة مطابقة للصورة
-        const seededRecords = [
-            {
-                id: 'exp-101',
-                date: '2026-10-19',
-                accountName: 'مصروفات تشغيل',
-                departmentName: 'أجور',
-                itemName: 'كريم',
-                description: '',
-                amount: 300,
-                source: 'الدرج',
-                createdAt: '2026/10/19 03:20AM',
-                createdBy: 'مدير الفرع',
-                updatedAt: '2026/10/19 03:20AM',
-                updatedBy: 'مدير الفرع',
-                shiftName: 'مدير الفرع // 06:00AM',
-                shiftOpen: true,
-                deleted: false
-            },
-            {
-                id: 'exp-102',
-                date: '2026-10-19',
-                accountName: 'مصروفات تشغيل',
-                departmentName: 'عام',
-                itemName: 'أكياس وشنط تعبئة',
-                description: 'شنط مطبوعة للمحل',
-                amount: 220,
-                source: 'الدرج',
-                createdAt: '2026/10/19 01:10AM',
-                createdBy: 'مدير الفرع',
-                updatedAt: '2026/10/19 01:10AM',
-                updatedBy: 'مدير الفرع',
-                shiftName: 'مدير الفرع // 06:00AM',
-                shiftOpen: true,
-                deleted: false
-            },
-            {
-                id: 'exp-103',
-                date: '2026-10-15',
-                accountName: 'مصروفات تشغيل',
-                departmentName: 'مرافق وفواتير محل',
-                itemName: 'فاتورة كهرباء',
-                description: 'كهرباء شهر أكتوبر',
-                amount: 650,
-                source: 'الخزينة الرئيسية',
-                createdAt: '2026/10/15 04:00PM',
-                createdBy: 'أحمد كاشير',
-                updatedAt: '2026/10/15 04:00PM',
-                updatedBy: 'أحمد كاشير',
-                shiftName: 'كاشير 1 // 02:00PM',
-                shiftOpen: false,
-                deleted: false
-            }
-        ];
-
-        let expenseTree = [];
-        let expensesList = [];
+        let expenseTree = @json($initialTree ?? []);
+        let expensesList = @json($initialExpenses ?? []);
         let selectedExpenseId = null;
         let editingRecord = null;
         let activeTreeLevel = null;
 
-        // عناصر التحكم بالتاريخ
         const dateModeSelect = document.getElementById('date-mode-select');
         const primaryDateBox = document.getElementById('primary-date-box');
         const secondaryDateBox = document.getElementById('secondary-date-box');
@@ -930,7 +808,6 @@
         const date1DayName = document.getElementById('date1-day-name');
         const date2DayName = document.getElementById('date2-day-name');
 
-        // عناصر الفلاتر
         const checkShowDeleted = document.getElementById('check-show-deleted');
         const shiftModeSelect = document.getElementById('shift-mode-select');
         const filterShiftName = document.getElementById('filter-shift-name');
@@ -942,7 +819,6 @@
         const filterItemText = document.getElementById('filter-item-text');
         const filterDescText = document.getElementById('filter-desc-text');
 
-        // عناصر الجدول والملخص
         const reportTbody = document.getElementById('report-tbody');
         const grandTotalBadge = document.getElementById('grand-total-badge');
         const btnEditSelected = document.getElementById('btn-edit-selected');
@@ -951,7 +827,6 @@
         const deptBarsContainer = document.getElementById('dept-bars-container');
         const itemBarsContainer = document.getElementById('item-bars-container');
 
-        // عناصر مودال التعديل
         const editModal = document.getElementById('edit-expense-modal');
         const editForm = document.getElementById('edit-expense-form');
         const modalEditDate = document.getElementById('modal-edit-date');
@@ -962,7 +837,6 @@
         const modalEditAmount = document.getElementById('modal-edit-amount');
         const modalEditSource = document.getElementById('modal-edit-source');
 
-        // عناصر مودال الشجرة السريع
         const quickTreeModal = document.getElementById('quick-tree-modal');
         const quickTreeForm = document.getElementById('quick-tree-form');
         const quickTreeInput = document.getElementById('quick-tree-input');
@@ -999,19 +873,16 @@
             return div.innerHTML;
         }
 
-        function nowFormattedTimestamp() {
-            const now = new Date();
-            const y = now.getFullYear();
-            const m = String(now.getMonth() + 1).padStart(2, '0');
-            const d = String(now.getDate()).padStart(2, '0');
-            let hours = now.getHours();
-            const mins = String(now.getMinutes()).padStart(2, '0');
-            const ampm = hours >= 12 ? 'PM' : 'AM';
-            hours = hours % 12 || 12;
-            return `${y}/${m}/${d} ${String(hours).padStart(2, '0')}:${mins}${ampm}`;
+        function syncDrawerExpensesToCache() {
+            try {
+                const todayIso = new Date().toISOString().slice(0, 10);
+                const drawerTotal = expensesList
+                    .filter(e => !e.deleted && e.source === 'الدرج' && e.date === todayIso)
+                    .reduce((s, e) => s + (Number(e.amount) || 0), 0);
+                localStorage.setItem(shiftExpensesKey, String(drawerTotal));
+            } catch (e) {}
         }
 
-        // تنسيق الإدخال اليدوي للتاريخ: يكتب المستخدم الأرقام فتتحول تلقائياً إلى YYYY/MM/DD
         function formatManualDateString(rawVal) {
             const clean = toEnglishDigits(rawVal).replace(/[^0-9/-\s]/g, '').replace(/-/g, '/');
             if (/^\d{8}$/.test(clean)) {
@@ -1032,20 +903,14 @@
 
         function updateDayBadge(inputEl, badgeEl) {
             const iso = parseManualDateToIso(inputEl.value);
-            if (!iso) {
-                badgeEl.textContent = '-';
-                return;
-            }
+            if (!iso) { badgeEl.textContent = '-'; return; }
             const dt = new Date(iso + 'T12:00:00');
-            if (Number.isNaN(dt.getTime())) {
-                badgeEl.textContent = '-';
-                return;
-            }
+            if (Number.isNaN(dt.getTime())) { badgeEl.textContent = '-'; return; }
             badgeEl.textContent = new Intl.DateTimeFormat('ar-EG', { weekday: 'long' }).format(dt);
         }
 
         function shiftManualDate(inputEl, badgeEl, deltaDays) {
-            const iso = parseManualDateToIso(inputEl.value) || '2026-10-19';
+            const iso = parseManualDateToIso(inputEl.value) || new Date().toISOString().slice(0, 10);
             const dt = new Date(iso + 'T12:00:00');
             dt.setDate(dt.getDate() + deltaDays);
             const nextIso = dt.toISOString().slice(0, 10);
@@ -1075,62 +940,19 @@
             renderReport();
         });
 
-        // تحميل البيانات من LocalStorage وتوحيدها مع شاشة إضافة مصروف
-        function loadAllData() {
-            try {
-                const rawTree = localStorage.getItem(treeStorageKey);
-                expenseTree = rawTree ? JSON.parse(rawTree) : JSON.parse(JSON.stringify(defaultExpenseTree));
-                if (!Array.isArray(expenseTree) || !expenseTree.length) {
-                    expenseTree = JSON.parse(JSON.stringify(defaultExpenseTree));
-                }
-            } catch (e) {
-                expenseTree = JSON.parse(JSON.stringify(defaultExpenseTree));
-            }
-
-            try {
-                const rawRec = localStorage.getItem(recordsStorageKey);
-                expensesList = rawRec ? JSON.parse(rawRec) : JSON.parse(JSON.stringify(seededRecords));
-                if (!Array.isArray(expensesList) || !expensesList.length) {
-                    expensesList = JSON.parse(JSON.stringify(seededRecords));
-                }
-            } catch (e) {
-                expensesList = JSON.parse(JSON.stringify(seededRecords));
-            }
-
-            // ضمان وجود الحقول التفصيلية لأي مصروف تم تسجيله من شاشة الإضافة
-            expensesList = expensesList.map(rec => ({
-                id: rec.id || `exp-${Date.now()}`,
-                date: String(rec.date || '2026-10-19').replace(/\//g, '-'),
-                accountName: rec.accountName || 'مصروفات تشغيل',
-                departmentName: rec.departmentName || 'عام',
-                itemName: rec.itemName || 'مصروف عام',
-                description: rec.description || '',
-                amount: Number(rec.amount) || 0,
-                source: rec.source || 'الدرج',
-                createdAt: rec.createdAt || `${String(rec.date || '2026-10-19').replace(/-/g, '/')} 03:20AM`,
-                createdBy: rec.createdBy || 'مدير الفرع',
-                updatedAt: rec.updatedAt || `${String(rec.date || '2026-10-19').replace(/-/g, '/')} 03:20AM`,
-                updatedBy: rec.updatedBy || 'مدير الفرع',
-                shiftName: rec.shiftName || 'مدير الفرع // 06:00AM',
-                shiftOpen: rec.shiftOpen !== undefined ? Boolean(rec.shiftOpen) : true,
-                deleted: Boolean(rec.deleted)
-            }));
-
-            saveAllRecords();
+        async function persistTreeData() {
             populateFilterDropdowns();
-        }
-
-        function saveAllRecords() {
-            localStorage.setItem(recordsStorageKey, JSON.stringify(expensesList));
-            const drawerTotal = expensesList
-                .filter(e => !e.deleted && e.source === 'الدرج')
-                .reduce((s, e) => s + (Number(e.amount) || 0), 0);
-            localStorage.setItem(shiftExpensesKey, String(drawerTotal));
-        }
-
-        function saveTreeData() {
-            localStorage.setItem(treeStorageKey, JSON.stringify(expenseTree));
-            populateFilterDropdowns();
+            try {
+                await fetch('/api/expenses/tree/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({ tree: expenseTree })
+                });
+            } catch (e) {}
         }
 
         function populateFilterDropdowns() {
@@ -1141,24 +963,22 @@
                 expenseTree.map(a => `<option value="${escapeHtml(a.name)}">${escapeHtml(a.name)}</option>`).join('');
             if (curAcc) filterAccount.value = curAcc;
 
-            // جمع كل الأقسام
             const allDepts = [];
             expenseTree.forEach(a => {
                 (a.departments || []).forEach(d => {
                     if (!allDepts.includes(d.name)) allDepts.push(d.name);
                 });
             });
+
             filterDepartment.innerHTML = '<option value="all">كل الأقسام</option>' +
                 allDepts.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
             if (curDept) filterDepartment.value = curDept;
         }
 
-        // فلترة السجلات حسب التاريخ والفلاتر المختارة
         function getFilteredRecords() {
             const mode = dateModeSelect.value;
             const iso1 = parseManualDateToIso(date1Input.value);
             const iso2 = parseManualDateToIso(date2Input.value);
-
             const showDeleted = checkShowDeleted.checked;
             const shiftMode = shiftModeSelect.value;
             const shiftNameVal = filterShiftName.value;
@@ -1172,7 +992,6 @@
             return expensesList.filter(rec => {
                 if (Boolean(rec.deleted) !== showDeleted) return false;
 
-                // فلترة التاريخ
                 if (mode === 'day' && iso1 && rec.date !== iso1) return false;
                 if (mode === 'range') {
                     if (iso1 && rec.date < iso1) return false;
@@ -1198,7 +1017,6 @@
             });
         }
 
-        // رسم الجدول والرسم البياني والإجماليات
         function renderReport() {
             const filtered = getFilteredRecords();
             const showDetails = checkShowDetails.checked;
@@ -1206,16 +1024,15 @@
             if (!filtered.length) {
                 reportTbody.innerHTML = '<tr><td colspan="13" class="py-5 text-muted">لا توجد مصروفات مطابقة للفترة أو الفلاتر المحددة.</td></tr>';
             } else {
-                if (!filtered.some(r => r.id === selectedExpenseId)) {
-                    selectedExpenseId = filtered[0].id;
+                if (!filtered.some(r => String(r.id) === String(selectedExpenseId))) {
+                    selectedExpenseId = String(filtered[0].id);
                 }
 
                 reportTbody.innerHTML = filtered.map((rec, idx) => {
-                    const isSelected = rec.id === selectedExpenseId;
+                    const isSelected = String(rec.id) === String(selectedExpenseId);
                     const amtStr = Number.isInteger(Number(rec.amount)) ? String(rec.amount) : Number(rec.amount).toFixed(2);
                     return `
-                        <tr class="report-row ${isSelected ? 'active-row' : ''} ${rec.deleted ? 'deleted-row' : ''}"
-                            data-id="${escapeHtml(rec.id)}">
+                        <tr class="report-row ${isSelected ? 'active-row' : ''} ${rec.deleted ? 'deleted-row' : ''}" data-id="${escapeHtml(rec.id)}">
                             <td class="en-digit text-muted">${idx + 1}</td>
                             <td>${escapeHtml(rec.accountName)}</td>
                             <td class="fw-bold">${escapeHtml(rec.departmentName)}</td>
@@ -1238,12 +1055,10 @@
                 }).join('');
             }
 
-            // إظهار أو إخفاء أعمدة التفاصيل
             document.querySelectorAll('.detail-col').forEach(el => {
                 el.style.display = showDetails ? '' : 'none';
             });
 
-            // حساب الإجمالي باللغة الإنجليزية
             const grandTotal = filtered.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
             grandTotalBadge.textContent = Number.isInteger(grandTotal) ? String(grandTotal) : grandTotal.toFixed(2);
 
@@ -1292,18 +1107,15 @@
         }
 
         function getSelectedRecord() {
-            return expensesList.find(r => r.id === selectedExpenseId) || null;
+            return expensesList.find(r => String(r.id) === String(selectedExpenseId)) || null;
         }
 
         function updateBottomButtons() {
             const rec = getSelectedRecord();
-            btnEditSelected.disabled = !rec;
-            btnDeleteSelected.disabled = !rec;
+            btnEditSelected.disabled = !rec || rec.deleted;
+            btnDeleteSelected.disabled = !rec || rec.deleted;
         }
 
-        // ==========================================================
-        // فتح نافذة تعديل المصروف (مسموح فقط لو الوردية مفتوحة)
-        // ==========================================================
         function populateModalAccountSelect(accName, deptName, itemName) {
             modalEditAccount.innerHTML = expenseTree.map(a =>
                 `<option value="${escapeHtml(a.name)}">${escapeHtml(a.name)}</option>`
@@ -1343,8 +1155,8 @@
 
         function attemptOpenEditModal(rec) {
             if (!rec) return;
-            if (!rec.shiftOpen) {
-                showToast('لا يمكن تعديل هذا المصروف لأن الوردية الخاصة به قد تم إغلاقها!');
+            if (!rec.shiftOpen || rec.deleted) {
+                showToast('لا يمكن تعديل هذا المصروف لأن الوردية الخاصة به قد تم إغلاقها أو أنه محذوف!');
                 return;
             }
             editingRecord = rec;
@@ -1369,10 +1181,9 @@
         document.getElementById('btn-close-edit-modal').addEventListener('click', closeEditModal);
         document.getElementById('btn-cancel-edit-modal').addEventListener('click', closeEditModal);
 
-        editForm.addEventListener('submit', function(e) {
+        editForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             if (!editingRecord) return;
-
             const newAmt = Number(toEnglishDigits(modalEditAmount.value));
             if (!Number.isFinite(newAmt) || newAmt <= 0) {
                 showToast('يرجى إدخال مبلغ صحيح أكبر من صفر');
@@ -1381,23 +1192,42 @@
             }
 
             const parsedIso = parseManualDateToIso(modalEditDate.value) || editingRecord.date;
-            editingRecord.date = parsedIso;
-            editingRecord.accountName = modalEditAccount.value;
-            editingRecord.departmentName = modalEditDept.value;
-            editingRecord.itemName = modalEditItem.value;
-            editingRecord.description = modalEditDesc.value.trim();
-            editingRecord.amount = newAmt;
-            editingRecord.source = modalEditSource.value;
-            editingRecord.updatedAt = nowFormattedTimestamp();
-            editingRecord.updatedBy = 'مدير الفرع';
 
-            saveAllRecords();
-            renderReport();
-            closeEditModal();
-            showToast('تم تحديث المصروف وتسجيل توقيت التعديل بنجاح');
+            try {
+                const res = await fetch('/api/expenses/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({
+                        id: editingRecord.id,
+                        date: parsedIso,
+                        accountName: modalEditAccount.value,
+                        departmentName: modalEditDept.value,
+                        itemName: modalEditItem.value,
+                        description: modalEditDesc.value.trim(),
+                        amount: newAmt,
+                        source: modalEditSource.value
+                    })
+                });
+                const out = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(out.message || 'تعذر تحديث المصروف');
+
+                if (out.bootstrap && Array.isArray(out.bootstrap.initialExpenses)) {
+                    expensesList = out.bootstrap.initialExpenses;
+                }
+
+                syncDrawerExpensesToCache();
+                renderReport();
+                closeEditModal();
+                showToast('تم تحديث المصروف في قاعدة البيانات بنجاح');
+            } catch (err) {
+                showToast(err.message);
+            }
         });
 
-        // أزرار القلم داخل نافذة التعديل لإضافة حساب/قسم/بند جديد فوراً
         document.querySelectorAll('.btn-mini-pen').forEach(btn => {
             btn.addEventListener('click', function() {
                 activeTreeLevel = this.getAttribute('data-level');
@@ -1424,22 +1254,21 @@
 
             if (activeTreeLevel === 'account') {
                 expenseTree.push({ id: `acc-${Date.now()}`, name: val, departments: [{ id: `dep-${Date.now()}`, name: 'عام', items: ['مصروف عام'] }] });
-                saveTreeData();
+                persistTreeData();
                 populateModalAccountSelect(val);
             } else if (activeTreeLevel === 'department' && acc) {
                 acc.departments.push({ id: `dep-${Date.now()}`, name: val, items: ['مصروف عام'] });
-                saveTreeData();
+                persistTreeData();
                 populateModalDeptSelect(val);
             } else if (activeTreeLevel === 'item' && dept) {
                 dept.items.push(val);
-                saveTreeData();
+                persistTreeData();
                 populateModalItemSelect(val);
             }
             closeQuickTreeModal();
             showToast(`تمت إضافة: ${val}`);
         });
 
-        // أحداث الجدول والفلاتر
         reportTbody.addEventListener('click', function(e) {
             const row = e.target.closest('.report-row');
             if (row) {
@@ -1458,18 +1287,32 @@
 
         btnEditSelected.addEventListener('click', () => attemptOpenEditModal(getSelectedRecord()));
 
-        btnDeleteSelected.addEventListener('click', function() {
+        btnDeleteSelected.addEventListener('click', async function() {
             const rec = getSelectedRecord();
-            if (!rec) return;
+            if (!rec || rec.deleted) return;
             if (!rec.shiftOpen) {
                 showToast('لا يمكن حذف مصروف في وردية مغلقة!');
                 return;
             }
-            rec.deleted = true;
-            saveAllRecords();
-            selectedExpenseId = null;
-            renderReport();
-            showToast('تم نقل المصروف إلى المحذوفات');
+            try {
+                const res = await fetch(`/api/expenses/${encodeURIComponent(rec.id)}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    }
+                });
+                const out = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(out.message || 'تعذر حذف المصروف');
+
+                rec.deleted = true;
+                syncDrawerExpensesToCache();
+                selectedExpenseId = null;
+                renderReport();
+                showToast('تم نقل المصروف إلى المحذوفات في قاعدة البيانات');
+            } catch (err) {
+                showToast(err.message);
+            }
         });
 
         [checkShowDeleted, shiftModeSelect, filterShiftName, filterDepartment, filterAccount, filterSource, filterUser, checkShowDetails].forEach(el => {
@@ -1503,7 +1346,6 @@
             analyticsStrip.classList.toggle('is-collapsed');
         });
 
-        // تصدير Excel
         document.getElementById('btn-export-excel').addEventListener('click', function() {
             const filtered = getFilteredRecords();
             const headers = ['م', 'الحساب', 'القسم', 'البند', 'الوصف', 'المصروف', 'المصدر', 'تاريخ الصرف', 'تاريخ الإضافة', 'المستخدم', 'تاريخ التعديل'];
@@ -1515,7 +1357,6 @@
             link.click();
         });
 
-        // دالة الخروج الموحدة (Esc)
         function exitScreen() {
             if (window.history.length > 1 && document.referrer) {
                 window.history.back();
@@ -1525,7 +1366,6 @@
         }
         document.getElementById('btn-exit-report').addEventListener('click', exitScreen);
 
-        // اختصارات الكيبورد الشاملة
         window.addEventListener('keydown', function(e) {
             if (quickTreeModal.classList.contains('is-open')) {
                 if (e.key === 'Escape') { e.preventDefault(); closeQuickTreeModal(); }
@@ -1535,7 +1375,6 @@
                 if (e.key === 'Escape') { e.preventDefault(); closeEditModal(); }
                 return;
             }
-
             if (e.key === 'Escape') {
                 e.preventDefault();
                 exitScreen();
@@ -1558,17 +1397,17 @@
 
             const filtered = getFilteredRecords();
             if (!filtered.length) return;
-            const curIdx = filtered.findIndex(r => r.id === selectedExpenseId);
+            const curIdx = filtered.findIndex(r => String(r.id) === String(selectedExpenseId));
 
             if (e.key === 'ArrowDown') {
                 e.preventDefault();
                 const nextIdx = curIdx < 0 ? 0 : Math.min(curIdx + 1, filtered.length - 1);
-                selectedExpenseId = filtered[nextIdx].id;
+                selectedExpenseId = String(filtered[nextIdx].id);
                 renderReport();
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 if (curIdx > 0) {
-                    selectedExpenseId = filtered[curIdx - 1].id;
+                    selectedExpenseId = String(filtered[curIdx - 1].id);
                     renderReport();
                 }
             } else if (e.key === 'Enter' && selectedExpenseId) {
@@ -1580,12 +1419,12 @@
             }
         });
 
-        loadAllData();
+        populateFilterDropdowns();
         updateDayBadge(date1Input, date1DayName);
         updateDayBadge(date2Input, date2DayName);
+        syncDrawerExpensesToCache();
         renderReport();
     })();
     </script>
 </body>
 </html>
-
