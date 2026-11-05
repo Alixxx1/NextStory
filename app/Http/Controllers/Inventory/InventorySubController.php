@@ -2468,4 +2468,134 @@ class InventorySubController extends Controller
     }
 
 
+    // =========================================================================
+    // ثامناً: شاشة جرد الأصناف السريع (/tools/stocktaking & /inventory/stocktaking)
+    // =========================================================================
+    public function stocktakingView()
+    {
+        return view('inventory.stocktaking', $this->buildStocktakingPayload());
+    }
+
+    public function stocktakingDataApi()
+    {
+        return response()->json($this->buildStocktakingPayload());
+    }
+
+    private function buildStocktakingPayload(): array
+    {
+        if (Category::withTrashed()->count() === 0) {
+            Category::create([
+                'uuid' => (string) Str::uuid(),
+                'code' => '001',
+                'name' => 'سايب',
+                'is_published_online' => true,
+                'is_synced' => false,
+            ]);
+        }
+
+        $allCategories = Category::orderBy('id', 'asc')->get();
+
+        // القوائم الرئيسية (التي ليس لها أب) والتصنيفات الفرعية
+        $mainLists = $allCategories->whereNull('parent_id')->map(fn (Category $c) => [
+            'id' => (string) $c->id,
+            'name' => $c->name,
+        ])->values()->all();
+
+        $subCategories = $allCategories->map(fn (Category $c) => [
+            'id' => (string) $c->id,
+            'parentId' => $c->parent_id ? (string) $c->parent_id : null,
+            'name' => $c->name,
+        ])->values()->all();
+
+        $items = Item::with('category')
+            ->where('is_disabled', false)
+            ->orderBy('id', 'asc')
+            ->get()
+            ->map(function (Item $item) {
+                $qty = round((float) $item->qty, 3);
+                $minStock = (float) ($item->min_stock ?? 0);
+
+                // تصنيف حالة الرصيد: تحت حد الطلب (low) | رصيد متوسط (medium) | رصيد كاف (sufficient)
+                $thresholdLow = $minStock > 0 ? $minStock : 0;
+                $thresholdMed = $minStock > 0 ? ($minStock * 2) : 5;
+
+                if ($qty <= $thresholdLow) {
+                    $stockLevel = 'low'; // تحت حد الطلب
+                } elseif ($qty <= $thresholdMed) {
+                    $stockLevel = 'medium'; // رصيد متوسط
+                } else {
+                    $stockLevel = 'sufficient'; // رصيد كاف
+                }
+
+                $catObj = $item->category;
+                $parentCatId = $catObj && $catObj->parent_id ? (string) $catObj->parent_id : ($catObj ? (string) $catObj->id : '');
+
+                return [
+                    'id' => (string) $item->id,
+                    'mainListId' => $parentCatId,
+                    'categoryId' => $catObj ? (string) $catObj->id : '',
+                    'categoryName' => $catObj ? $catObj->name : 'سايب',
+                    'name' => $item->name,
+                    'barcode' => $item->barcode ?? '',
+                    'unit' => $item->unit ?: 'قطعة',
+                    'qty' => $qty,
+                    'minStock' => $minStock,
+                    'lastBuyPrice' => round((float) $item->last_buy_price, 2),
+                    'retailPrice' => round((float) $item->retail_price, 2),
+                    'stockLevel' => $stockLevel,
+                ];
+            })
+            ->values()
+            ->all();
+
+        return [
+            'initialMainLists' => $mainLists,
+            'initialSubCategories' => $subCategories,
+            'initialItems' => $items,
+        ];
+    }
+
+    // تحديث سريع لرصيد صنف واحد مباشرة من شاشة الجرد عند الضغط على مربع الرصيد
+    public function quickUpdateStockFromAudit(Request $request, $id)
+    {
+        $data = $request->validate([
+            'newQty' => 'required|numeric',
+        ]);
+
+        return DB::transaction(function () use ($id, $data) {
+            $item = Item::lockForUpdate()->findOrFail($id);
+            $oldQty = round((float) $item->qty, 3);
+            $newQty = round((float) $data['newQty'], 3);
+            $diff = round($newQty - $oldQty, 3);
+
+            if (abs($diff) > 0.0001) {
+                $item->update([
+                    'qty' => $newQty,
+                    'last_move_date' => now()->format('Y-m-d'),
+                    'is_synced' => false,
+                ]);
+
+                ItemMovement::create([
+                    'item_id' => $item->id,
+                    'move_date' => now()->format('Y/m/d h:i A'),
+                    'type' => $diff > 0 ? 'تسوية جرد (زيادة)' : 'تسوية جرد (عجز)',
+                    'ref_no' => 'AUD-' . now()->format('His'),
+                    'party' => 'شاشة جرد الأصناف',
+                    'user_name' => 'مدير الفرع',
+                    'before_qty' => $oldQty,
+                    'in_qty' => $diff > 0 ? $diff : 0,
+                    'out_qty' => $diff < 0 ? abs($diff) : 0,
+                    'after_qty' => $newQty,
+                    'price' => (float) $item->last_buy_price,
+                ]);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'bootstrap' => $this->buildStocktakingPayload(),
+            ]);
+        });
+    }
+
+
 }
