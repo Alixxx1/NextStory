@@ -22,7 +22,7 @@
         .shifts-table th { background: #f1f5f9; color: #1e293b; padding: 10px; font-size: 13px; font-weight: 900; border-bottom: 2px solid #cbd5e1; border-left: 1px solid #cbd5e1; position: sticky; top: 0; }
         .shifts-table td { padding: 9px 10px; font-size: 13.5px; font-weight: 800; border-bottom: 1px solid #e2e8f0; border-left: 1px solid #e2e8f0; }
         /* الوردية المغلقة باللون الأحمر كما طلبت */
-        .shifts-table tr.closed-shift-row > td { background-color: #fee2e2 !important; color: #991b1b !important; }
+        .shifts-table tr        .closed-shift-row > td { background-color: #f8fafc !important; color: #334155 !important; }
         .shifts-table tr.open-shift-row > td { background-color: #f0fdf4; color: #14532d; }
         .win-footer { padding: 10px 16px; background: #e9eef3; border-top: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center; }
     </style>
@@ -38,8 +38,8 @@
         <div class="filters-bar">
             <span class="fw-bold">التاريخ:</span>
             <select id="date-mode" class="form-select form-select-sm fw-bold" style="width:150px;">
-                <option value="all" selected>كل الأوقات (من البداية)</option>
-                <option value="exact">تاريخ محدد</option>
+                <option value="exact" selected>تاريخ محدد</option>
+                <option value="all">كل الأوقات (من البداية)</option>
                 <option value="before">قبل</option>
                 <option value="after">بعد</option>
                 <option value="range">فترة زمنية</option>
@@ -103,18 +103,33 @@
             let d1 = new Date();
             let d2 = new Date();
             let shiftsData = [];
+            let initialDateResolved = false;
 
-            function toISO(d) { return d.toISOString().slice(0, 10); }
-            function formatArDate(d) {
-                const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-                const arDigits = s => String(s).replace(/[0-9]/g, x => '٠١٢٣٤٥٦٧٨٩'[x]);
-                return `${days[d.getDay()]} ${arDigits(toISO(d).replace(/-/g, '/'))}`;
+            function toISO(d) {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+
+            function formatDate(d) {
+                const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(d);
+                return `${dayName} ${toISO(d).replace(/-/g, '/')}`;
+            }
+
+            function escapeHtml(value) {
+                const element = document.createElement('span');
+                element.textContent = String(value ?? '');
+                return element.innerHTML;
             }
 
             function updateDateUI() {
                 const mode = document.getElementById('date-mode').value;
-                document.getElementById('d1-label').textContent = formatArDate(d1);
-                document.getElementById('d2-label').textContent = formatArDate(d2);
+                document.getElementById('d1-label').textContent = formatDate(d1);
+                document.getElementById('d2-label').textContent = formatDate(d2);
+                document.getElementById('d1-native').value = toISO(d1);
+                document.getElementById('d2-native').value = toISO(d2);
+                document.getElementById('date1-box').classList.toggle('d-none', mode === 'all');
                 document.getElementById('date2-box').classList.toggle('d-none', mode !== 'range');
                 document.getElementById('range-sep').classList.toggle('d-none', mode !== 'range');
             }
@@ -123,45 +138,71 @@
                 updateDateUI();
                 const mode = document.getElementById('date-mode').value;
                 const user = document.getElementById('user-filter').value;
-                const url = `/api/admin/shifts/log?date_mode=${mode}&date1=${toISO(d1)}&date2=${toISO(d2)}&user=${encodeURIComponent(user)}`;
-                const res = await fetch(url);
-                const data = await res.json();
-                shiftsData = data.shifts || [];
-
-                const uSel = document.getElementById('user-filter');
-                if (uSel.options.length <= 1 && Array.isArray(data.users)) {
-                    data.users.forEach(u => {
-                        const opt = document.createElement('option');
-                        opt.value = u;
-                        opt.textContent = u;
-                        uSel.appendChild(opt);
-                    });
-                }
-
+                const params = new URLSearchParams({ date_mode: mode, user });
+                if (mode !== 'all') params.set('date1', toISO(d1));
+                if (mode === 'range') params.set('date2', toISO(d2));
                 const tbody = document.getElementById('shifts-tbody');
-                if (!shiftsData.length) {
-                    tbody.innerHTML = '<tr><td colspan="11" class="py-5 text-muted">لا توجد ورديات مسجلة في هذه الفترة</td></tr>';
-                    return;
-                }
+                tbody.innerHTML = '<tr><td colspan="11" class="py-5 text-muted">جاري تحميل سجل الورديات...</td></tr>';
 
-                tbody.innerHTML = shiftsData.map((s, i) => {
-                    const isClosed = s.status === 'closed';
-                    return `
-                        <tr class="${isClosed ? 'closed-shift-row' : 'open-shift-row'}">
-                            <td>${i + 1}</td>
-                            <td>${s.shift_no}</td>
-                            <td style="direction:ltr;">${s.started_time_label}</td>
-                            <td>${s.started_by_name}</td>
-                            <td style="direction:ltr;">${s.start_device}</td>
-                            <td style="direction:ltr;">${s.ended_time_label || '-'}</td>
-                            <td>${s.duration_label || (isClosed ? '-' : 'مفتوحة الآن')}</td>
-                            <td>${s.ended_by_name || '-'}</td>
-                            <td style="direction:ltr;">${s.end_device || '-'}</td>
-                            <td style="direction:ltr;">${isClosed ? Number(s.counted_drawer_cash).toFixed(2) + ' ج.م' : '-'}</td>
-                            <td>${s.report_sent ? '✓ نعم' : '-'}</td>
-                        </tr>
-                    `;
-                }).join('');
+                try {
+                    const res = await fetch(`/api/admin/shifts/log?${params.toString()}`, {
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.ok) {
+                        throw new Error(data.message || 'تعذر تحميل سجل الورديات.');
+                    }
+
+                    const uSel = document.getElementById('user-filter');
+                    if (uSel.options.length <= 1 && Array.isArray(data.users)) {
+                        data.users.forEach(userName => {
+                            const opt = document.createElement('option');
+                            opt.value = userName;
+                            opt.textContent = userName;
+                            uSel.appendChild(opt);
+                        });
+                    }
+
+                    shiftsData = Array.isArray(data.shifts) ? data.shifts : [];
+                    if (!initialDateResolved) {
+                        initialDateResolved = true;
+                        if (mode === 'exact'
+                            && shiftsData.length === 0
+                            && data.latest_date
+                            && data.latest_date < toISO(d1)) {
+                            d1 = new Date(`${data.latest_date}T12:00:00`);
+                            await fetchShifts();
+                            return;
+                        }
+                    }
+
+                    if (!shiftsData.length) {
+                        tbody.innerHTML = '<tr><td colspan="11" class="py-5 text-muted">لا توجد ورديات مسجلة في هذا اليوم. غيّر التاريخ أو اختر كل الأوقات.</td></tr>';
+                        return;
+                    }
+
+                    tbody.innerHTML = shiftsData.map((s, i) => {
+                        const isClosed = s.status === 'closed';
+                        return `
+                            <tr class="${isClosed ? 'closed-shift-row' : 'open-shift-row'}">
+                                <td>${i + 1}</td>
+                                <td>${escapeHtml(s.shift_no)}</td>
+                                <td style="direction:ltr;">${escapeHtml(s.started_time_label)}</td>
+                                <td>${escapeHtml(s.started_by_name)}</td>
+                                <td style="direction:ltr;">${escapeHtml(s.start_device)}</td>
+                                <td style="direction:ltr;">${escapeHtml(s.ended_time_label || '-')}</td>
+                                <td>${escapeHtml(s.duration_label || (isClosed ? '-' : 'مفتوحة الآن'))}</td>
+                                <td>${escapeHtml(s.ended_by_name || '-')}</td>
+                                <td style="direction:ltr;">${escapeHtml(s.end_device || '-')}</td>
+                                <td style="direction:ltr;">${isClosed ? Number(s.counted_drawer_cash).toFixed(2) + ' ج.م' : '-'}</td>
+                                <td>${s.report_sent ? '✓ نعم' : '-'}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                } catch (error) {
+                    shiftsData = [];
+                    tbody.innerHTML = `<tr><td colspan="11" class="py-5 text-danger">${escapeHtml(error.message || 'تعذر تحميل سجل الورديات.')}</td></tr>`;
+                }
             }
 
             document.getElementById('d1-prev').addEventListener('click', () => { d1.setDate(d1.getDate() - 1); fetchShifts(); });

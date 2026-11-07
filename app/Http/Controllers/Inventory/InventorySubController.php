@@ -2736,7 +2736,7 @@ class InventorySubController extends Controller
 
     public function importSuppliersView()
     {
-        return view('tools.import_suppliers');
+        return view('tools.import-suppliers');
     }
 
     /**

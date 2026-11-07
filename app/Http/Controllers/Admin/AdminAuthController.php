@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -773,12 +774,18 @@ class AdminAuthController extends Controller
             return $error;
         }
 
-        $dateMode = $request->query('date_mode', 'all');
-        $date1    = $request->query('date1');
-        $date2    = $request->query('date2');
-        $user     = $request->query('user', 'all');
+        $validated = $request->validate([
+            'date_mode' => ['sometimes', 'in:all,exact,before,after,range'],
+            'date1' => ['required_if:date_mode,exact,before,after,range', 'date_format:Y-m-d'],
+            'date2' => ['required_if:date_mode,range', 'date_format:Y-m-d'],
+            'user' => ['nullable', 'string', 'max:120'],
+        ]);
+        $dateMode = $validated['date_mode'] ?? 'all';
+        $date1    = $validated['date1'] ?? null;
+        $date2    = $validated['date2'] ?? null;
+        $user     = $validated['user'] ?? 'all';
 
-        $q = DB::table('pos_shifts')->orderBy('id', 'desc');
+        $q = DB::table('pos_shifts')->orderByDesc('started_at')->orderByDesc('id');
 
         if ($dateMode === 'exact' && $date1) {
             $q->where('shift_date', $date1);
@@ -798,11 +805,13 @@ class AdminAuthController extends Controller
 
         $shifts = $q->limit(500)->get();
         $usersList = DB::table('pos_users')->pluck('full_name')->unique()->values();
+        $latestDate = DB::table('pos_shifts')->max('shift_date');
 
         return response()->json([
-            'ok'     => true,
-            'shifts' => $shifts,
-            'users'  => $usersList,
+            'ok'          => true,
+            'shifts'      => $shifts,
+            'users'       => $usersList,
+            'latest_date' => $latestDate ? substr((string) $latestDate, 0, 10) : null,
         ]);
     }
 
@@ -1045,49 +1054,73 @@ class AdminAuthController extends Controller
 // =========================================================================
     // 1. تحميل نسخة احتياطية مشفرة بالكامل (.nsbak) لا يمكن فتحها خارج النظام
     // =========================================================================
-    public function downloadEncryptedBackup()
+    public function downloadEncryptedBackup(Request $request)
     {
-        $driver = DB::connection()->getDriverName();
-        $payload = [
-            'system'     => 'NextStore_POS_Protected_Backup',
-            'version'    => '2025.1',
-            'driver'     => $driver,
-            'created_at' => now()->toDateTimeString(),
-        ];
-
-        if ($driver === 'sqlite') {
-            $dbPath = DB::connection()->getDatabaseName();
-            if (!file_exists($dbPath)) {
-                return back()->with('error', 'ملف قاعدة البيانات غير موجود.');
-            }
-            // قراءة ملف SQLite الخام وتحويله إلى Base64
-            $payload['raw_sqlite_base64'] = base64_encode(file_get_contents($dbPath));
-        } else {
-            // في حالة MySQL: سحب كافة الجداول والبيانات ديناميكياً
-            $tablesData = [];
-            $tables = DB::select('SHOW TABLES');
-            foreach ($tables as $tableObj) {
-                $tableName = array_values((array) $tableObj)[0];
-                if ($tableName === 'migrations') {
-                    continue;
-                }
-                $tablesData[$tableName] = DB::table($tableName)->get()->map(fn ($r) => (array) $r)->toArray();
-            }
-            $payload['tables_data'] = $tablesData;
+        if ($error = $this->adminAccessError($request, 'settings.manage')) {
+            return $error;
         }
 
-        // ضغط البيانات ثم تشفيرها بتشفير Laravel AES-256-CBC
-        $jsonString = json_encode($payload, JSON_UNESCAPED_UNICODE);
-        $compressed = gzencode($jsonString, 9);
-        $encryptedContent = \Illuminate\Support\Facades\Crypt::encryptString(base64_encode($compressed));
+        try {
+            $driver = DB::connection()->getDriverName();
+            $payload = [
+                'system'     => 'NextStore_POS_Protected_Backup',
+                'version'    => '2025.1',
+                'driver'     => $driver,
+                'created_at' => now()->toDateTimeString(),
+            ];
 
-        $fileName = 'NextStore_Backup_' . now()->format('Y_m_d_His') . '.nsbak';
+            if ($driver === 'sqlite') {
+                $dbPath = $this->sqliteDatabasePath();
+                if (!is_file($dbPath)) {
+                    return response()->json(['ok' => false, 'message' => 'ملف قاعدة البيانات غير موجود.'], 404);
+                }
 
-        return response($encryptedContent, 200, [
-            'Content-Type'        => 'application/octet-stream',
-            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-            'Cache-Control'       => 'no-store, no-cache',
-        ]);
+                $pdo = DB::connection()->getPdo();
+                $checkpoint = $pdo->query('PRAGMA wal_checkpoint(FULL)')->fetch(\PDO::FETCH_NUM);
+                if (!$checkpoint || (int) $checkpoint[0] !== 0 || (int) $checkpoint[1] !== (int) $checkpoint[2]) {
+                    throw new \RuntimeException('Unable to checkpoint the SQLite database before backup.');
+                }
+                $pdo->exec('BEGIN IMMEDIATE');
+                try {
+                    $sqliteBinary = file_get_contents($dbPath);
+                    if ($sqliteBinary === false) {
+                        throw new \RuntimeException('Unable to read the SQLite database file.');
+                    }
+                } finally {
+                    $pdo->exec('ROLLBACK');
+                }
+                $payload['raw_sqlite_base64'] = base64_encode($sqliteBinary);
+            } elseif ($driver === 'mysql') {
+                $tablesData = [];
+                foreach (DB::select('SHOW TABLES') as $tableObj) {
+                    $tableName = array_values((array) $tableObj)[0];
+                    if ($tableName === 'migrations') {
+                        continue;
+                    }
+                    $tablesData[$tableName] = DB::table($tableName)->get()->map(fn ($row) => (array) $row)->all();
+                }
+                $payload['tables_data'] = $tablesData;
+            } else {
+                return response()->json(['ok' => false, 'message' => 'نوع قاعدة البيانات غير مدعوم للنسخ الاحتياطي.'], 422);
+            }
+
+            $jsonString = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+            $compressed = gzencode($jsonString, 9);
+            if ($compressed === false) {
+                throw new \RuntimeException('Unable to compress the database backup.');
+            }
+            $encryptedContent = \Illuminate\Support\Facades\Crypt::encryptString(base64_encode($compressed));
+            $fileName = 'NextStore_Backup_' . now()->format('Y_m_d_His') . '.nsbak';
+
+            return response($encryptedContent, 200, [
+                'Content-Type'        => 'application/octet-stream',
+                'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+                'Cache-Control'       => 'no-store, no-cache',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Database backup creation failed.', ['exception' => $e]);
+            return response()->json(['ok' => false, 'message' => 'تعذر إنشاء النسخة الاحتياطية. راجع سجل النظام.'], 500);
+        }
     }
 
     // =========================================================================
@@ -1095,43 +1128,46 @@ class AdminAuthController extends Controller
     // =========================================================================
     public function restoreEncryptedBackup(Request $request)
     {
-        $request->validate([
-            'backup_file' => 'required|file',
-        ]);
+        if ($error = $this->adminAccessError($request, 'settings.manage')) {
+            return $error;
+        }
+
+        $request->validate(['backup_file' => 'required|file|max:512000']);
 
         try {
             $encryptedContent = file_get_contents($request->file('backup_file')->getRealPath());
-
-            // فك التشفير وفك الضغط
+            if ($encryptedContent === false) {
+                return response()->json(['ok' => false, 'message' => 'تعذر قراءة ملف النسخة الاحتياطية.'], 422);
+            }
             $compressedBase64 = \Illuminate\Support\Facades\Crypt::decryptString($encryptedContent);
-            $jsonString = gzdecode(base64_decode($compressedBase64));
-            $payload = json_decode($jsonString, true);
-
-            if (!is_array($payload) || ($payload['system'] ?? '') !== 'NextStore_POS_Protected_Backup') {
+            $compressed = base64_decode($compressedBase64, true);
+            $jsonString = $compressed === false ? false : gzdecode($compressed);
+            if ($jsonString === false) {
                 return response()->json([
                     'ok'      => false,
-                    'message' => 'ملف النسخة الاحتياطية غير صالح أو لا ينتمي لنظام NextStore!',
+                    'message' => 'بيانات ملف النسخة الاحتياطية تالفة.',
                 ], 422);
+            }
+            $payload = json_decode($jsonString, true, 512, JSON_THROW_ON_ERROR);
+            if (!is_array($payload) || ($payload['system'] ?? '') !== 'NextStore_POS_Protected_Backup') {
+                return response()->json(['ok' => false, 'message' => 'ملف النسخة الاحتياطية غير صالح أو لا ينتمي لنظام NextStore.'], 422);
             }
 
             $currentDriver = DB::connection()->getDriverName();
 
-            if ($currentDriver === 'sqlite' && !empty($payload['raw_sqlite_base64'])) {
-                $dbPath = DB::connection()->getDatabaseName();
-                $sqliteBinary = base64_decode($payload['raw_sqlite_base64']);
-
-                // التحقق من أن الملف هو SQLite حقيقي بعد فك التشفير
-                if (substr($sqliteBinary, 0, 15) !== 'SQLite format 3') {
+            if ($currentDriver === 'sqlite' && isset($payload['raw_sqlite_base64'])) {
+                if (($payload['driver'] ?? null) !== 'sqlite') {
+                    return response()->json(['ok' => false, 'message' => 'نوع قاعدة البيانات في الملف غير متوافق.'], 422);
+                }
+                $sqliteBinary = base64_decode($payload['raw_sqlite_base64'], true);
+                if ($sqliteBinary === false || substr($sqliteBinary, 0, 16) !== "SQLite format 3\0") {
                     return response()->json([
                         'ok'      => false,
-                        'message' => 'البيانات الداخلية للملف تالفة.',
+                        'message' => 'البيانات الداخلية للملف ليست قاعدة SQLite صالحة.',
                     ], 422);
                 }
 
-                // إغلاق الاتصال مؤقتاً واستبدال ملف الداتابيز بالنسخة المسترجعة
-                DB::disconnect();
-                file_put_contents($dbPath, $sqliteBinary);
-                DB::reconnect();
+                $this->replaceSqliteDatabase($sqliteBinary);
 
                 return response()->json([
                     'ok'      => true,
@@ -1139,29 +1175,14 @@ class AdminAuthController extends Controller
                 ]);
             }
 
-            if (!empty($payload['tables_data']) && is_array($payload['tables_data'])) {
-                Schema::disableForeignKeyConstraints();
-                DB::beginTransaction();
-                try {
-                    foreach ($payload['tables_data'] as $tableName => $rows) {
-                        if (Schema::hasTable($tableName)) {
-                            DB::table($tableName)->delete();
-                            foreach (array_chunk($rows, 200) as $chunk) {
-                                DB::table($tableName)->insert($chunk);
-                            }
-                        }
-                    }
-                    DB::commit();
-                } catch (\Throwable $e) {
-                    DB::rollBack();
-                    throw $e;
-                } finally {
-                    Schema::enableForeignKeyConstraints();
-                }
-
+            if ($currentDriver === 'mysql'
+                && ($payload['driver'] ?? null) === 'mysql'
+                && isset($payload['tables_data'])
+                && is_array($payload['tables_data'])) {
+                $this->restoreTableBackup($payload['tables_data']);
                 return response()->json([
                     'ok'      => true,
-                    'message' => 'تم استرجاع جميع الجداول والبيانات بنجاح!',
+                    'message' => 'تم استبدال بيانات الجداول الحالية ببيانات النسخة الاحتياطية بنجاح.',
                 ]);
             }
 
@@ -1174,11 +1195,180 @@ class AdminAuthController extends Controller
                 'ok'      => false,
                 'message' => 'فشل فك تشفير الملف! هذا الملف غير صالح أو تم التلاعب به.',
             ], 422);
+        } catch (\UnexpectedValueException $e) {
+            return response()->json(['ok' => false, 'message' => 'بيانات النسخة الاحتياطية غير صالحة أو لا تطابق بنية قاعدة البيانات.'], 422);
+        } catch (\JsonException $e) {
+            return response()->json(['ok' => false, 'message' => 'محتوى النسخة الاحتياطية غير صالح.'], 422);
         } catch (\Throwable $e) {
+            Log::error('Database backup restore failed.', ['exception' => $e]);
             return response()->json([
                 'ok'      => false,
-                'message' => 'حدث خطأ أثناء الاستعادة: ' . $e->getMessage(),
+                'message' => 'تعذرت استعادة النسخة الاحتياطية. لم يتم اعتماد بيانات ناقصة؛ راجع سجل النظام.',
             ], 500);
+        }
+    }
+
+    private function sqliteDatabasePath(): string
+    {
+        $databaseName = DB::connection()->getDatabaseName();
+        if ($databaseName === ':memory:' || str_starts_with($databaseName, 'file:')) {
+            throw new \RuntimeException('SQLite backup restore requires a file-backed database.');
+        }
+
+        if (!preg_match('/^(?:[A-Za-z]:[\\\\\/]|\\\\\\\\|\/)/', $databaseName)) {
+            $databaseName = base_path($databaseName);
+        }
+
+        return $databaseName;
+    }
+
+    private function isValidSqliteDatabase(string $path): bool
+    {
+        try {
+            $pdo = new \PDO('sqlite:' . $path, null, null, [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+            ]);
+            $integrity = $pdo->query('PRAGMA integrity_check')->fetchColumn();
+            $tables = $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table'")->fetchAll(\PDO::FETCH_COLUMN);
+
+            return $integrity === 'ok'
+                && in_array('sales_invoices', $tables, true)
+                && in_array('items', $tables, true);
+        } catch (\PDOException $e) {
+            return false;
+        }
+    }
+
+    private function replaceSqliteDatabase(string $sqliteBinary): void
+    {
+        $databasePath = $this->sqliteDatabasePath();
+        $directory = dirname($databasePath);
+        if (!is_dir($directory) || !is_writable($directory)) {
+            throw new \RuntimeException('SQLite database directory is not writable.');
+        }
+
+        $temporaryPath = tempnam($directory, '.nextstore-restore-');
+        if ($temporaryPath === false) {
+            throw new \RuntimeException('Unable to stage the restored SQLite database.');
+        }
+
+        $rollbackPath = $databasePath . '.restore-' . Str::uuid() . '.bak';
+        $originalExists = is_file($databasePath);
+        $originalPermissions = $originalExists ? fileperms($databasePath) : false;
+        $databaseReplaced = false;
+
+        try {
+            $written = file_put_contents($temporaryPath, $sqliteBinary, LOCK_EX);
+            if ($written !== strlen($sqliteBinary) || !$this->isValidSqliteDatabase($temporaryPath)) {
+                throw new \UnexpectedValueException('The restored SQLite file failed integrity validation.');
+            }
+            if ($originalPermissions !== false) {
+                if (!chmod($temporaryPath, $originalPermissions & 0777)) {
+                    throw new \RuntimeException('Unable to preserve SQLite database permissions.');
+                }
+            }
+
+            if ($originalExists) {
+                DB::connection()->getPdo()->query('PRAGMA wal_checkpoint(FULL)');
+            }
+            DB::purge();
+
+            if ($originalExists && !rename($databasePath, $rollbackPath)) {
+                throw new \RuntimeException('Unable to preserve the current SQLite database before restore.');
+            }
+            foreach (['-wal', '-shm', '-journal'] as $suffix) {
+                $sidecarPath = $databasePath . $suffix;
+                if (is_file($sidecarPath) && !unlink($sidecarPath)) {
+                    throw new \RuntimeException('Unable to clear an old SQLite journal file.');
+                }
+            }
+            if (!rename($temporaryPath, $databasePath)) {
+                throw new \RuntimeException('Unable to replace the current SQLite database.');
+            }
+            $databaseReplaced = true;
+
+            DB::reconnect();
+            if (!$this->isValidSqliteDatabase($databasePath)) {
+                throw new \RuntimeException('The restored SQLite database failed post-restore validation.');
+            }
+            if ($originalExists && is_file($rollbackPath) && !unlink($rollbackPath)) {
+                Log::warning('The previous SQLite database backup could not be removed after restore.');
+            }
+        } catch (\Throwable $e) {
+            DB::purge();
+            foreach (['-wal', '-shm', '-journal'] as $suffix) {
+                $sidecarPath = $databasePath . $suffix;
+                if (is_file($sidecarPath) && !unlink($sidecarPath)) {
+                    Log::warning('A SQLite sidecar could not be removed during restore rollback.');
+                }
+            }
+            if ($originalExists && is_file($rollbackPath)) {
+                if (!rename($rollbackPath, $databasePath)) {
+                    Log::critical('Failed to restore the previous SQLite database after a failed backup restore.');
+                }
+            } elseif ($databaseReplaced && is_file($databasePath) && !unlink($databasePath)) {
+                Log::critical('Failed to remove a partially restored SQLite database.');
+            }
+            DB::reconnect();
+            throw $e;
+        } finally {
+            if (is_file($temporaryPath) && !unlink($temporaryPath)) {
+                Log::warning('A temporary SQLite restore file could not be removed.');
+            }
+        }
+    }
+
+    private function restoreTableBackup(array $tablesData): void
+    {
+        if ($tablesData === []) {
+            throw new \UnexpectedValueException('The backup contains no table data.');
+        }
+
+        $validatedTables = [];
+        foreach ($tablesData as $tableName => $rows) {
+            if (!is_string($tableName)
+                || !preg_match('/^[A-Za-z0-9_]+$/', $tableName)
+                || $tableName === 'migrations'
+                || !Schema::hasTable($tableName)
+                || !is_array($rows)) {
+                throw new \UnexpectedValueException('The backup contains an invalid table definition.');
+            }
+
+            $columns = Schema::getColumnListing($tableName);
+            foreach ($rows as $row) {
+                if (!is_array($row) || array_diff(array_keys($row), $columns) !== []) {
+                    throw new \UnexpectedValueException('The backup contains invalid row data.');
+                }
+            }
+            $validatedTables[$tableName] = $rows;
+        }
+
+        $currentTables = array_map(
+            fn ($table) => array_values((array) $table)[0],
+            DB::select('SHOW TABLES')
+        );
+        $constraintsDisabled = false;
+        try {
+            Schema::disableForeignKeyConstraints();
+            $constraintsDisabled = true;
+
+            DB::transaction(function () use ($validatedTables, $currentTables) {
+                foreach ($currentTables as $tableName) {
+                    if ($tableName !== 'migrations') {
+                        DB::table($tableName)->delete();
+                    }
+                }
+
+                foreach ($validatedTables as $tableName => $rows) {
+                    foreach (array_chunk($rows, 200) as $chunk) {
+                        DB::table($tableName)->insert($chunk);
+                    }
+                }
+            });
+        } finally {
+            if ($constraintsDisabled) {
+                Schema::enableForeignKeyConstraints();
+            }
         }
     }
 
@@ -1187,11 +1377,20 @@ class AdminAuthController extends Controller
     // =========================================================================
     public function factoryZeroReset(Request $request)
     {
+        if ($error = $this->adminAccessError($request, 'settings.manage')) {
+            return $error;
+        }
+
+        $this->ensureSeeded();
+        $posUser = $request->session()->get('pos_user', []);
+        $now = Carbon::now('Africa/Cairo');
+        $constraintsDisabled = false;
+
         try {
             Schema::disableForeignKeyConstraints();
+            $constraintsDisabled = true;
 
-            DB::transaction(function () {
-                // أ) الجداول الحركية التي يتم مسحها بالكامل (الفواتير، المرتجعات، الحركات، المصروفات، الورديات)
+            $newShiftId = DB::transaction(function () use ($posUser, $now) {
                 $transactionalTables = [
                     'orders',
                     'order_items',
@@ -1199,47 +1398,56 @@ class AdminAuthController extends Controller
                     'pos_order_items',
                     'sales_returns',
                     'sales_return_items',
+                    'sales_invoice_items',
+                    'sales_invoices',
                     'purchases',
                     'purchase_items',
                     'purchase_returns',
                     'purchase_return_items',
+                    'purchase_invoice_items',
+                    'purchase_invoices',
                     'item_movements',
                     'stock_adjustments',
                     'stock_adjustment_items',
+                    'warehouse_orders',
                     'inventory_orders',
                     'inventory_order_items',
+                    'admin_permissions',
                     'inventory_permissions',
                     'inventory_permission_items',
                     'manufacturing_batches',
-                    ' manufacturing_batch_items',
+                    'manufacturing_batch_items',
                     'customer_transactions',
+                    'customer_notes',
                     'supplier_transactions',
                     'expenses',
+                    'employee_transactions',
+                    'employee_settlements',
+                    'safe_transactions',
                     'pos_safe_transactions',
                     'pos_shifts',
-                    'pos_login_logs',
                 ];
 
                 foreach ($transactionalTables as $table) {
-                    $cleanTable = trim($table);
-                    if (Schema::hasTable($cleanTable)) {
-                        DB::table($cleanTable)->delete();
+                    if (Schema::hasTable($table)) {
+                        DB::table($table)->delete();
                     }
                 }
 
-                // ب) تصفير كميات الأصناف مع الإبقاء على بيانات الصنف وأسعاره وتصنيفه
                 if (Schema::hasTable('items')) {
                     $itemUpdate = ['qty' => 0];
                     if (Schema::hasColumn('items', 'last_move_date')) {
                         $itemUpdate['last_move_date'] = null;
                     }
+                    if (Schema::hasColumn('items', 'is_synced')) {
+                        $itemUpdate['is_synced'] = false;
+                    }
                     DB::table('items')->update($itemUpdate);
                 }
 
-                // ج) تصفير أرصدة العملاء مع الإبقاء على أسمائهم وعناوينهم وأكوادهم
                 if (Schema::hasTable('customers')) {
                     $custUpdate = [];
-                    foreach (['balance', 'current_balance', 'debit', 'credit'] as $col) {
+                    foreach (['opening_balance', 'balance', 'current_balance', 'debit', 'credit'] as $col) {
                         if (Schema::hasColumn('customers', $col)) {
                             $custUpdate[$col] = 0;
                         }
@@ -1249,10 +1457,9 @@ class AdminAuthController extends Controller
                     }
                 }
 
-                // د) تصفير أرصدة الموردين مع الإبقاء على أسمائهم وشركاتهم
                 if (Schema::hasTable('suppliers')) {
                     $suppUpdate = [];
-                    foreach (['balance', 'current_balance', 'total_purchases', 'invoices_count'] as $col) {
+                    foreach (['opening_balance', 'balance', 'current_balance', 'total_purchases', 'invoices_count'] as $col) {
                         if (Schema::hasColumn('suppliers', $col)) {
                             $suppUpdate[$col] = 0;
                         }
@@ -1262,49 +1469,72 @@ class AdminAuthController extends Controller
                     }
                 }
 
-                // هـ) تصفير أرصدة الخزائن والدرج والحساب البنكي
-                if (Schema::hasTable('pos_safes')) {
-                    DB::table('pos_safes')->update(['balance' => 0]);
+                if (Schema::hasTable('safes')) {
+                    $safeUpdate = [];
+                    foreach (['opening_balance', 'balance'] as $column) {
+                        if (Schema::hasColumn('safes', $column)) {
+                            $safeUpdate[$column] = 0;
+                        }
+                    }
+                    if (Schema::hasColumn('safes', 'is_synced')) {
+                        $safeUpdate['is_synced'] = false;
+                    }
+                    if ($safeUpdate !== []) {
+                        DB::table('safes')->update($safeUpdate);
+                    }
                 }
 
-                // و) فتح وردية جديدة رقم #1 بعد التصفير مباشرة
+                $newShiftId = null;
                 if (Schema::hasTable('pos_shifts')) {
-                    $shiftInsert = ['status' => 'open'];
-                    if (Schema::hasColumn('pos_shifts', 'shift_number')) {
-                        $shiftInsert['shift_number'] = 1;
-                    } elseif (Schema::hasColumn('pos_shifts', 'shift_no')) {
-                        $shiftInsert['shift_no'] = 1;
-                    }
-                    if (Schema::hasColumn('pos_shifts', 'shift_date')) {
-                        $shiftInsert['shift_date'] = now()->toDateString();
-                    }
-                    if (Schema::hasColumn('pos_shifts', 'started_at')) {
-                        $shiftInsert['started_at'] = now();
-                    }
-                    if (Schema::hasColumn('pos_shifts', 'started_by')) {
-                        $shiftInsert['started_by'] = session('pos_user.full_name', 'مدير النظام');
-                    }
-                    if (Schema::hasColumn('pos_shifts', 'created_at')) {
-                        $shiftInsert['created_at'] = now();
-                        $shiftInsert['updated_at'] = now();
-                    }
-                    DB::table('pos_shifts')->insert($shiftInsert);
+                    $startedByName = $posUser['full_name'] ?? $posUser['name'] ?? 'مدير النظام';
+                    $newShiftId = DB::table('pos_shifts')->insertGetId([
+                        'uuid'               => (string) Str::uuid(),
+                        'shift_no'           => 1,
+                        'status'             => 'open',
+                        'shift_date'         => $now->toDateString(),
+                        'started_at'         => $now,
+                        'started_time_label' => $now->format('Y/m/d - h:iA'),
+                        'started_by_id'      => $posUser['id'] ?? null,
+                        'started_by_name'    => $startedByName,
+                        'start_device'       => strtoupper(gethostname() ?: 'DESKTOP-0BV4S0U'),
+                        'created_at'         => $now,
+                        'updated_at'         => $now,
+                    ]);
                 }
+
+                self::logActivity(
+                    $posUser['full_name'] ?? $posUser['name'] ?? 'مدير النظام',
+                    'تصفير النظام',
+                    'نجحت',
+                    'تم مسح حركات النظام وتصفير المخزون والأرصدة مع الاحتفاظ بالبيانات الأساسية',
+                    '',
+                    isset($posUser['id']) ? (int) $posUser['id'] : null
+                );
+
+                return $newShiftId;
             });
 
-            session(['pos_shift_number' => 1]);
+            if ($newShiftId !== null) {
+                $posUser['shift_id'] = $newShiftId;
+                $posUser['shift_no'] = 1;
+                $request->session()->put('pos_user', $posUser);
+            }
+            $request->session()->put('pos_shift_number', 1);
 
             return response()->json([
                 'ok'      => true,
-                'message' => 'تم تصفير النظام بالكامل! جميع الأرصدة والفواتير والحركات أصبحت (0) مع الاحتفاظ ببيانات الأصناف والعملاء والموردين.',
+                'message' => 'تم حذف الفواتير والحركات وتصفير أرصدة المخزون والعملاء والموردين والخزائن، مع الاحتفاظ بالبيانات الأساسية وسجل التدقيق.',
             ]);
         } catch (\Throwable $e) {
+            Log::error('System zero reset failed.', ['exception' => $e]);
             return response()->json([
                 'ok'      => false,
-                'message' => 'حدث خطأ أثناء تصفير النظام: ' . $e->getMessage(),
+                'message' => 'تعذر إكمال تصفير النظام. راجع سجل النظام.',
             ], 500);
         } finally {
-            Schema::enableForeignKeyConstraints();
+            if ($constraintsDisabled) {
+                Schema::enableForeignKeyConstraints();
+            }
         }
     }
 

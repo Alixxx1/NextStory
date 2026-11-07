@@ -991,7 +991,7 @@
                         if (uiAction) {
                             openManagerAuthDialog('callback', `صلاحية ${permTitle}`, '', () => {
                                 mgrPowersModal.show();
-                            });
+                            }, 'settings.manage');
                         } else if (href === '#' && this.id === 'open-sales-return') {
                             openManagerAuthDialog('callback', `صلاحية ${permTitle}`, '', () => {
                                 openSalesReturnModalAfterAuth();
@@ -1143,35 +1143,6 @@
                     } catch (err) {
                         Swal.fire('خطأ', err.message, 'error');
                     }
-                });
-            });
-
-            document.getElementById('btnUiRestoreBackup')?.addEventListener('click', function () {
-                const fileInp = document.getElementById('backupRestoreFileInput');
-                if (!fileInp.files || !fileInp.files.length) {
-                    Swal.fire('تنبيه', 'يرجى اختيار ملف النسخة الاحتياطية أولاً', 'warning');
-                    return;
-                }
-                Swal.fire({
-                    icon: 'question',
-                    title: 'تأكيد استيراد النسخة الاحتياطية',
-                    text: `سيتم استعادة البيانات من الملف (${fileInp.files[0].name})، هل أنت متأكد؟`,
-                    showCancelButton: true,
-                    confirmButtonColor: '#0284c7',
-                    confirmButtonText: 'نعم، استعادة الآن',
-                    cancelButtonText: 'إلغاء'
-                });
-            });
-
-            document.getElementById('btnUiZeroResetSystem')?.addEventListener('click', function () {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'تأكيد تصفير النظام بالكامل (Zero Reset)',
-                    html: `<div class="text-end small fw-bold text-danger">سيتم تصفير جميع الأرصدة والكميات والفواتير والحركات وإرجاع البرنامج كأنه جديد زيرو مع بقاء أسماء الأصناف والعملاء والموردين. هل أنت متأكد؟</div>`,
-                    showCancelButton: true,
-                    confirmButtonColor: '#dc2626',
-                    confirmButtonText: 'نعم، تصفير النظام بالكامل',
-                    cancelButtonText: 'إلغاء'
                 });
             });
 

@@ -318,5 +318,5 @@ Route::prefix('api/tools')->group(function () {
 
 
 Route::get('/admin/backup/download', [AdminAuthController::class, 'downloadEncryptedBackup'])->name('admin.backup.download');
-Route::post('/admin/backup/restore', [AdminAuthController::class, 'restoreEncryptedBackup'])->name('admin.backup.restore');
-Route::post('/admin/system/factory-reset', [AdminAuthController::class, 'factoryZeroReset'])->name('admin.system.reset');
+Route::post('/admin/backup/restore', [AdminAuthController::class, 'restoreEncryptedBackup'])->middleware('throttle:3,1')->name('admin.backup.restore');
+Route::post('/admin/system/factory-reset', [AdminAuthController::class, 'factoryZeroReset'])->middleware('throttle:3,1')->name('admin.system.reset');
