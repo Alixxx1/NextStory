@@ -12,6 +12,8 @@ use App\Models\SalesInvoice;
 use App\Models\SalesInvoiceItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\QueryException;
+use Illuminate\Validation\Rule;
 
 
 class PosSalesController extends Controller
@@ -39,6 +41,8 @@ class PosSalesController extends Controller
             'name'        => $posUser['name'] ?? 'كاشير',
             'role'        => $role,
             'shift_name'  => $posUser['shift_name'] ?? ($posUser['name'] ?? 'الوردية الحالية'),
+            'shift_id'    => $posUser['shift_id'] ?? null,
+            'shift_no'    => $posUser['shift_no'] ?? null,
             'safe_name'   => $posUser['safe_name'] ?? 'الدرج',
             'permissions' => $permissions,
             'is_manager'  => $isManager,
@@ -215,31 +219,51 @@ class PosSalesController extends Controller
     public function storeInvoice(Request $request)
     {
         $data = $request->validate([
-            'customerId'         => 'nullable',
-            'customerName'       => 'required|string',
-            'customerPhone'      => 'nullable|string',
-            'customerAddress'    => 'nullable|string',
-            'customerZone'       => 'nullable|string',
-            'fulfillment'        => 'required|string',
-            'priceTier'          => 'required|string',
+            'requestId'          => 'required|uuid',
+            'customerId'         => ['nullable', 'integer', Rule::exists('customers', 'id')->whereNull('deleted_at')],
+            'customerName'       => 'required|string|max:150',
+            'customerPhone'      => 'nullable|string|max:30',
+            'customerAddress'    => 'nullable|string|max:2000',
+            'customerZone'       => 'nullable|string|max:100',
+            'fulfillment'        => 'required|string|max:30',
+            'priceTier'          => 'required|in:retail,semi_wholesale,wholesale',
             'paymentType'        => 'required|in:cash,credit',
             'paymentMethod'      => 'required|in:cash,card,vodafone_cash,instapay',
-            'storeSubTotal'      => 'required|numeric',
-            'storeNetTotal'      => 'required|numeric',
-            'externalSubTotal'   => 'required|numeric',
-            'discount'           => 'required|numeric',
-            'deliveryFee'        => 'required|numeric',
-            'total'              => 'required|numeric',
-            'paidAmount'         => 'required|numeric',
-            'dueAmount'          => 'required|numeric',
-            'notes'              => 'nullable|string',
-            'authorizedByManager'=> 'nullable|string',
-            'items'              => 'required|array|min:1',
+            'storeSubTotal'      => 'required|numeric|min:0',
+            'storeNetTotal'      => 'required|numeric|min:0',
+            'externalSubTotal'   => 'required|numeric|min:0',
+            'discount'           => 'required|numeric|min:0',
+            'deliveryFee'        => 'required|numeric|min:0',
+            'total'              => 'required|numeric|min:0',
+            'paidAmount'         => 'required|numeric|min:0',
+            'dueAmount'           => 'required|numeric|min:0',
+            'notes'               => 'nullable|string|max:500',
+            'authorizedByManager' => 'nullable|string|max:100',
+            'items'               => 'required|array|min:1|max:500',
+            'items.*'             => 'required|array',
+            'items.*.itemId'      => 'nullable|integer|exists:items,id',
+            'items.*.name'        => 'required|string|max:255',
+            'items.*.barcode'     => 'nullable|string|max:100',
+            'items.*.buyPrice'    => 'required|numeric|min:0',
+            'items.*.price'       => 'required|numeric|min:0',
+            'items.*.quantity'    => 'required|numeric|gt:0',
+            'items.*.quantityType'=> 'required|in:piece,weight',
+            'items.*.total'       => 'required|numeric|min:0',
+            'items.*.isExternal'  => 'required|boolean',
         ]);
 
         $posUser = $this->getCurrentPosUser();
 
-        return DB::transaction(function () use ($data, $posUser) {
+        try {
+            return DB::transaction(function () use ($data, $posUser) {
+            $existingInvoice = SalesInvoice::withTrashed()
+                ->where('request_id', $data['requestId'])
+                ->first();
+
+            if ($existingInvoice) {
+                return $this->invoiceStoreResponse($existingInvoice);
+            }
+
             $isCashCustomer = empty($data['customerId']) || $data['customerId'] === 'cash-customer';
 
             if ($isCashCustomer && ($data['paymentType'] === 'credit' || $data['dueAmount'] > 0.01)) {
@@ -277,6 +301,7 @@ class PosSalesController extends Controller
             $confirmedByName = !empty($data['authorizedByManager']) ? $data['authorizedByManager'] : $activeUserName;
 
             $invoice = SalesInvoice::create([
+                'request_id'         => $data['requestId'],
                 'order_no'           => $orderNo,
                 'order_type'         => $data['fulfillment'],
                 'price_tier'         => $data['priceTier'],
@@ -309,6 +334,7 @@ class PosSalesController extends Controller
                 'due_amount'         => $data['dueAmount'],
                 'safe_name'          => $posUser['safe_name'],
                 'shift_name'         => $posUser['shift_name'],
+                'shift_id'           => $posUser['shift_id'],
                 'shift_period'       => now()->hour < 16 ? 'morning' : 'evening',
                 'created_by'         => $activeUserName,
                 'created_device'     => gethostname() ?: 'DESKTOP-POS',
@@ -394,12 +420,30 @@ class PosSalesController extends Controller
                 'نجحت'
             );
 
-            return response()->json([
-                'status'            => 'success',
-                'invoiceNumber'     => $invoice->order_no,
-                'nextInvoiceNumber' => ((int) $invoice->order_no) + 1,
-                'customerBalance'   => $customer ? (float) $customer->fresh()->balance : 0,
-            ]);
-        });
+            return $this->invoiceStoreResponse($invoice);
+            });
+        } catch (QueryException $e) {
+            $existingInvoice = SalesInvoice::withTrashed()
+                ->where('request_id', $data['requestId'])
+                ->first();
+
+            if ($existingInvoice) {
+                return $this->invoiceStoreResponse($existingInvoice);
+            }
+
+            throw $e;
+        }
+    }
+
+    private function invoiceStoreResponse(SalesInvoice $invoice)
+    {
+        $customer = $invoice->customer_id ? Customer::find($invoice->customer_id) : null;
+
+        return response()->json([
+            'status'            => 'success',
+            'invoiceNumber'     => $invoice->order_no,
+            'nextInvoiceNumber' => (SalesInvoice::withTrashed()->max('id') ?? 0) + 1,
+            'customerBalance'   => $customer ? (float) $customer->balance : 0,
+        ]);
     }
 }

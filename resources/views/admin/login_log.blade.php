@@ -67,6 +67,7 @@
                         <option value="صلاحية متاحة">صلاحية متاحة</option>
                         <option value="تصريح عملية">تصريح عملية</option>
                         <option value="إغلاق الوردية">إغلاق الوردية</option>
+                        <option value="إدارة المستخدمين">إدارة المستخدمين</option>
                     </select>
                 </div>
                 <div class="col-md-6 d-flex align-items-center gap-2">

@@ -2598,4 +2598,397 @@ class InventorySubController extends Controller
     }
 
 
+
+    
+
+
+
+
+// =========================================================================
+    // تاسعاً: شاشة استيراد المخازن والأصناف الذكية من Excel / CSV (/tools/import-items)
+    // =========================================================================
+
+    public function importItemsView()
+    {
+        return view('inventory.import_items');
+    }
+
+    public function importItemsProcessApi(Request $request)
+    {
+        $data = $request->validate([
+            'rows'            => 'required|array|min:1',
+            'defaultCategory' => 'nullable|string|max:120',
+            'defaultUnit'     => 'nullable|string|max:60',
+        ]);
+
+        $rows            = $data['rows'];
+        $defaultCatName  = trim($data['defaultCategory'] ?? 'سايب') ?: 'سايب';
+        $defaultUnitName = trim($data['defaultUnit'] ?? 'كيلو') ?: 'كيلو';
+
+        return DB::transaction(function () use ($rows, $defaultCatName, $defaultUnitName) {
+            $categoriesMap = [];
+            foreach (Category::withTrashed()->get() as $cat) {
+                if ($cat->trashed()) {
+                    $cat->restore();
+                }
+                $categoriesMap[mb_strtolower(trim($cat->name))] = $cat->id;
+            }
+
+            $getCategoryId = function (string $catName) use (&$categoriesMap, $defaultCatName): int {
+                $cleanName = trim($catName) ?: $defaultCatName;
+                $key = mb_strtolower($cleanName);
+                if (isset($categoriesMap[$key])) {
+                    return (int) $categoriesMap[$key];
+                }
+
+                $nextCode = str_pad((string) ((Category::withTrashed()->max('id') ?? 0) + 1), 3, '0', STR_PAD_LEFT);
+                $newCat = Category::create([
+                    'uuid'                => (string) Str::uuid(),
+                    'code'                => $nextCode,
+                    'name'                => $cleanName,
+                    'is_published_online' => true,
+                    'is_synced'           => false,
+                ]);
+                $categoriesMap[$key] = $newCat->id;
+                return (int) $newCat->id;
+            };
+
+            $insertedCount = 0;
+            $nowDate       = now()->format('Y-m-d');
+            $nowSlashDate  = now()->format('Y/m/d');
+            $nextId        = (Item::withTrashed()->max('id') ?? 0) + 1;
+
+            foreach ($rows as $row) {
+                $name = trim((string) ($row['name'] ?? ''));
+                if ($name === '') {
+                    continue;
+                }
+
+                $rawBarcode = trim((string) ($row['barcode'] ?? ($row['code'] ?? '')));
+                $barcode    = $rawBarcode !== '' ? $rawBarcode : str_pad((string) $nextId, 6, '0', STR_PAD_LEFT);
+                $catName    = trim((string) ($row['category'] ?? '')) ?: $defaultCatName;
+                $unitName   = trim((string) ($row['unit'] ?? '')) ?: $defaultUnitName;
+
+                $qty            = isset($row['qty']) && is_numeric($row['qty']) ? round((float) $row['qty'], 3) : 0.0;
+                $retailPrice    = isset($row['retail_price']) && is_numeric($row['retail_price']) ? round((float) $row['retail_price'], 2) : 0.0;
+                $buyPrice       = isset($row['buy_price']) && is_numeric($row['buy_price']) ? round((float) $row['buy_price'], 2) : $retailPrice;
+                $wholesalePrice = isset($row['wholesale_price']) && is_numeric($row['wholesale_price']) ? round((float) $row['wholesale_price'], 2) : null;
+                $semiWholesale  = isset($row['semi_wholesale_price']) && is_numeric($row['semi_wholesale_price']) ? round((float) $row['semi_wholesale_price'], 2) : $wholesalePrice;
+                $minStock       = isset($row['min_stock']) && is_numeric($row['min_stock']) ? round((float) $row['min_stock'], 3) : 0.0;
+
+                // البحث عن الصنف بالباركود أو الاسم لمنع التكرار وتحديثه إن وجد
+                $existingItem = Item::withTrashed()
+                    ->where('barcode', $barcode)
+                    ->orWhere('name', $name)
+                    ->first();
+
+                $itemPayload = [
+                    'item_type'             => 'صنف مخزني',
+                    'category_id'           => $getCategoryId($catName),
+                    'name'                  => $name,
+                    'barcode'               => $barcode,
+                    'unit'                  => $unitName,
+                    'default_purchase_unit' => 'main',
+                    'qty'                   => $qty,
+                    'min_stock'             => $minStock,
+                    'last_buy_price'        => $buyPrice,
+                    'avg_cost'              => $buyPrice,
+                    'last_buy_date'         => $nowSlashDate,
+                    'retail_price'          => $retailPrice,
+                    'semi_wholesale_price'  => $semiWholesale,
+                    'wholesale_price'       => $wholesalePrice,
+                    'online_price'          => $retailPrice,
+                    'is_published_online'   => true,
+                    'is_disabled'           => false,
+                    'last_move_date'        => $nowDate,
+                    'is_synced'             => false,
+                ];
+
+                if ($existingItem) {
+                    if ($existingItem->trashed()) {
+                        $existingItem->restore();
+                    }
+                    $existingItem->update($itemPayload);
+                } else {
+                    $itemPayload['uuid'] = (string) Str::uuid();
+                    Item::create($itemPayload);
+                    $nextId++;
+                }
+
+                $insertedCount++;
+            }
+
+            return response()->json([
+                'status'        => 'success',
+                'insertedCount' => $insertedCount,
+            ]);
+        });
+    }
+
+    // =========================================================================
+    // عاشراً: استيراد العملاء والموردين من Excel / CSV (متوافق 100% مع جدول customers و suppliers)
+    // =========================================================================
+
+    public function importCustomersView()
+    {
+        return view('tools.import_customers');
+    }
+
+    public function importSuppliersView()
+    {
+        return view('tools.import_suppliers');
+    }
+
+    /**
+     * معالجة وحفظ شيت العملاء في جدول customers مع ربط المناطق تلقائياً بجدول delivery_zones وبناء مصفوفة الـ 3 عناوين
+     */
+    public function importCustomersProcessApi(Request $request)
+    {
+        $rows  = $request->input('rows', []);
+        $count = 0;
+
+        DB::transaction(function () use ($rows, &$count) {
+            // 1. تحميل مناطق التوصيل الحالية لربط اسم المنطقة أو إنشائها تلقائياً
+            $zonesMap = [];
+            if (Schema::hasTable('delivery_zones')) {
+                foreach (DB::table('delivery_zones')->get() as $z) {
+                    $zonesMap[mb_strtolower(trim($z->name))] = $z;
+                }
+            }
+
+            $resolveZone = function (string $zoneName) use (&$zonesMap) {
+                $clean = trim($zoneName);
+                if ($clean === '' || $clean === '-') {
+                    return null;
+                }
+                $key = mb_strtolower($clean);
+                if (isset($zonesMap[$key])) {
+                    return $zonesMap[$key];
+                }
+                if (Schema::hasTable('delivery_zones')) {
+                    $newId = DB::table('delivery_zones')->insertGetId([
+                        'uuid'       => (string) Str::uuid(),
+                        'tenant_id'  => 1,
+                        'branch_id'  => 1,
+                        'name'       => $clean,
+                        'fee'        => 0,
+                        'is_synced'  => 0,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                    $obj = (object) ['id' => $newId, 'name' => $clean, 'fee' => 0];
+                    $zonesMap[$key] = $obj;
+                    return $obj;
+                }
+                return null;
+            };
+
+            $nextCustNum = (int) (DB::table('customers')->max('id') ?? 0) + 1;
+
+            foreach ($rows as $r) {
+                $name = trim((string) ($r['name'] ?? ''));
+                if ($name === '') {
+                    continue;
+                }
+
+                // معالجة أرقام الهاتف (في حال كان العمود يحتوي على رقمين مفصولين بـ - أو /)
+                $rawPhone1 = trim((string) ($r['phone'] ?? ($r['phone1'] ?? '')));
+                $rawPhone2 = trim((string) ($r['phone2'] ?? ''));
+
+                if ($rawPhone2 === '' && preg_match('/[-,\/|]/', $rawPhone1)) {
+                    $parts = array_values(array_filter(array_map('trim', preg_split('/[-,\/|]+/', $rawPhone1))));
+                    $rawPhone1 = $parts[0] ?? '';
+                    $rawPhone2 = $parts[1] ?? '';
+                }
+
+                // لأن عمود phone1 في جدول customers هو NOT NULL، نضع قيمة افتراضية إن كان فارغاً في الشيت
+                $phone1 = $rawPhone1 !== '' ? $rawPhone1 : '-';
+                $phone2 = $rawPhone2 !== '' ? $rawPhone2 : null;
+
+                $zoneName = trim((string) ($r['zone'] ?? ''));
+                $zoneObj  = $resolveZone($zoneName);
+
+                $addr1 = trim((string) ($r['address'] ?? ($r['addr1'] ?? '')));
+                $addr2 = trim((string) ($r['addr2'] ?? ''));
+                $addr3 = trim((string) ($r['addr3'] ?? ''));
+                $note  = trim((string) ($r['note'] ?? ''));
+
+                // بناء مصفوفة الـ 3 عناوين المعتمدة في شاشة الكاشير وشاشة العملاء
+                $addressesJson = json_encode([
+                    [
+                        'label'        => 'العنوان الرئيسي',
+                        'fullAddress'  => $addr1,
+                        'location'     => '',
+                        'deliveryNote' => '',
+                        'zoneId'       => $zoneObj ? (string) $zoneObj->id : '',
+                        'zoneName'     => $zoneObj ? $zoneObj->name : $zoneName,
+                        'fee'          => $zoneObj ? (float) $zoneObj->fee : 0,
+                    ],
+                    [
+                        'label'        => 'عنوان بديل',
+                        'fullAddress'  => $addr2,
+                        'location'     => '',
+                        'deliveryNote' => '',
+                        'zoneId'       => $zoneObj ? (string) $zoneObj->id : '',
+                        'zoneName'     => $zoneObj ? $zoneObj->name : $zoneName,
+                        'fee'          => $zoneObj ? (float) $zoneObj->fee : 0,
+                    ],
+                    [
+                        'label'        => 'عنوان بديل 2',
+                        'fullAddress'  => $addr3,
+                        'location'     => '',
+                        'deliveryNote' => '',
+                        'zoneId'       => '',
+                        'zoneName'     => '',
+                        'fee'          => 0,
+                    ],
+                ], JSON_UNESCAPED_UNICODE);
+
+                $rawBal      = isset($r['balance']) && is_numeric($r['balance']) ? round((float) $r['balance'], 2) : 0.0;
+                $balanceAbs  = abs($rawBal);
+                $balanceType = (!empty($r['balance_type']) && in_array($r['balance_type'], ['debit', 'credit']))
+                    ? $r['balance_type']
+                    : ($rawBal < 0 ? 'credit' : 'debit');
+
+                // البحث عن العميل بالاسم أو الكود لتحديثه أو إضافته
+                $existing = DB::table('customers')
+                    ->where('name', $name)
+                    ->when(!empty($r['code']), fn ($q) => $q->orWhere('code', trim((string) $r['code'])))
+                    ->first();
+
+                $code = !empty($r['code'])
+                    ? trim((string) $r['code'])
+                    : ($existing && $existing->code ? $existing->code : str_pad((string) $nextCustNum, 3, '0', STR_PAD_LEFT));
+
+                $payload = [
+                    'code'              => $code,
+                    'name'              => $name,
+                    'phone1'            => $phone1,
+                    'phone2'            => $phone2,
+                    'contact_note'      => $note ?: null,
+                    'invoice_note'      => $note ?: null,
+                    'primary_zone_id'   => $zoneObj ? $zoneObj->id : null,
+                    'primary_zone_name' => $zoneObj ? $zoneObj->name : ($zoneName ?: null),
+                    'addr1'             => $addr1 ?: null,
+                    'addr2'             => $addr2 ?: null,
+                    'addr3'             => $addr3 ?: null,
+                    'addresses'         => $addressesJson,
+                    'opening_balance'   => $balanceAbs,
+                    'balance'           => $balanceAbs,
+                    'balance_type'      => $balanceType,
+                    'is_synced'         => 0,
+                    'deleted_at'        => null,
+                    'updated_at'        => now(),
+                ];
+
+                if ($existing) {
+                    DB::table('customers')->where('id', $existing->id)->update($payload);
+                } else {
+                    $payload['uuid']       = (string) Str::uuid();
+                    $payload['tenant_id']  = 1;
+                    $payload['branch_id']  = 1;
+                    $payload['created_at'] = now();
+                    DB::table('customers')->insert($payload);
+                    $nextCustNum++;
+                }
+
+                $count++;
+            }
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'count'  => $count,
+        ]);
+    }
+
+    /**
+     * معالجة وحفظ شيت الموردين بمرونة تامة مع فحص أعمدة جدول suppliers الفعلية في قاعدة البيانات
+     */
+    public function importSuppliersProcessApi(Request $request)
+    {
+        $rows  = $request->input('rows', []);
+        $count = 0;
+
+        DB::transaction(function () use ($rows, &$count) {
+            // فحص الأعمدة الفعلية الموجودة في جدول suppliers بقاعدة البيانات لضمان عدم حدوث أي خطأ
+            $cols = Schema::getColumnListing('suppliers');
+            $hasCol = fn (string $c) => in_array($c, $cols, true);
+
+            $nextSupNum = (int) (DB::table('suppliers')->max('id') ?? 0) + 1;
+
+            foreach ($rows as $r) {
+                $name    = trim((string) ($r['name'] ?? ''));
+                $company = trim((string) ($r['company'] ?? ''));
+
+                if ($name === '' && $company === '') {
+                    continue;
+                }
+                if ($name === '') {
+                    $name = $company;
+                }
+                if ($company === '') {
+                    $company = $name;
+                }
+
+                $phone   = trim((string) ($r['phone'] ?? ''));
+                $address = trim((string) ($r['address'] ?? ''));
+                $rawBal  = isset($r['balance']) && is_numeric($r['balance']) ? round((float) $r['balance'], 2) : 0.0;
+                $balAbs  = abs($rawBal);
+                $balType = $rawBal < 0 ? 'debit' : 'credit';
+
+                // البحث عن المورد الحالي
+                $query = DB::table('suppliers');
+                if ($hasCol('contact')) {
+                    $query->where('contact', $name);
+                } elseif ($hasCol('name')) {
+                    $query->where('name', $name);
+                } elseif ($hasCol('company')) {
+                    $query->where('company', $company);
+                }
+                $existing = $query->first();
+
+                $code = !empty($r['code'])
+                    ? trim((string) $r['code'])
+                    : ($existing && isset($existing->code) && $existing->code ? $existing->code : str_pad((string) $nextSupNum, 3, '0', STR_PAD_LEFT));
+
+                $payload = [];
+                if ($hasCol('code'))            $payload['code'] = $code;
+                if ($hasCol('name'))            $payload['name'] = $name;
+                if ($hasCol('contact'))         $payload['contact'] = $name;
+                if ($hasCol('company'))         $payload['company'] = $company;
+                if ($hasCol('company_name'))    $payload['company_name'] = $company;
+                if ($hasCol('phone'))           $payload['phone'] = $phone;
+                if ($hasCol('phone1'))          $payload['phone1'] = $phone;
+                if ($hasCol('address'))         $payload['address'] = $address;
+                if ($hasCol('opening_balance')) $payload['opening_balance'] = $balAbs;
+                if ($hasCol('balance'))         $payload['balance'] = $balAbs;
+                if ($hasCol('balance_type'))    $payload['balance_type'] = $balType;
+                if ($hasCol('is_synced'))       $payload['is_synced'] = 0;
+                if ($hasCol('deleted_at'))      $payload['deleted_at'] = null;
+                if ($hasCol('updated_at'))      $payload['updated_at'] = now();
+
+                if ($existing) {
+                    DB::table('suppliers')->where('id', $existing->id)->update($payload);
+                } else {
+                    if ($hasCol('uuid'))       $payload['uuid'] = (string) Str::uuid();
+                    if ($hasCol('tenant_id'))  $payload['tenant_id'] = 1;
+                    if ($hasCol('branch_id'))  $payload['branch_id'] = 1;
+                    if ($hasCol('created_at')) $payload['created_at'] = now();
+
+                    DB::table('suppliers')->insert($payload);
+                    $nextSupNum++;
+                }
+
+                $count++;
+            }
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'count'  => $count,
+        ]);
+    }
+
+
 }

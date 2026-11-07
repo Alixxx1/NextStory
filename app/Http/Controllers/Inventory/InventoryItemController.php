@@ -309,25 +309,86 @@ class InventoryItemController extends Controller
     public function posItemsApi()
     {
         $items = Item::where('is_disabled', false)->orderByDesc('is_pinned')->orderBy('name')->get()->map(function ($item) {
-            return [
-                'id' => $item->id,
-                'uuid' => $item->uuid,
-                'name' => $item->name,
-                'desc' => $item->description ?? '',
-                'barcode' => $item->barcode ?? '',
-                'stock' => (float) $item->qty,
-                'buyPrice' => (float) $item->last_buy_price,
-                'salePrice' => (float) $item->retail_price,
-                'retailPrice' => (float) $item->retail_price,
-                'semiWholesalePrice' => $item->semi_wholesale_price !== null ? (float) $item->semi_wholesale_price : null,
-                'wholesalePrice' => $item->wholesale_price !== null ? (float) $item->wholesale_price : null,
-                'unit' => $item->unit,
-                'quantityType' => in_array($item->unit, ['كيلو', 'لتر']) ? 'weight' : 'piece',
-                'allowPriceEdit' => (bool) $item->allow_price_edit,
-                'subUnits' => $item->sub_units ?? [],
-            ];
+            return $this->formatPosItem($item);
         });
 
         return response()->json($items);
+    }
+
+    public function quickUpdateFromPos(Request $request, int $id)
+    {
+        $posUser = $request->session()->get('pos_user');
+        if (!$posUser) {
+            return response()->json(['message' => 'يجب تسجيل الدخول قبل تعديل الأصناف'], 401);
+        }
+
+        $permissions = $posUser['permissions'] ?? [];
+        if (is_string($permissions)) {
+            $permissions = json_decode($permissions, true) ?: [];
+        }
+        $role = $posUser['role'] ?? '';
+        $isManager = !empty($posUser['is_admin'])
+            || !empty($posUser['is_manager'])
+            || in_array($role, ['admin', 'manager', 'super_admin', 'system_admin', 'branch_admin', 'مدير النظام', 'مدير الفرع'], true)
+            || (is_array($permissions) && (in_array('*', $permissions, true) || in_array('all', $permissions, true)));
+        $hasPermission = is_array($permissions) && array_intersect(
+            ['inventory.items', 'inventory.create', 'inventory.manage'],
+            $permissions
+        );
+        $temporaryGrants = $request->session()->get('pos_temp_authorized_permissions', []);
+        $hasTemporaryGrant = is_array($temporaryGrants)
+            && (int) ($temporaryGrants['inventory.items'] ?? 0) >= now()->timestamp;
+
+        if (!$isManager && !$hasPermission && !$hasTemporaryGrant) {
+            return response()->json(['message' => 'لا تملك صلاحية تعديل أصناف المخزن'], 403);
+        }
+
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'barcode' => 'nullable|string|max:100',
+            'unit' => 'required|string|max:50',
+            'lastBuyPrice' => 'required|numeric|min:0',
+            'retailPrice' => 'required|numeric|min:0',
+            'semiWholesalePrice' => 'nullable|numeric|min:0',
+            'wholesalePrice' => 'nullable|numeric|min:0',
+        ]);
+
+        $item = Item::findOrFail($id);
+        $item->fill([
+            'name' => $data['name'],
+            'description' => $data['description'] ?? '',
+            'barcode' => $data['barcode'] ?? '',
+            'unit' => $data['unit'],
+            'last_buy_price' => $data['lastBuyPrice'],
+            'retail_price' => $data['retailPrice'],
+            'semi_wholesale_price' => $data['semiWholesalePrice'] ?? null,
+            'wholesale_price' => $data['wholesalePrice'] ?? null,
+            'is_synced' => false,
+        ]);
+        $item->save();
+
+        return response()->json(['item' => $this->formatPosItem($item)]);
+    }
+
+    private function formatPosItem(Item $item): array
+    {
+        return [
+            'id' => $item->id,
+            'uuid' => $item->uuid,
+            'name' => $item->name,
+            'desc' => $item->description ?? '',
+            'barcode' => $item->barcode ?? '',
+            'stock' => (float) $item->qty,
+            'buyPrice' => (float) $item->last_buy_price,
+            'salePrice' => (float) $item->retail_price,
+            'retailPrice' => (float) $item->retail_price,
+            'semiWholesalePrice' => $item->semi_wholesale_price !== null ? (float) $item->semi_wholesale_price : null,
+            'wholesalePrice' => $item->wholesale_price !== null ? (float) $item->wholesale_price : null,
+            'unit' => $item->unit,
+            'quantityType' => in_array($item->unit, ['كيلو', 'لتر']) ? 'weight' : 'piece',
+            'allowPriceEdit' => (bool) $item->allow_price_edit,
+            'subUnits' => $item->sub_units ?? [],
+        ];
     }
 }

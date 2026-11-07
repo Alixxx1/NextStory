@@ -7,6 +7,8 @@ use App\Models\Category;
 use App\Models\SalesInvoice;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class OrderArchiveController extends Controller
 {
@@ -24,6 +26,13 @@ class OrderArchiveController extends Controller
      */
     public function getOrders(Request $request): JsonResponse
     {
+        $validated = $request->validate([
+            'period_mode' => ['sometimes', 'in:day,range,before,after,all'],
+            'day_date' => ['nullable', 'date_format:Y-m-d'],
+            'from_date' => ['nullable', 'date_format:Y-m-d'],
+            'to_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from_date'],
+            'shift_scope' => ['nullable', 'string', 'max:20'],
+        ]);
         $showDeleted = filter_var($request->query('deleted', false), FILTER_VALIDATE_BOOLEAN);
 
         $query = SalesInvoice::with(['items']);
@@ -33,10 +42,10 @@ class OrderArchiveController extends Controller
         }
 
         // فلترة الفترة الزمنية من الخادم لتسريع الأداء أو جلب السجل المطلوب
-        $periodMode = $request->query('period_mode', 'all');
-        $dayDate    = $request->query('day_date');
-        $fromDate   = $request->query('from_date');
-        $toDate     = $request->query('to_date');
+        $periodMode = $validated['period_mode'] ?? 'all';
+        $dayDate    = $validated['day_date'] ?? null;
+        $fromDate   = $validated['from_date'] ?? null;
+        $toDate     = $validated['to_date'] ?? null;
 
         if ($periodMode === 'day' && $dayDate) {
             $query->whereDate('invoice_date', $dayDate);
@@ -53,6 +62,37 @@ class OrderArchiveController extends Controller
             $query->whereDate('invoice_date', '>', $fromDate);
         }
 
+        $shiftScope = $validated['shift_scope'] ?? null;
+        if ($shiftScope === 'latest' && $periodMode === 'day' && $dayDate) {
+            $latestShiftId = null;
+            if (Schema::hasTable('pos_shifts')) {
+                $latestShiftId = DB::table('pos_shifts')
+                    ->whereDate('shift_date', $dayDate)
+                    ->orderByDesc('started_at')
+                    ->orderByDesc('id')
+                    ->value('id');
+            }
+            $latestShiftId = $latestShiftId ?: SalesInvoice::withTrashed()
+                ->whereDate('invoice_date', $dayDate)
+                ->whereNotNull('shift_id')
+                ->max('shift_id');
+
+            $dayHasShiftLinks = SalesInvoice::withTrashed()
+                ->whereDate('invoice_date', $dayDate)
+                ->whereNotNull('shift_id')
+                ->exists();
+            if ($latestShiftId && $dayHasShiftLinks) {
+                $query->where(function ($shiftQuery) use ($latestShiftId) {
+                    $shiftQuery->where('shift_id', $latestShiftId)
+                        ->orWhereNull('shift_id');
+                });
+            } elseif ($dayHasShiftLinks) {
+                $query->whereRaw('1 = 0');
+            }
+        } elseif ($shiftScope !== null && ctype_digit($shiftScope)) {
+            $query->where('shift_id', (int) $shiftScope);
+        }
+
         $invoices = $query->orderBy('invoice_date', 'desc')
                           ->orderBy('id', 'desc')
                           ->get();
@@ -63,6 +103,7 @@ class OrderArchiveController extends Controller
 
         // بناء خيارات الفلاتر الديناميكية من البيانات الفعلية في قاعدة البيانات
         $allMetaQuery = SalesInvoice::withTrashed()->select([
+            'shift_id',
             'shift_name',
             'created_by',
             'confirmed_by',
@@ -74,12 +115,33 @@ class OrderArchiveController extends Controller
         $categoriesFromDb = Category::whereNull('deleted_at')->pluck('name')->toArray();
         $invoiceCategories = $allMetaQuery->pluck('main_category_name')->filter()->unique()->values()->toArray();
         $mergedCategories = array_values(array_unique(array_filter(array_merge($categoriesFromDb, $invoiceCategories))));
+        $shifts = Schema::hasTable('pos_shifts')
+            ? DB::table('pos_shifts')
+                ->select('id', 'shift_no', 'shift_date', 'started_at', 'status')
+                ->orderByDesc('started_at')
+                ->orderByDesc('id')
+                ->get()
+                ->map(fn ($shift) => [
+                    'id' => (int) $shift->id,
+                    'shift_no' => (int) $shift->shift_no,
+                    'date' => substr((string) $shift->shift_date, 0, 10),
+                    'started_at' => $shift->started_at,
+                    'status' => $shift->status,
+                ])
+                ->values()
+            : collect();
+        $latestDateQuery = SalesInvoice::query();
+        if ($showDeleted) {
+            $latestDateQuery = SalesInvoice::onlyTrashed();
+        }
+        $latestDate = $latestDateQuery->max('invoice_date');
 
         return response()->json([
             'ok'      => true,
             'orders'  => $formattedOrders,
+            'latest_date' => $latestDate ? substr((string) $latestDate, 0, 10) : null,
             'filters' => [
-                'shifts'      => $allMetaQuery->pluck('shift_name')->filter()->unique()->values(),
+                'shifts'      => $shifts,
                 'created_by'  => $allMetaQuery->pluck('created_by')->filter()->unique()->values(),
                 'closed_by'   => $allMetaQuery->pluck('confirmed_by')->filter()->unique()->values(),
                 'couriers'    => $allMetaQuery->pluck('courier_name')->filter()->unique()->values(),
@@ -219,6 +281,7 @@ class OrderArchiveController extends Controller
             'createdDevice'   => $inv->created_device ?: '—',
             'confirmedBy'     => $inv->confirmed_by ?: '',
             'confirmedDevice' => $inv->confirmed_device ?: '',
+            'shiftId'         => $inv->shift_id ? (int) $inv->shift_id : null,
             'shift'           => $inv->shift_name ?: '',
             'shiftPeriod'     => $inv->shift_period ?: '',
             'courier'         => $inv->courier_name ?: '',

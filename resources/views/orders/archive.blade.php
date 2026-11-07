@@ -83,8 +83,8 @@
         .date-stepper {
             display: flex;
             align-items: center;
-            background: #f8f9fa;
-            border: 1px solid #bdc9d6;
+            background: #f7fafc;
+            border: 1px solid #cbd5e1;
             border-radius: 6px;
             padding: 2px 3px;
             gap: 3px;
@@ -109,7 +109,7 @@
             text-align: center;
             font-weight: 900;
             font-size: 13px;
-            color: var(--dark);
+            color: #334155;
             padding: 0 8px;
         }
         .top-bar-controls {
@@ -175,15 +175,27 @@
         }
         .filter-item-search-wrap {
             position: relative;
-            flex: 1 1 160px;
-            min-width: 120px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            flex: 1 1 250px;
+            min-width: 210px;
+            color: #334155;
+        }
+        .filter-item-search-wrap label {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+            font-size: 11.5px;
+            font-weight: 800;
         }
         .filter-item-search-wrap input {
             width: 100%;
-            height: 28px;
-            border: 1px solid #94a3b8;
+            height: 30px;
+            border: 1px solid #8da0b4;
             border-radius: 6px;
-            padding: 2px 28px 2px 8px;
+            padding: 2px 30px 2px 8px;
             font-size: 12px;
             font-weight: 600;
             background: #fff;
@@ -194,15 +206,7 @@
             border-color: var(--primary);
             box-shadow: 0 0 0 2px rgba(17,151,68,.12);
         }
-        .filter-item-search-wrap i {
-            position: absolute;
-            left: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #64748b;
-            font-size: 11px;
-            pointer-events: none;
-        }
+        .filter-item-search-wrap label i { color: #64748b; font-size: 11px; }
         /* ══════════════════════════════════════════ 3. جدول الفواتير — يأخذ كل المساحة المتبقية ══════════════════════════════════════════ */
         .table-panel {
             flex: 1 1 0;
@@ -221,8 +225,8 @@
             min-width: 1500px;
         }
         .archive-table th {
-            background: linear-gradient(115deg, var(--dark) 0%, var(--dark-2) 100%);
-            color: #fff;
+            background: #e8eef3;
+            color: #334155;
             position: sticky;
             top: 0;
             z-index: 10;
@@ -230,7 +234,7 @@
             font-weight: 800;
             padding: 9px 7px;
             text-align: center;
-            border-left: 1px solid #334e68;
+            border-left: 1px solid #d5dee7;
             white-space: nowrap;
         }
         .archive-table td {
@@ -408,22 +412,23 @@
                 <button type="button" class="step-arrow" id="btn-next-day" title="اليوم التالي">
                     <i class="fas fa-arrow-right"></i>
                 </button>
-                <div class="date-label-box en-digit" id="arabic-date-display">—</div>
+                <div class="date-label-box en-digit" id="archive-date-display">—</div>
                 <button type="button" class="step-arrow" id="btn-prev-day" title="اليوم السابق">
                     <i class="fas fa-arrow-left"></i>
                 </button>
             </div>
             <div class="d-none align-items-center gap-2" id="range-date-inputs">
-                <input type="date" class="form-control form-control-sm en-digit" id="date-from-input">
-                <span class="fw-bold small text-muted" id="date-to-separator">إلى</span>
-                <input type="date" class="form-control form-control-sm en-digit" id="date-to-input">
+                <span class="fw-bold small text-muted">From</span>
+                <input type="date" lang="en-US" dir="ltr" aria-label="From date" class="form-control form-control-sm en-digit" id="date-from-input">
+                <span class="fw-bold small text-muted" id="date-to-separator">To</span>
+                <input type="date" lang="en-US" dir="ltr" aria-label="To date" class="form-control form-control-sm en-digit" id="date-to-input">
             </div>
         </div>
         <div class="top-bar-controls">
-            <select class="form-select form-select-sm fw-bold w-auto" id="quick-shift-mode">
-                <option value="all">كل الورديات</option>
-                <option value="morning">صباحية</option>
-                <option value="evening">مسائية</option>
+            <select class="form-select form-select-sm fw-bold w-auto" id="quick-shift-mode" aria-label="فترة الوردية">
+                <option value="all">كل الفترات</option>
+                <option value="morning">صباحية فقط</option>
+                <option value="evening">مسائية فقط</option>
             </select>
             <div class="form-check d-flex align-items-center gap-1 mb-0">
                 <input class="form-check-input" type="checkbox" id="toggle-show-profits" checked>
@@ -457,7 +462,8 @@
         <div class="filter-chip">
             <label>الوردية:</label>
             <select class="form-select form-select-sm" id="filter-shift" style="min-width:130px;">
-                <option value="all">الكل</option>
+                <option value="latest" selected>أحدث وردية في اليوم</option>
+                <option value="all">كل الورديات</option>
             </select>
         </div>
         <div class="filter-divider"></div>
@@ -512,8 +518,8 @@
             </select>
         </div>
         <div class="filter-item-search-wrap">
-            <input type="search" id="filter-item-search" placeholder="بحث بالصنف أو الباركود (F3)" autocomplete="off">
-            <i class="fas fa-search"></i>
+            <label for="filter-item-search"><i class="fas fa-search"></i> بحث:</label>
+            <input type="search" id="filter-item-search" placeholder="صنف أو باركود (F3)" autocomplete="off">
         </div>
     </section>
 
@@ -680,6 +686,8 @@ $(function () {
     let selectedOrderId = null;
     let currentDate = new Date();
     let isLoading = false;
+    let reloadAfterCurrentRequest = false;
+    let autoLatestShift = true;
 
     /* ══ دوال مساعدة ══ */
     function toEnglishDigits(str) {
@@ -701,6 +709,13 @@ $(function () {
     function formatMoney(val) {
         const n = Number(val) || 0;
         return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.00$/, '');
+    }
+
+    function localDateIso(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 
     function typeBadge(type) {
@@ -744,24 +759,73 @@ $(function () {
         }
     }
 
+    function populateShiftSelect(shifts) {
+        const $select = $('#filter-shift');
+        const currentVal = $select.val() || 'latest';
+        const options = [
+            '<option value="latest">أحدث وردية في اليوم</option>',
+            '<option value="all">كل الورديات</option>'
+        ];
+        (shifts || []).forEach(shift => {
+            const date = String(shift.date || '').replace(/-/g, '/');
+            const label = `وردية #${shift.shift_no} — ${date}`;
+            options.push(`<option value="${escapeHtml(shift.id)}">${escapeHtml(label)}</option>`);
+        });
+        $select.html(options.join(''));
+        if ($select.find('option').toArray().some(option => option.value === String(currentVal))) {
+            $select.val(currentVal);
+        } else {
+            $select.val(autoLatestShift ? 'latest' : 'all');
+        }
+    }
+
     /* ══ تحميل الفواتير من قاعدة البيانات ══ */
     async function loadOrdersFromServer() {
-        if (isLoading) return;
+        if (isLoading) {
+            reloadAfterCurrentRequest = true;
+            return;
+        }
         isLoading = true;
+        reloadAfterCurrentRequest = false;
+        let fallbackDate = null;
 
         try {
             const showDeleted = $('#toggle-deleted-orders').is(':checked') ? '1' : '0';
-            const data = await apiRequest(`${API_BASE_URL}/archive?deleted=${showDeleted}`, 'GET');
+            const periodMode = $('#period-mode').val();
+            const dayDate = localDateIso(currentDate);
+            const shiftScope = autoLatestShift && periodMode !== 'day'
+                ? 'all'
+                : ($('#filter-shift').val() || 'all');
+            const params = new URLSearchParams({
+                deleted: showDeleted,
+                period_mode: periodMode,
+                shift_scope: shiftScope
+            });
+            if (periodMode === 'day') params.set('day_date', dayDate);
+            if ($('#date-from-input').val()) params.set('from_date', $('#date-from-input').val());
+            if (periodMode === 'range' && $('#date-to-input').val()) {
+                params.set('to_date', $('#date-to-input').val());
+            }
+            const data = await apiRequest(`${API_BASE_URL}/archive?${params.toString()}`, 'GET');
 
             orders = Array.isArray(data.orders) ? data.orders : [];
 
             if (data.filters) {
-                populateFilterSelect($('#filter-shift'), data.filters.shifts, 'الكل');
+                populateShiftSelect(data.filters.shifts);
                 populateFilterSelect($('#filter-created-by'), data.filters.created_by, 'الكل');
                 populateFilterSelect($('#filter-closed-by'), data.filters.closed_by, 'الكل');
                 populateFilterSelect($('#filter-courier'), data.filters.couriers, 'الكل');
                 populateFilterSelect($('#filter-safe'), data.filters.safes, 'الكل');
                 populateFilterSelect($('#filter-category'), data.filters.categories, 'كل التصنيفات');
+            }
+
+            if (periodMode === 'day'
+                && dayDate === localDateIso(new Date())
+                && shiftScope === 'latest'
+                && orders.length === 0
+                && data.latest_date
+                && data.latest_date < dayDate) {
+                fallbackDate = new Date(`${data.latest_date}T12:00:00`);
             }
 
             renderArchive();
@@ -771,6 +835,13 @@ $(function () {
             renderArchive();
         } finally {
             isLoading = false;
+        }
+        if (fallbackDate) {
+            currentDate = fallbackDate;
+            updateDateLabel();
+            loadOrdersFromServer();
+        } else if (reloadAfterCurrentRequest) {
+            loadOrdersFromServer();
         }
     }
 
@@ -788,20 +859,20 @@ $(function () {
 
     /* ══ تحديث عرض التاريخ ══ */
     function updateDateLabel() {
-        const iso     = currentDate.toISOString().slice(0, 10);
-        const dayName = new Intl.DateTimeFormat('ar-EG', { weekday: 'long' }).format(currentDate);
-        $('#arabic-date-display').html(`${dayName} ${iso.replace(/-/g, '/')}`);
+        const iso = localDateIso(currentDate);
+        const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(currentDate);
+        $('#archive-date-display').text(`${dayName} ${iso.replace(/-/g, '/')}`);
     }
 
     $('#btn-prev-day').on('click', () => {
         currentDate.setDate(currentDate.getDate() - 1);
         updateDateLabel();
-        renderArchive();
+        loadOrdersFromServer();
     });
     $('#btn-next-day').on('click', () => {
         currentDate.setDate(currentDate.getDate() + 1);
         updateDateLabel();
-        renderArchive();
+        loadOrdersFromServer();
     });
 
     $('#period-mode').on('change', function () {
@@ -809,23 +880,33 @@ $(function () {
         if (mode === 'day') {
             $('#single-day-stepper').removeClass('d-none');
             $('#range-date-inputs').addClass('d-none').removeClass('d-flex');
+            if (autoLatestShift) $('#filter-shift').val('latest');
         } else if (mode === 'all') {
             $('#single-day-stepper').addClass('d-none');
             $('#range-date-inputs').addClass('d-none').removeClass('d-flex');
+            if (autoLatestShift) $('#filter-shift').val('all');
         } else {
             $('#single-day-stepper').addClass('d-none');
             $('#range-date-inputs').removeClass('d-none').addClass('d-flex');
             $('#date-to-input, #date-to-separator').toggle(mode === 'range');
+            if (autoLatestShift) $('#filter-shift').val('all');
         }
-        renderArchive();
+        loadOrdersFromServer();
     });
+
+    $('#filter-shift').on('change', function () {
+        autoLatestShift = $(this).val() === 'latest';
+        loadOrdersFromServer();
+    });
+
+    $('#date-from-input, #date-to-input').on('change', loadOrdersFromServer);
 
     /* ══ عرض الجدول ══ */
     function renderArchive() {
         const showProfits    = $('#toggle-show-profits').is(':checked');
         const showDeleted    = $('#toggle-deleted-orders').is(':checked');
         const periodMode     = $('#period-mode').val();
-        const dayIso         = currentDate.toISOString().slice(0, 10);
+        const dayIso         = localDateIso(currentDate);
         const fromDate       = $('#date-from-input').val();
         const toDate         = $('#date-to-input').val();
         const quickShiftMode = $('#quick-shift-mode').val();
@@ -856,7 +937,7 @@ $(function () {
             if (periodMode === 'before' && fromDate && !(ord.date < fromDate))    return false;
             if (periodMode === 'after'  && fromDate && !(ord.date > fromDate))    return false;
             if (quickShiftMode !== 'all' && ord.shiftPeriod && ord.shiftPeriod !== quickShiftMode) return false;
-            if (fShift   !== 'all' && ord.shift       !== fShift)   return false;
+            if (fShift !== 'all' && fShift !== 'latest' && String(ord.shiftId) !== String(fShift)) return false;
             if (fCreated !== 'all' && ord.createdBy   !== fCreated) return false;
             if (fClosed  !== 'all' && ord.confirmedBy !== fClosed)  return false;
             if (fType    !== 'all' && ord.orderType   !== fType)    return false;
@@ -1063,6 +1144,8 @@ $(function () {
     $('#opt-reset-filters').on('click', function (e) {
         e.preventDefault();
         $('.filters-bar select').val('all');
+        autoLatestShift = true;
+        $('#filter-shift').val('latest');
         $('#quick-shift-mode').val('all');
         $('.filters-bar input[type="text"], .filters-bar input[type="search"]').val('');
         const wasDeletedChecked = $('#toggle-deleted-orders').is(':checked');
@@ -1155,7 +1238,7 @@ $(function () {
             .join('\r\n');
         const a = document.createElement('a');
         a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-        a.download = `orders-${currentDate.toISOString().slice(0,10)}.csv`;
+        a.download = `orders-${localDateIso(currentDate)}.csv`;
         a.click();
     });
 

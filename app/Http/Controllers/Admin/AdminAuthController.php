@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Carbon\Carbon;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
@@ -174,7 +175,6 @@ class AdminAuthController extends Controller
                     'username'    => 'Cashier1',
                     'full_name'   => 'كاشير1',
                     'password'    => Hash::make('123'),
-                    'plain_hint'  => '123',
                     'role'        => 'user',
                     'role_label'  => 'مستخدم',
                     'permissions' => json_encode($cashierDefaultPerms),
@@ -187,7 +187,6 @@ class AdminAuthController extends Controller
                     'username'    => 'Cashier2',
                     'full_name'   => 'كاشير2',
                     'password'    => Hash::make('123'),
-                    'plain_hint'  => '123',
                     'role'        => 'user',
                     'role_label'  => 'مستخدم',
                     'permissions' => json_encode($cashierDefaultPerms),
@@ -200,7 +199,6 @@ class AdminAuthController extends Controller
                     'username'    => 'admin',
                     'full_name'   => 'مدير النظام',
                     'password'    => Hash::make('123'),
-                    'plain_hint'  => '123',
                     'role'        => 'system_admin',
                     'role_label'  => 'مدير',
                     'permissions' => json_encode($allPermsKeys),
@@ -213,7 +211,6 @@ class AdminAuthController extends Controller
                     'username'    => 'BranchAdmin',
                     'full_name'   => 'مدير الفرع',
                     'password'    => Hash::make('123'),
-                    'plain_hint'  => '123',
                     'role'        => 'branch_admin',
                     'role_label'  => 'مدير',
                     'permissions' => json_encode($allPermsKeys),
@@ -273,6 +270,8 @@ class AdminAuthController extends Controller
                 ],
             ]);
         }
+
+        DB::table('pos_users')->whereNotNull('plain_hint')->update(['plain_hint' => null]);
     }
 
     public static function logActivity(string $userName, string $operationType, string $status = '-', string $description = '', string $note = '', ?int $userId = null): void
@@ -298,6 +297,53 @@ class AdminAuthController extends Controller
             'created_at'     => $now,
             'updated_at'     => $now,
         ]);
+    }
+
+    private function hasAdminAccess(Request $request, string $permission): bool
+    {
+        $posUser = $request->session()->get('pos_user');
+        if (!is_array($posUser)) {
+            return false;
+        }
+
+        $role = $posUser['role'] ?? '';
+        if (!empty($posUser['is_admin'])
+            || !empty($posUser['is_manager'])
+            || in_array($role, ['admin', 'branch_manager', 'system_admin', 'branch_admin', 'مدير النظام', 'مدير الفرع'], true)) {
+            return true;
+        }
+
+        $permissions = $posUser['permissions'] ?? [];
+        if (is_string($permissions)) {
+            $permissions = json_decode($permissions, true) ?: [];
+        }
+        if (is_array($permissions)
+            && (in_array('*', $permissions, true) || in_array('all', $permissions, true) || in_array($permission, $permissions, true))) {
+            return true;
+        }
+
+        $temporaryGrants = $request->session()->get('pos_temp_authorized_permissions', []);
+        return is_array($temporaryGrants)
+            && (int) ($temporaryGrants[$permission] ?? 0) >= now()->timestamp;
+    }
+
+    private function adminAccessError(Request $request, string $permission): ?JsonResponse
+    {
+        if (!$request->session()->has('pos_user')) {
+            return response()->json(['ok' => false, 'message' => 'يجب تسجيل الدخول أولاً'], 401);
+        }
+        if (!$this->hasAdminAccess($request, $permission)) {
+            return response()->json(['ok' => false, 'message' => 'ليس لديك صلاحية تنفيذ هذا الإجراء'], 403);
+        }
+        return null;
+    }
+
+    private function requireAdminPageAccess(Request $request, string $permission): void
+    {
+        if (!$request->session()->has('pos_user')) {
+            abort(redirect('/login'));
+        }
+        abort_unless($this->hasAdminAccess($request, $permission), 403);
     }
 
     public function loginView(Request $request)
@@ -377,6 +423,7 @@ class AdminAuthController extends Controller
             'shift_no'    => $openShift ? $openShift->shift_no : 136,
         ];
 
+        $request->session()->forget('pos_temp_authorized_permissions');
         $request->session()->put('pos_user', $sessionData);
 
         self::logActivity($user->full_name, 'تسجيل دخول', 'نجحت', 'تسجيل دخول للبرنامج وفتح شاشة المبيعات', '', $user->id);
@@ -394,7 +441,7 @@ class AdminAuthController extends Controller
         if ($posUser) {
             self::logActivity($posUser['full_name'], 'تسجيل خروج', 'نجحت', 'خروج من الجلسة الحالية', '', $posUser['id']);
         }
-        $request->session()->forget('pos_user');
+        $request->session()->forget(['pos_user', 'pos_temp_authorized_permissions']);
 
         if ($request->expectsJson()) {
             return response()->json(['ok' => true, 'redirect' => '/login']);
@@ -406,14 +453,22 @@ class AdminAuthController extends Controller
     {
         $this->ensureSeeded();
 
-        $password   = trim((string) $request->input('password'));
-        $actionName = trim((string) $request->input('action_name', 'صلاحية إدارية'));
-        $targetUrl  = trim((string) $request->input('target_url', ''));
+        $currentUser = $request->session()->get('pos_user');
+        if (!is_array($currentUser)) {
+            return response()->json(['ok' => false, 'message' => 'يجب تسجيل الدخول قبل طلب اعتماد المدير'], 401);
+        }
 
-        $currentUser = $request->session()->get('pos_user', ['id' => null, 'full_name' => 'كاشير1']);
+        $validated = $request->validate([
+            'password' => 'required|string|max:255',
+            'action_name' => 'nullable|string|max:255',
+            'permission' => 'nullable|string|max:100',
+        ]);
+        $password   = trim($validated['password']);
+        $actionName = trim((string) $request->input('action_name', 'صلاحية إدارية'));
 
         $managers = DB::table('pos_users')
             ->whereNull('deleted_at')
+            ->where('is_active', 1)
             ->whereIn('role', ['system_admin', 'branch_admin'])
             ->get();
 
@@ -430,10 +485,14 @@ class AdminAuthController extends Controller
             return response()->json(['ok' => false, 'message' => 'كلمة مرور المدير غير صحيحة!'], 422);
         }
 
-        $grantedUrls = $request->session()->get('pos_temp_authorized_urls', []);
-        if ($targetUrl) {
-            $grantedUrls[] = parse_url($targetUrl, PHP_URL_PATH) ?: $targetUrl;
-            $request->session()->put('pos_temp_authorized_urls', array_unique($grantedUrls));
+        $permission = trim((string) $request->input('permission', ''));
+        if ($permission !== '' && array_key_exists($permission, self::allSystemPermissions())) {
+            $grantedPermissions = $request->session()->get('pos_temp_authorized_permissions', []);
+            if (!is_array($grantedPermissions)) {
+                $grantedPermissions = [];
+            }
+            $grantedPermissions[$permission] = now()->addMinutes(5)->timestamp;
+            $request->session()->put('pos_temp_authorized_permissions', $grantedPermissions);
         }
 
         self::logActivity($currentUser['full_name'], 'تصريح عملية', 'نجحت', $actionName, "تم التصريح بواسطة: {$authorizedManager->full_name}", $currentUser['id']);
@@ -448,10 +507,14 @@ class AdminAuthController extends Controller
     {
         $this->ensureSeeded();
 
+        $currentUser = $request->session()->get('pos_user');
+        if (!is_array($currentUser)) {
+            return response()->json(['ok' => false, 'message' => 'يجب تسجيل الدخول قبل إغلاق الوردية'], 401);
+        }
+
         $password    = trim((string) $request->input('password'));
         $drawerCash  = (float) $request->input('drawer_cash', 0);
         $notes       = trim((string) $request->input('notes', ''));
-        $currentUser = $request->session()->get('pos_user', ['id' => null, 'full_name' => 'مدير الفرع']);
 
         $managers = DB::table('pos_users')
             ->whereNull('deleted_at')
@@ -502,7 +565,7 @@ class AdminAuthController extends Controller
 
         self::logActivity($currentUser['full_name'], 'إغلاق الوردية', 'نجحت', 'تقفيل الوردية وجرد النقدية بالدرج: ' . number_format($drawerCash, 2) . ' ج.م', "تصريح: {$authorizedManager->full_name}", $currentUser['id']);
 
-        $request->session()->forget(['pos_user', 'pos_temp_authorized_urls']);
+        $request->session()->forget(['pos_user', 'pos_temp_authorized_permissions']);
 
         return response()->json([
             'ok'       => true,
@@ -511,15 +574,19 @@ class AdminAuthController extends Controller
         ]);
     }
 
-    public function usersView()
+    public function usersView(Request $request)
     {
         $this->ensureSeeded();
+        $this->requireAdminPageAccess($request, 'admin.users');
         return view('admin.users');
     }
 
-    public function usersBootstrapApi()
+    public function usersBootstrapApi(Request $request)
     {
         $this->ensureSeeded();
+        if ($error = $this->adminAccessError($request, 'admin.users')) {
+            return $error;
+        }
 
         $users = DB::table('pos_users')->orderBy('id', 'asc')->get()->map(function ($u) {
             return [
@@ -543,6 +610,9 @@ class AdminAuthController extends Controller
     public function saveUserApi(Request $request)
     {
         $this->ensureSeeded();
+        if ($error = $this->adminAccessError($request, 'admin.users')) {
+            return $error;
+        }
 
         $id          = $request->input('id');
         $username    = trim((string) $request->input('username'));
@@ -579,15 +649,19 @@ class AdminAuthController extends Controller
 
         if ($password !== '') {
             $data['password']   = Hash::make($password);
-            $data['plain_hint'] = $password;
+            $data['plain_hint'] = null;
         }
 
         if ($id) {
+            $targetUser = DB::table('pos_users')->where('id', $id)->first();
+            if (!$targetUser) {
+                return response()->json(['ok' => false, 'message' => 'المستخدم غير موجود'], 404);
+            }
             DB::table('pos_users')->where('id', $id)->update($data);
         } else {
             if ($password === '') {
                 $data['password']   = Hash::make('123');
-                $data['plain_hint'] = '123';
+                $data['plain_hint'] = null;
             }
             $data['uuid']       = (string) Str::uuid();
             $data['created_at'] = now();
@@ -603,29 +677,61 @@ class AdminAuthController extends Controller
             $request->session()->put('pos_user', $posUser);
         }
 
-        self::logActivity($posUser['full_name'] ?? 'مدير النظام', 'صلاحية متاحة', '-', "حفظ بيانات وصلاحيات المستخدم: {$fullName}", 'إدارة المستخدمين');
+        self::logActivity(
+            $posUser['full_name'] ?? 'مدير النظام',
+            'إدارة المستخدمين',
+            'نجحت',
+            ($id && isset($targetUser) ? 'تعديل بيانات وصلاحيات المستخدم: ' : 'إضافة مستخدم جديد: ') . $fullName,
+            'إدارة المستخدمين',
+            isset($posUser['id']) ? (int) $posUser['id'] : null
+        );
 
-        return $this->usersBootstrapApi();
+        return $this->usersBootstrapApi($request);
     }
 
     public function changeUserPasswordApi(Request $request, $id)
     {
+        $this->ensureSeeded();
+        if ($error = $this->adminAccessError($request, 'admin.users')) {
+            return $error;
+        }
+
         $password = trim((string) $request->input('password'));
         if ($password === '') {
             return response()->json(['ok' => false, 'message' => 'أدخل كلمة المرور الجديدة.'], 422);
         }
 
+        $user = DB::table('pos_users')->where('id', $id)->whereNull('deleted_at')->first();
+        if (!$user) {
+            return response()->json(['ok' => false, 'message' => 'المستخدم غير موجود'], 404);
+        }
+
         DB::table('pos_users')->where('id', $id)->update([
             'password'   => Hash::make($password),
-            'plain_hint' => $password,
+            'plain_hint' => null,
             'updated_at' => now(),
         ]);
+
+        $posUser = $request->session()->get('pos_user', []);
+        self::logActivity(
+            $posUser['full_name'] ?? 'مدير النظام',
+            'إدارة المستخدمين',
+            'نجحت',
+            'تغيير كلمة مرور المستخدم: ' . $user->full_name,
+            'تم حفظ كلمة المرور مشفرة',
+            isset($posUser['id']) ? (int) $posUser['id'] : null
+        );
 
         return response()->json(['ok' => true, 'message' => 'تم تغيير كلمة المرور بنجاح.']);
     }
 
-    public function toggleDeleteUserApi($id)
+    public function toggleDeleteUserApi(Request $request, $id)
     {
+        $this->ensureSeeded();
+        if ($error = $this->adminAccessError($request, 'admin.users')) {
+            return $error;
+        }
+
         $user = DB::table('pos_users')->where('id', $id)->first();
         if (!$user) {
             return response()->json(['ok' => false, 'message' => 'المستخدم غير موجود'], 404);
@@ -640,18 +746,32 @@ class AdminAuthController extends Controller
             'updated_at' => now(),
         ]);
 
-        return $this->usersBootstrapApi();
+        $posUser = $request->session()->get('pos_user', []);
+        self::logActivity(
+            $posUser['full_name'] ?? 'مدير النظام',
+            'إدارة المستخدمين',
+            'نجحت',
+            (is_null($user->deleted_at) ? 'حذف المستخدم: ' : 'استعادة المستخدم: ') . $user->full_name,
+            'إدارة المستخدمين',
+            isset($posUser['id']) ? (int) $posUser['id'] : null
+        );
+
+        return $this->usersBootstrapApi($request);
     }
 
-    public function shiftsLogView()
+    public function shiftsLogView(Request $request)
     {
         $this->ensureSeeded();
+        $this->requireAdminPageAccess($request, 'admin.shifts');
         return view('admin.shifts_log');
     }
 
     public function shiftsLogApi(Request $request)
     {
         $this->ensureSeeded();
+        if ($error = $this->adminAccessError($request, 'admin.shifts')) {
+            return $error;
+        }
 
         $dateMode = $request->query('date_mode', 'all');
         $date1    = $request->query('date1');
@@ -686,15 +806,19 @@ class AdminAuthController extends Controller
         ]);
     }
 
-    public function loginLogView()
+    public function loginLogView(Request $request)
     {
         $this->ensureSeeded();
+        $this->requireAdminPageAccess($request, 'admin.login_log');
         return view('admin.login_log');
     }
 
     public function loginLogApi(Request $request)
     {
         $this->ensureSeeded();
+        if ($error = $this->adminAccessError($request, 'admin.login_log')) {
+            return $error;
+        }
 
         $dateMode = $request->query('date_mode', 'exact');
         $date1    = $request->query('date1', now()->format('Y-m-d'));
@@ -913,4 +1037,283 @@ class AdminAuthController extends Controller
 
         return $this->safesBootstrapApi();
     }
+
+
+
+
+
+// =========================================================================
+    // 1. تحميل نسخة احتياطية مشفرة بالكامل (.nsbak) لا يمكن فتحها خارج النظام
+    // =========================================================================
+    public function downloadEncryptedBackup()
+    {
+        $driver = DB::connection()->getDriverName();
+        $payload = [
+            'system'     => 'NextStore_POS_Protected_Backup',
+            'version'    => '2025.1',
+            'driver'     => $driver,
+            'created_at' => now()->toDateTimeString(),
+        ];
+
+        if ($driver === 'sqlite') {
+            $dbPath = DB::connection()->getDatabaseName();
+            if (!file_exists($dbPath)) {
+                return back()->with('error', 'ملف قاعدة البيانات غير موجود.');
+            }
+            // قراءة ملف SQLite الخام وتحويله إلى Base64
+            $payload['raw_sqlite_base64'] = base64_encode(file_get_contents($dbPath));
+        } else {
+            // في حالة MySQL: سحب كافة الجداول والبيانات ديناميكياً
+            $tablesData = [];
+            $tables = DB::select('SHOW TABLES');
+            foreach ($tables as $tableObj) {
+                $tableName = array_values((array) $tableObj)[0];
+                if ($tableName === 'migrations') {
+                    continue;
+                }
+                $tablesData[$tableName] = DB::table($tableName)->get()->map(fn ($r) => (array) $r)->toArray();
+            }
+            $payload['tables_data'] = $tablesData;
+        }
+
+        // ضغط البيانات ثم تشفيرها بتشفير Laravel AES-256-CBC
+        $jsonString = json_encode($payload, JSON_UNESCAPED_UNICODE);
+        $compressed = gzencode($jsonString, 9);
+        $encryptedContent = \Illuminate\Support\Facades\Crypt::encryptString(base64_encode($compressed));
+
+        $fileName = 'NextStore_Backup_' . now()->format('Y_m_d_His') . '.nsbak';
+
+        return response($encryptedContent, 200, [
+            'Content-Type'        => 'application/octet-stream',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+            'Cache-Control'       => 'no-store, no-cache',
+        ]);
+    }
+
+    // =========================================================================
+    // 2. استيراد واستعادة النسخة الاحتياطية المشفرة (.nsbak)
+    // =========================================================================
+    public function restoreEncryptedBackup(Request $request)
+    {
+        $request->validate([
+            'backup_file' => 'required|file',
+        ]);
+
+        try {
+            $encryptedContent = file_get_contents($request->file('backup_file')->getRealPath());
+
+            // فك التشفير وفك الضغط
+            $compressedBase64 = \Illuminate\Support\Facades\Crypt::decryptString($encryptedContent);
+            $jsonString = gzdecode(base64_decode($compressedBase64));
+            $payload = json_decode($jsonString, true);
+
+            if (!is_array($payload) || ($payload['system'] ?? '') !== 'NextStore_POS_Protected_Backup') {
+                return response()->json([
+                    'ok'      => false,
+                    'message' => 'ملف النسخة الاحتياطية غير صالح أو لا ينتمي لنظام NextStore!',
+                ], 422);
+            }
+
+            $currentDriver = DB::connection()->getDriverName();
+
+            if ($currentDriver === 'sqlite' && !empty($payload['raw_sqlite_base64'])) {
+                $dbPath = DB::connection()->getDatabaseName();
+                $sqliteBinary = base64_decode($payload['raw_sqlite_base64']);
+
+                // التحقق من أن الملف هو SQLite حقيقي بعد فك التشفير
+                if (substr($sqliteBinary, 0, 15) !== 'SQLite format 3') {
+                    return response()->json([
+                        'ok'      => false,
+                        'message' => 'البيانات الداخلية للملف تالفة.',
+                    ], 422);
+                }
+
+                // إغلاق الاتصال مؤقتاً واستبدال ملف الداتابيز بالنسخة المسترجعة
+                DB::disconnect();
+                file_put_contents($dbPath, $sqliteBinary);
+                DB::reconnect();
+
+                return response()->json([
+                    'ok'      => true,
+                    'message' => 'تم استيراد واستعادة النسخة الاحتياطية بالكامل بنجاح! (تاريخ النسخة: ' . ($payload['created_at'] ?? '') . ')',
+                ]);
+            }
+
+            if (!empty($payload['tables_data']) && is_array($payload['tables_data'])) {
+                Schema::disableForeignKeyConstraints();
+                DB::beginTransaction();
+                try {
+                    foreach ($payload['tables_data'] as $tableName => $rows) {
+                        if (Schema::hasTable($tableName)) {
+                            DB::table($tableName)->delete();
+                            foreach (array_chunk($rows, 200) as $chunk) {
+                                DB::table($tableName)->insert($chunk);
+                            }
+                        }
+                    }
+                    DB::commit();
+                } catch (\Throwable $e) {
+                    DB::rollBack();
+                    throw $e;
+                } finally {
+                    Schema::enableForeignKeyConstraints();
+                }
+
+                return response()->json([
+                    'ok'      => true,
+                    'message' => 'تم استرجاع جميع الجداول والبيانات بنجاح!',
+                ]);
+            }
+
+            return response()->json([
+                'ok'      => false,
+                'message' => 'نوع قاعدة البيانات في الملف لا يتطابق مع الإعداد الحالي.',
+            ], 422);
+        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+            return response()->json([
+                'ok'      => false,
+                'message' => 'فشل فك تشفير الملف! هذا الملف غير صالح أو تم التلاعب به.',
+            ], 422);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'ok'      => false,
+                'message' => 'حدث خطأ أثناء الاستعادة: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // =========================================================================
+    // 3. تصفير النظام بالكامل (Zero Reset) — مسح الفواتير والحركات وتصفير الأرصدة مع بقاء الأصناف والعملاء والموردين
+    // =========================================================================
+    public function factoryZeroReset(Request $request)
+    {
+        try {
+            Schema::disableForeignKeyConstraints();
+
+            DB::transaction(function () {
+                // أ) الجداول الحركية التي يتم مسحها بالكامل (الفواتير، المرتجعات، الحركات، المصروفات، الورديات)
+                $transactionalTables = [
+                    'orders',
+                    'order_items',
+                    'pos_orders',
+                    'pos_order_items',
+                    'sales_returns',
+                    'sales_return_items',
+                    'purchases',
+                    'purchase_items',
+                    'purchase_returns',
+                    'purchase_return_items',
+                    'item_movements',
+                    'stock_adjustments',
+                    'stock_adjustment_items',
+                    'inventory_orders',
+                    'inventory_order_items',
+                    'inventory_permissions',
+                    'inventory_permission_items',
+                    'manufacturing_batches',
+                    ' manufacturing_batch_items',
+                    'customer_transactions',
+                    'supplier_transactions',
+                    'expenses',
+                    'pos_safe_transactions',
+                    'pos_shifts',
+                    'pos_login_logs',
+                ];
+
+                foreach ($transactionalTables as $table) {
+                    $cleanTable = trim($table);
+                    if (Schema::hasTable($cleanTable)) {
+                        DB::table($cleanTable)->delete();
+                    }
+                }
+
+                // ب) تصفير كميات الأصناف مع الإبقاء على بيانات الصنف وأسعاره وتصنيفه
+                if (Schema::hasTable('items')) {
+                    $itemUpdate = ['qty' => 0];
+                    if (Schema::hasColumn('items', 'last_move_date')) {
+                        $itemUpdate['last_move_date'] = null;
+                    }
+                    DB::table('items')->update($itemUpdate);
+                }
+
+                // ج) تصفير أرصدة العملاء مع الإبقاء على أسمائهم وعناوينهم وأكوادهم
+                if (Schema::hasTable('customers')) {
+                    $custUpdate = [];
+                    foreach (['balance', 'current_balance', 'debit', 'credit'] as $col) {
+                        if (Schema::hasColumn('customers', $col)) {
+                            $custUpdate[$col] = 0;
+                        }
+                    }
+                    if (!empty($custUpdate)) {
+                        DB::table('customers')->update($custUpdate);
+                    }
+                }
+
+                // د) تصفير أرصدة الموردين مع الإبقاء على أسمائهم وشركاتهم
+                if (Schema::hasTable('suppliers')) {
+                    $suppUpdate = [];
+                    foreach (['balance', 'current_balance', 'total_purchases', 'invoices_count'] as $col) {
+                        if (Schema::hasColumn('suppliers', $col)) {
+                            $suppUpdate[$col] = 0;
+                        }
+                    }
+                    if (!empty($suppUpdate)) {
+                        DB::table('suppliers')->update($suppUpdate);
+                    }
+                }
+
+                // هـ) تصفير أرصدة الخزائن والدرج والحساب البنكي
+                if (Schema::hasTable('pos_safes')) {
+                    DB::table('pos_safes')->update(['balance' => 0]);
+                }
+
+                // و) فتح وردية جديدة رقم #1 بعد التصفير مباشرة
+                if (Schema::hasTable('pos_shifts')) {
+                    $shiftInsert = ['status' => 'open'];
+                    if (Schema::hasColumn('pos_shifts', 'shift_number')) {
+                        $shiftInsert['shift_number'] = 1;
+                    } elseif (Schema::hasColumn('pos_shifts', 'shift_no')) {
+                        $shiftInsert['shift_no'] = 1;
+                    }
+                    if (Schema::hasColumn('pos_shifts', 'shift_date')) {
+                        $shiftInsert['shift_date'] = now()->toDateString();
+                    }
+                    if (Schema::hasColumn('pos_shifts', 'started_at')) {
+                        $shiftInsert['started_at'] = now();
+                    }
+                    if (Schema::hasColumn('pos_shifts', 'started_by')) {
+                        $shiftInsert['started_by'] = session('pos_user.full_name', 'مدير النظام');
+                    }
+                    if (Schema::hasColumn('pos_shifts', 'created_at')) {
+                        $shiftInsert['created_at'] = now();
+                        $shiftInsert['updated_at'] = now();
+                    }
+                    DB::table('pos_shifts')->insert($shiftInsert);
+                }
+            });
+
+            session(['pos_shift_number' => 1]);
+
+            return response()->json([
+                'ok'      => true,
+                'message' => 'تم تصفير النظام بالكامل! جميع الأرصدة والفواتير والحركات أصبحت (0) مع الاحتفاظ ببيانات الأصناف والعملاء والموردين.',
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'ok'      => false,
+                'message' => 'حدث خطأ أثناء تصفير النظام: ' . $e->getMessage(),
+            ], 500);
+        } finally {
+            Schema::enableForeignKeyConstraints();
+        }
+    }
+
+
+
+
+
+
+
+
+
 }

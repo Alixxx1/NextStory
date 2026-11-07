@@ -29,7 +29,7 @@ Route::get('/login', [AdminAuthController::class, 'loginView'])->name('login');
 Route::post('/api/auth/login', [AdminAuthController::class, 'loginSubmit'])->name('api.auth.login');
 Route::post('/api/auth/logout', [AdminAuthController::class, 'logout'])->name('api.auth.logout');
 Route::get('/logout', [AdminAuthController::class, 'logout'])->name('logout');
-Route::post('/api/auth/authorize-manager', [AdminAuthController::class, 'authorizeManagerAction']);
+Route::post('/api/auth/authorize-manager', [AdminAuthController::class, 'authorizeManagerAction'])->middleware('throttle:10,1');
 Route::post('/api/auth/close-shift', [AdminAuthController::class, 'closeShiftAndSwitch']);
 
 // الصفحة الرئيسية: إذا لم يسجل دخول يفتح نافذة تسجيل الدخول، وإذا سجل دخول يفتح شاشة المبيعات فوراً!
@@ -82,9 +82,13 @@ Route::prefix('inventory')->group(function () {
     Route::get('/permissions', [InventorySubController::class, 'permissionsView'])->name('inventory.permissions');
     Route::get('/permissions-log', [InventorySubController::class, 'permissionsLogView'])->name('inventory.permissions.log');
     Route::get('/permissions-movement', [InventorySubController::class, 'permissionsLogView'])->name('inventory.permissions.movement');
+        Route::get('/import-items', [InventorySubController::class, 'importItemsView'])->name('inventory.import_items');
+
 });
 
 Route::prefix('api/inventory')->group(function () {
+    Route::post('/import-items/process', [InventorySubController::class, 'importItemsProcessApi']);
+    Route::post('/items/{id}/quick-update-pos', [InventoryItemController::class, 'quickUpdateFromPos']);
     Route::post('/items/save', [InventoryItemController::class, 'saveItem']);
     Route::post('/categories/quick', [InventoryItemController::class, 'quickCategory']);
     Route::post('/items/batch', [InventoryItemController::class, 'batchAction']);
@@ -269,6 +273,11 @@ Route::prefix('tools')->name('tools.')->group(function () {
     Route::get('/barcode-print', fn () => view('tools.barcode_print'))->name('barcode');
     Route::get('/scale-barcode-print', fn () => view('tools.scale_barcode_print'))->name('scale_barcode');
     Route::get('/printers-status', fn () => view('tools.printers_status'))->name('printers');
+        Route::get('/import-items', [InventorySubController::class, 'importItemsView'])->name('import_items');
+        Route::get('/import-customers', [InventorySubController::class, 'importCustomersView'])->name('import_customers');
+Route::get('/import-suppliers', [InventorySubController::class, 'importSuppliersView'])->name('import_suppliers');
+
+
 });
 
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -297,3 +306,17 @@ Route::prefix('api/admin')->group(function () {
     Route::post('/safes/save', [AdminAuthController::class, 'saveSafeApi']);
     Route::post('/safes/transaction', [AdminAuthController::class, 'safeTransactionApi']);
 });
+
+
+
+
+Route::prefix('api/tools')->group(function () {
+    Route::post('/import-customers-process', [InventorySubController::class, 'importCustomersProcessApi']);
+    Route::post('/import-suppliers-process', [InventorySubController::class, 'importSuppliersProcessApi']);
+});
+
+
+
+Route::get('/admin/backup/download', [AdminAuthController::class, 'downloadEncryptedBackup'])->name('admin.backup.download');
+Route::post('/admin/backup/restore', [AdminAuthController::class, 'restoreEncryptedBackup'])->name('admin.backup.restore');
+Route::post('/admin/system/factory-reset', [AdminAuthController::class, 'factoryZeroReset'])->name('admin.system.reset');

@@ -7,7 +7,7 @@
     <title>NextStore POS - شاشة البيع الاحترافية</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
@@ -39,7 +39,7 @@
             color: #1e293b;
             height: 100vh;
             overflow: hidden;
-            font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+            font-family: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
             display: flex;
             flex-direction: column;
             user-select: none;
@@ -323,6 +323,7 @@
             background: linear-gradient(180deg, #f0fdf4 0%, #f8fafc 100%);
             position: relative;
             z-index: 5;
+            flex-shrink: 0;
             box-shadow: 0 3px 10px rgba(17, 151, 68, 0.05);
         }
         .search-bar-box {
@@ -388,12 +389,13 @@
             margin-top: 6px;
             color: #475569;
             font-size: 11.5px;
-            font-weight: 700;
+            font-weight: 600;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
             gap: 6px;
+            flex-shrink: 0;
         }
         .search-results-dropdown {
             position: absolute;
@@ -595,6 +597,7 @@
             justify-content: space-between;
             gap: 8px;
             padding: 10px 14px;
+            flex-shrink: 0;
             background: white;
             border-top: 2px solid var(--border-color);
         }
@@ -722,6 +725,30 @@
             gap: 7px;
             transition: 0.15s;
         }
+        .pay-type-btn-copy {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            min-width: 0;
+            text-align: right;
+        }
+        .pay-type-customer-name {
+            max-width: 100%;
+            font-size: 11px;
+            font-weight: 700;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .pay-type-customer-address {
+            max-width: 100%;
+            font-size: 10px;
+            font-weight: 600;
+            opacity: 0.85;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
         .pay-type-btn.active-cash {
             background: #119744;
             color: #ffffff;
@@ -827,6 +854,29 @@
             gap: 10px;
         }
         .modal-form-row label { font-weight: 800; color: var(--ns-navy); font-size: 13px; margin: 0; }
+        #posCustomerPickerModal .modal-content { height: 100vh; height: 100dvh; }
+        .pos-customer-picker-frame { display: block; width: 100%; height: 100%; border: 0; background: var(--bg-color); }
+        #posProductEditModal .modal-dialog { max-width: 760px; }
+        #posProductEditModal .modal-content { height: auto; max-height: 92vh; border: 0; border-radius: 12px; }
+        .pos-edit-product-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .pos-edit-product-field { display: flex; flex-direction: column; gap: 5px; }
+        .pos-edit-product-field label { color: #334155; font-size: 12px; font-weight: 600; }
+        .pos-edit-product-field .form-control,
+        .pos-edit-product-field .form-select { min-height: 40px; font-size: 14px; }
+        .pos-toast-stack { position: fixed; inset-inline-end: 20px; bottom: 20px; z-index: 4000; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+        .pos-toast {
+            min-width: 260px; max-width: min(420px, calc(100vw - 32px)); padding: 12px 16px;
+            border: 1px solid #bbf7d0; border-inline-start: 4px solid #16a34a; border-radius: 10px;
+            background: #fff; color: #14532d; box-shadow: 0 10px 28px rgba(15, 23, 42, .18);
+            font-size: 13px; font-weight: 600; opacity: 0; transform: translateX(24px);
+            transition: opacity .2s ease, transform .2s ease;
+        }
+        .pos-toast.is-visible { opacity: 1; transform: translateX(0); }
+        .pos-toast.is-error { color: #7f1d1d; border-color: #fecaca; border-inline-start-color: #dc2626; }
+        @media (max-width: 576px) {
+            .pos-edit-product-grid { grid-template-columns: 1fr; }
+            .pos-toast-stack { inset-inline-end: 12px; bottom: 12px; }
+        }
         .ns-control {
             height: 32px;
             padding: 0 10px;
@@ -938,7 +988,7 @@
                 width: 78mm;
                 margin: 0 auto;
                 padding: 4mm 2mm;
-                font-family: 'Cairo', Tahoma, sans-serif;
+                font-family: 'IBM Plex Sans Arabic', Tahoma, sans-serif;
                 color: #000;
                 direction: rtl;
             }
@@ -1030,7 +1080,7 @@
                         </div>
                         <div class="search-shortcut-hint">
                             <span>بحث/باركود: <span class="keycap">F3</span> | عميل: <span class="keycap">F2</span> | خوارج: <span class="keycap">F4</span> | صنف مخزن جديد: <span class="keycap">F6</span></span>
-                            <span>المخزن: <span class="keycap">F7</span> | المعلقة: <span class="keycap">F8</span> | تعليق: <span class="keycap">F9</span> | دفع: <span class="keycap">F12</span> | خروج: <span class="keycap">Esc</span></span>
+                            <span>تعديل الصنف: <span class="keycap">F7</span> | المخزن: <span class="keycap">F10</span> | المعلقة: <span class="keycap">F8</span> | تعليق: <span class="keycap">F9</span> | دفع: <span class="keycap">F12</span> | خروج: <span class="keycap">Esc</span></span>
                         </div>
                         <div class="search-results-dropdown" id="search-results-dropdown"></div>
                     </div>
@@ -1082,7 +1132,7 @@
                                 <i class="fas fa-plus-square"></i> صنف جديد (F6)
                             </button>
                             <button class="btn btn-info btn-action text-white fw-bold" id="btn-warehouse-items" type="button">
-                                <i class="fas fa-boxes-stacked"></i> المخزن (F7)
+                                <i class="fas fa-boxes-stacked"></i> المخزن (F10)
                             </button>
                             <button class="btn btn-danger btn-action" id="btn-return-invoice">
                                 <i class="fas fa-rotate-left"></i> مرتجع (F1)
@@ -1519,6 +1569,79 @@
         </div>
     </div>
 
+    <div class="modal fade" id="posCustomerPickerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen m-0">
+            <div class="modal-content border-0">
+                <iframe id="pos-customer-picker-frame" title="اختيار العميل للفاتورة" class="pos-customer-picker-frame"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="posProductEditModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <form class="modal-content shadow-lg" id="pos-product-edit-form">
+                <div class="modal-header bg-dark text-white">
+                    <div>
+                        <h5 class="modal-title fw-bold mb-1">تعديل بيانات الصنف</h5>
+                        <div class="small text-white-50" id="pos-edit-product-stock"></div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <div class="pos-edit-product-grid">
+                        <div class="pos-edit-product-field">
+                            <label for="pos-edit-product-name">اسم الصنف</label>
+                            <input id="pos-edit-product-name" class="form-control" type="text" maxlength="255" required>
+                        </div>
+                        <div class="pos-edit-product-field">
+                            <label for="pos-edit-product-barcode">الباركود</label>
+                            <input id="pos-edit-product-barcode" class="form-control en-digit" type="text" maxlength="100" dir="ltr">
+                        </div>
+                        <div class="pos-edit-product-field">
+                            <label for="pos-edit-product-unit">وحدة القياس</label>
+                            <select id="pos-edit-product-unit" class="form-select">
+                                <option value="قطعة">قطعة</option>
+                                <option value="علبة">علبة</option>
+                                <option value="كرتونة">كرتونة</option>
+                                <option value="كيلو">كيلو</option>
+                                <option value="لتر">لتر</option>
+                                <option value="باكت">باكت</option>
+                            </select>
+                        </div>
+                        <div class="pos-edit-product-field">
+                            <label for="pos-edit-product-buy-price">آخر سعر شراء</label>
+                            <input id="pos-edit-product-buy-price" class="form-control numeric-input" type="text" inputmode="decimal" required>
+                        </div>
+                        <div class="pos-edit-product-field">
+                            <label for="pos-edit-product-retail-price">سعر القطاعي</label>
+                            <input id="pos-edit-product-retail-price" class="form-control numeric-input" type="text" inputmode="decimal" required>
+                        </div>
+                        <div class="pos-edit-product-field">
+                            <label for="pos-edit-product-semi-price">سعر النص جملة</label>
+                            <input id="pos-edit-product-semi-price" class="form-control numeric-input" type="text" inputmode="decimal">
+                        </div>
+                        <div class="pos-edit-product-field">
+                            <label for="pos-edit-product-wholesale-price">سعر الجملة</label>
+                            <input id="pos-edit-product-wholesale-price" class="form-control numeric-input" type="text" inputmode="decimal">
+                        </div>
+                        <div class="pos-edit-product-field">
+                            <label for="pos-edit-product-description">وصف الصنف</label>
+                            <input id="pos-edit-product-description" class="form-control" type="text">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-success fw-bold" id="btn-save-pos-product">
+                        <i class="fas fa-floppy-disk me-1"></i> حفظ التعديل
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="pos-toast-stack" id="pos-toast-stack" aria-live="polite" aria-atomic="true"></div>
+
     {{-- ================= مودال 4: اختيار العميل أو إضافة عميل بـ 3 عناوين مربوط بقاعدة البيانات (F2) ================= --}}
     <div class="modal fade" id="customerModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -1702,7 +1825,12 @@
                         <label class="form-label fw-bold small text-secondary mb-1">حالة السداد:</label>
                         <div class="pay-type-switcher">
                             <button type="button" class="pay-type-btn active-cash" id="btn-pay-type-cash" data-pay-type="cash">
-                                <i class="fas fa-circle-check"></i> <span>سداد نقدي / فوري</span>
+                                <i class="fas fa-circle-check"></i>
+                                <span class="pay-type-btn-copy">
+                                    <span>سداد نقدي / فوري</span>
+                                    <small class="pay-type-customer-name" id="checkout-customer-name">عميل نقدي</small>
+                                    <small class="pay-type-customer-address" id="checkout-customer-address"></small>
+                                </span>
                             </button>
                             <button type="button" class="pay-type-btn d-none" id="btn-pay-type-credit" data-pay-type="credit">
                                 <i class="fas fa-file-invoice-dollar"></i> <span>آجل (على حساب العميل)</span>
@@ -1854,6 +1982,38 @@
             const whatsappOfflineQueueKey = 'nextstore.whatsapp.queue.v1';
             const whatsappBridgeSecurityKey = 'nextstore.whatsapp.bridge.secret.v1';
             const BRIDGE_BASE_URL = 'http://127.0.0.1:4895';
+
+            function showPosToast(message, type = 'success') {
+                const toast = document.createElement('div');
+                toast.className = `pos-toast${type === 'error' ? ' is-error' : ''}`;
+                toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+                toast.textContent = message;
+                document.getElementById('pos-toast-stack').appendChild(toast);
+                requestAnimationFrame(() => toast.classList.add('is-visible'));
+                setTimeout(() => {
+                    toast.classList.remove('is-visible');
+                    setTimeout(() => toast.remove(), 220);
+                }, 2200);
+            }
+
+            function createInvoiceRequestId() {
+                if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+                    return window.crypto.randomUUID();
+                }
+
+                const bytes = new Uint8Array(16);
+                if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+                    window.crypto.getRandomValues(bytes);
+                } else {
+                    for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+                }
+                bytes[6] = (bytes[6] & 0x0f) | 0x40;
+                bytes[8] = (bytes[8] & 0x3f) | 0x80;
+                const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+                return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+            }
+
+            let currentInvoiceRequestId = createInvoiceRequestId();
 
             // =========================================================================
             // 0. منظومة الأمان والصلاحيات ومصادقة المدير (Session + managerAuthModal)
@@ -2014,6 +2174,10 @@
             let currentUploadedImageBase64 = '';
 
             let catalogProducts = [];
+            let catalogSearchIndex = [];
+            let catalogBarcodeIndex = new Map();
+            let catalogSubUnitBarcodeIndex = new Map();
+            let catalogScaleCodeIndex = new Map();
             let dbCategories = @json($initialCategories ?? [['id' => 1, 'name' => 'عام']]);
 
             function toEnglishDigits(value) {
@@ -2042,6 +2206,39 @@
                     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
             }
 
+            function buildCatalogIndexes() {
+                catalogSearchIndex = [];
+                catalogBarcodeIndex = new Map();
+                catalogSubUnitBarcodeIndex = new Map();
+                catalogScaleCodeIndex = new Map();
+
+                catalogProducts.forEach(product => {
+                    const barcode = toEnglishDigits(product.barcode || '').trim();
+                    catalogSearchIndex.push({
+                        product,
+                        text: normalizeSearchText(`${product.name} ${product.desc} ${product.barcode}`)
+                    });
+
+                    if (barcode) {
+                        if (!catalogBarcodeIndex.has(barcode)) catalogBarcodeIndex.set(barcode, product);
+                        const numericCode = parseInt(barcode, 10);
+                        if (Number.isFinite(numericCode)) {
+                            const scaleCode = String(numericCode);
+                            if (!catalogScaleCodeIndex.has(scaleCode)) catalogScaleCodeIndex.set(scaleCode, product);
+                        }
+                    }
+
+                    if (Array.isArray(product.subUnits)) {
+                        product.subUnits.forEach(unit => {
+                            const unitBarcode = toEnglishDigits(unit && unit.barcode || '').trim();
+                            if (unitBarcode && !catalogSubUnitBarcodeIndex.has(unitBarcode)) {
+                                catalogSubUnitBarcodeIndex.set(unitBarcode, { product, unit });
+                            }
+                        });
+                    }
+                });
+            }
+
             function parseOptionalFloat(val) {
                 const clean = toEnglishDigits(val).trim();
                 if (clean === '') return null;
@@ -2064,6 +2261,7 @@
                         const data = await res.json();
                         if (Array.isArray(data)) {
                             catalogProducts = data;
+                            buildCatalogIndexes();
                         }
                     }
                 } catch (e) {
@@ -2146,14 +2344,8 @@
             // 2. محرك قارئ باركود الميزان الذكي (Scale Barcode EAN-13 Parser)
             // =========================================================================
             function findProductByScaleItemCode(rawItemCode6) {
-                const numericCode = String(parseInt(rawItemCode6, 10));
-                const padded5 = numericCode.padStart(5, '0');
-                const padded6 = numericCode.padStart(6, '0');
-                return catalogProducts.find(p => {
-                    const b = toEnglishDigits(p.barcode || '').trim();
-                    if (!b) return false;
-                    return b === rawItemCode6 || b === padded5 || b === padded6 || String(parseInt(b, 10)) === numericCode;
-                });
+                const numericCode = parseInt(rawItemCode6, 10);
+                return Number.isFinite(numericCode) ? catalogScaleCodeIndex.get(String(numericCode)) || null : null;
             }
 
             function tryHandleBarcodeScan(rawInput) {
@@ -2185,7 +2377,7 @@
                     }
                 }
 
-                const exactProduct = catalogProducts.find(p => String(p.barcode).trim() === code);
+                const exactProduct = catalogBarcodeIndex.get(code);
                 if (exactProduct) {
                     const effectivePrice = getEffectiveProductPrice(exactProduct);
                     addProductToCart({ ...exactProduct, salePrice: effectivePrice }, 1, '');
@@ -2193,21 +2385,18 @@
                     return true;
                 }
 
-                for (const prod of catalogProducts) {
-                    if (Array.isArray(prod.subUnits)) {
-                        const matchedSub = prod.subUnits.find(u => u && String(u.barcode || '').trim() === code);
-                        if (matchedSub) {
-                            addProductToCart({
-                                ...prod,
-                                name: `${prod.name} (${matchedSub.name})`,
-                                barcode: matchedSub.barcode,
-                                salePrice: Number(matchedSub.price) || getEffectiveProductPrice(prod),
-                                quantityType: 'piece'
-                            }, 1, '');
-                            clearProductSearch();
-                            return true;
-                        }
-                    }
+                const matchedSubUnit = catalogSubUnitBarcodeIndex.get(code);
+                if (matchedSubUnit) {
+                    const { product, unit } = matchedSubUnit;
+                    addProductToCart({
+                        ...product,
+                        name: `${product.name} (${unit.name})`,
+                        barcode: unit.barcode,
+                        salePrice: Number(unit.price) || getEffectiveProductPrice(product),
+                        quantityType: 'piece'
+                    }, 1, '');
+                    clearProductSearch();
+                    return true;
                 }
                 return false;
             }
@@ -2469,6 +2658,13 @@
                 const activeAddr = (selectedCustomer.addresses && selectedCustomer.addresses[selectedAddressIndex])
                     || (selectedCustomer.addresses && selectedCustomer.addresses[0])
                     || { label: 'العنوان الرئيسي', fullAddress: '', zoneName: '', fee: 0, deliveryNote: '' };
+                const selectedAddress = String(activeAddr.fullAddress || '').trim();
+                $('#checkout-customer-name').text(selectedCustomer.isCash
+                    ? selectedCustomer.name
+                    : `${selectedCustomer.name} · #${selectedCustomer.code}`);
+                $('#checkout-customer-address')
+                    .text(selectedAddress || (selectedCustomer.isCash ? '' : 'بدون عنوان مسجل'))
+                    .toggleClass('d-none', !selectedAddress && selectedCustomer.isCash);
 
                 if (!selectedCustomer.isCash) {
                     const displayAddress = (activeAddr.fullAddress || '').trim() || (selectedCustomer.addresses?.[0]?.fullAddress || '').trim();
@@ -2559,6 +2755,9 @@
                 if (!customer || customer.isCash) {
                     selectedCustomer = cashCustomer;
                     selectedAddressIndex = 0;
+                    $('#header-fulfillment-select').val('استلام');
+                    deliveryFeeValue = 0;
+                    $('#delivery-fee-input').val('');
                     updateCustomerHeader();
                     setTimeout(() => $('#item-search-input').trigger('focus'), 150);
                     return;
@@ -2573,8 +2772,11 @@
                 } else {
                     selectedCustomer = customer;
                     selectedAddressIndex = filledAddrs.length === 1 ? filledAddrs[0].index : 0;
-                    if (filledAddrs.length === 1 || customer.phone1) {
-                        $('#header-fulfillment-select').val('توصيل');
+                    const hasDeliveryDetails = filledAddrs.length === 1 || Boolean(customer.phone1);
+                    $('#header-fulfillment-select').val(hasDeliveryDetails ? 'توصيل' : 'استلام');
+                    if (!hasDeliveryDetails) {
+                        deliveryFeeValue = 0;
+                        $('#delivery-fee-input').val('');
                     }
                     updateCustomerHeader();
                     setTimeout(() => $('#item-search-input').trigger('focus'), 150);
@@ -3425,16 +3627,16 @@
             // =========================================================================
             let searchMatches = [];
             let initialProductModalPrice = 0;
+            let searchRenderTimer = null;
 
             function renderSearchResults(query) {
                 let normalizedQuery = normalizeSearchText(query);
                 let terms = normalizedQuery.split(/\s+/).filter(Boolean);
                 let dropdown = $('#search-results-dropdown');
 
-                searchMatches = catalogProducts.filter(product => {
-                    let searchableText = normalizeSearchText(`${product.name} ${product.desc} ${product.barcode}`);
-                    return terms.every(term => searchableText.includes(term));
-                });
+                searchMatches = catalogSearchIndex
+                    .filter(record => terms.every(term => record.text.includes(term)))
+                    .map(record => record.product);
 
                 if (searchMatches.length === 0) {
                     dropdown.html(`
@@ -3443,7 +3645,7 @@
                         </div>
                     `);
                 } else {
-                    let results = searchMatches.map((item, index) => {
+                    let results = searchMatches.slice(0, 50).map((item, index) => {
                         const displayPrice = getEffectiveProductPrice(item);
                         return `
                             <tr class="search-result-item ${index === 0 ? 'active' : ''}" data-index="${index}">
@@ -3468,6 +3670,7 @@
                             </thead>
                             <tbody>${results}</tbody>
                         </table>
+                        ${searchMatches.length > 50 ? '<div class="p-2 text-center small text-muted fw-bold">أول 50 نتيجة فقط — أضف كلمات للبحث لتضييق النتائج.</div>' : ''}
                     `);
                 }
                 dropdown.show();
@@ -3475,12 +3678,17 @@
 
             $('#item-search-input').on('input', function() {
                 let q = $(this).val().trim();
+                if (searchRenderTimer) clearTimeout(searchRenderTimer);
                 if (!q) {
+                    searchRenderTimer = null;
                     $('#search-results-dropdown').hide().empty();
                     searchMatches = [];
                     return;
                 }
-                renderSearchResults(q);
+                searchRenderTimer = setTimeout(() => {
+                    searchRenderTimer = null;
+                    renderSearchResults(q);
+                }, 90);
             });
 
             $('#item-search-input').on('keydown', function(e) {
@@ -3499,9 +3707,18 @@
                 } else if (e.key === 'Enter') {
                     e.preventDefault(); e.stopPropagation();
                     const rawVal = $(this).val().trim();
+                    const hasPendingSearch = searchRenderTimer !== null;
+                    if (searchRenderTimer) {
+                        clearTimeout(searchRenderTimer);
+                        searchRenderTimer = null;
+                    }
                     if (tryHandleBarcodeScan(rawVal)) {
                         return;
                     }
+                    if (hasPendingSearch && rawVal) renderSearchResults(rawVal);
+                    dropdown = $('#search-results-dropdown');
+                    items = dropdown.find('.search-result-item');
+                    activeItem = dropdown.find('.search-result-item.active');
                     if (dropdown.is(':visible') && activeItem.length > 0) {
                         openProductDetails(searchMatches[Number(activeItem.attr('data-index'))]);
                     }
@@ -3513,6 +3730,8 @@
             });
 
             function clearProductSearch() {
+                if (searchRenderTimer) clearTimeout(searchRenderTimer);
+                searchRenderTimer = null;
                 $('#search-results-dropdown').hide().empty();
                 $('#item-search-input').val('').trigger('focus');
                 searchMatches = [];
@@ -3916,7 +4135,13 @@
                 `);
             }
 
+            let isSavingOrder = false;
+
             async function finishOrder(action) {
+                if (isSavingOrder) return;
+                isSavingOrder = true;
+                $('#btn-print-save, #btn-save-only').prop('disabled', true);
+
                 const rawPaid = normalizeNumericInput($('#paid-amount').val());
                 let paidVal = rawPaid === '' ? currentGrandTotal : (parseFloat(rawPaid) || 0);
 
@@ -3929,6 +4154,8 @@
                     });
                     $('#paid-amount').val(currentGrandTotal.toFixed(2)).trigger('focus').trigger('select');
                     recalculateCheckoutModalState();
+                    isSavingOrder = false;
+                    $('#btn-print-save, #btn-save-only').prop('disabled', false);
                     return;
                 }
 
@@ -3953,6 +4180,7 @@
                 const storeNetTotal = Math.max(0, currentStoreSubTotal - discountAmount);
 
                 const invoicePayload = {
+                    requestId: currentInvoiceRequestId,
                     number: String(currentInvoiceNumber),
                     customerName: selectedCustomer.name,
                     customerId: selectedCustomer.isCash ? null : selectedCustomer.id,
@@ -4000,18 +4228,33 @@
                         },
                         body: JSON.stringify(invoicePayload)
                     });
-                    if (res.ok) {
-                        const out = await res.json();
-                        invoicePayload.number = String(out.invoiceNumber || currentInvoiceNumber);
-                        nextInvoiceNumber = Number(out.nextInvoiceNumber) || (currentInvoiceNumber + 1);
-                        if (!selectedCustomer.isCash && out.customerBalance !== undefined) {
-                            const cIdx = customers.findIndex(c => String(c.id) === String(selectedCustomer.id));
-                            if (cIdx !== -1) customers[cIdx].balance = Number(out.customerBalance);
-                        }
-                        fetchRealDatabaseItems();
+                    let out;
+                    try {
+                        out = await res.json();
+                    } catch (e) {
+                        throw new Error('استجابة السيرفر غير صالحة. لم يتم تأكيد حفظ الفاتورة.');
                     }
+                    if (!res.ok) {
+                        throw new Error(out.message || 'رفض السيرفر حفظ الفاتورة. راجع البيانات وحاول مرة أخرى.');
+                    }
+
+                    invoicePayload.number = String(out.invoiceNumber || currentInvoiceNumber);
+                    nextInvoiceNumber = Number(out.nextInvoiceNumber) || (currentInvoiceNumber + 1);
+                    if (!selectedCustomer.isCash && out.customerBalance !== undefined) {
+                        const cIdx = customers.findIndex(c => String(c.id) === String(selectedCustomer.id));
+                        if (cIdx !== -1) customers[cIdx].balance = Number(out.customerBalance);
+                    }
+                    fetchRealDatabaseItems();
                 } catch (e) {
-                    console.warn('تم الحفظ محلياً لحين اتصال السيرفر:', e);
+                    isSavingOrder = false;
+                    $('#btn-print-save, #btn-save-only').prop('disabled', false);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'تعذر تأكيد حفظ الفاتورة',
+                        text: e.message || 'حدث خطأ في الاتصال. الفاتورة ما زالت مفتوحة ويمكنك إعادة المحاولة بأمان.',
+                        confirmButtonColor: '#119744'
+                    });
+                    return;
                 }
 
                 try {
@@ -4035,13 +4278,12 @@
 
                 $('#checkoutModal').modal('hide');
                 performResetCurrentInvoice();
-                Swal.fire({
-                    title: dueAmount > 0 ? `تم حفظ الفاتورة (متبقي آجل: ${dueAmount.toFixed(2)} ج.م)` : 'تم حفظ الفاتورة بنجاح',
-                    icon: 'success',
-                    timer: 1200,
-                    showConfirmButton: false
-                });
+                showPosToast(dueAmount > 0
+                    ? `تم حفظ الفاتورة · متبقي آجل ${dueAmount.toFixed(2)} ج.م`
+                    : 'تم حفظ الفاتورة بنجاح');
                 setTimeout(() => $('#item-search-input').trigger('focus'), 200);
+                isSavingOrder = false;
+                $('#btn-print-save, #btn-save-only').prop('disabled', false);
             }
 
             $('#btn-print-save').on('click', () => finishOrder('print'));
@@ -4063,6 +4305,7 @@
                 $('#header-fulfillment-select').val('استلام');
                 $('#order-notes-input').val('');
                 currentInvoiceNumber = nextInvoiceNumber++;
+                currentInvoiceRequestId = createInvoiceRequestId();
                 $('#current-order-number').text(currentInvoiceNumber);
                 updateCustomerHeader();
                 updateTotals();
@@ -4081,13 +4324,64 @@
 
             $('#btn-new-invoice').on('click', resetCurrentInvoice);
 
+            let customerPickerToken = null;
+            const customerPickerModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('posCustomerPickerModal'));
+
+            $('#posCustomerPickerModal').on('hidden.bs.modal', function() {
+                customerPickerToken = null;
+            });
+
             $('#btn-select-customer').on('click', function() {
-                $('#customer-picker-panel').removeClass('d-none');
-                $('#new-customer-form').addClass('d-none');
-                $('#customer-search-input').val('');
-                renderCustomerPicker('');
-                $('#customerModal').modal('show');
-                setTimeout(() => $('#customer-search-input').trigger('focus'), 200);
+                customerPickerToken = createInvoiceRequestId();
+                const pickerUrl = new URL('/customers', window.location.origin);
+                pickerUrl.searchParams.set('selectForPos', '1');
+                pickerUrl.searchParams.set('pickerToken', customerPickerToken);
+                $('#pos-customer-picker-frame').attr('src', pickerUrl.href);
+                customerPickerModal.show();
+            });
+
+            async function applyPosCustomerSelection(customerId) {
+                if (customerId !== 'cash-customer' && !/^\d+$/.test(customerId)) return;
+
+                customerPickerModal.hide();
+                customerPickerToken = null;
+
+                if (customerId === 'cash-customer') {
+                    selectCustomerFromPicker(cashCustomer);
+                    return;
+                }
+
+                let customer = customers.find(c => String(c.id) === customerId && !c.deleted);
+                if (!customer) {
+                    await fetchPosBootstrapData();
+                    customer = customers.find(c => String(c.id) === customerId && !c.deleted);
+                }
+                if (!customer) {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-start',
+                        icon: 'error',
+                        title: 'تعذر تحميل بيانات العميل المختار، حدّث قائمة العملاء وحاول مرة أخرى',
+                        showConfirmButton: false,
+                        timer: 3000
+                    });
+                    return;
+                }
+
+                selectCustomerFromPicker(customer);
+            }
+
+            window.addEventListener('message', async function(event) {
+                const pickerFrame = document.getElementById('pos-customer-picker-frame');
+                if (event.origin !== window.location.origin || event.source !== pickerFrame.contentWindow) return;
+                if (!event.data || !['nextstore:pos-customer-selected', 'nextstore:pos-customer-picker-cancelled'].includes(event.data.type)) return;
+                if (event.data.pickerToken !== customerPickerToken) return;
+                if (event.data.type === 'nextstore:pos-customer-picker-cancelled') {
+                    customerPickerModal.hide();
+                    customerPickerToken = null;
+                    return;
+                }
+                await applyPosCustomerSelection(String(event.data.customerId || ''));
             });
 
             $('#customer-search-input').on('input', function() {
@@ -4100,7 +4394,7 @@
             });
 
             // =========================================================================
-            // 11. محرك اختصارات الكيبورد الشامل + حماية المرتجعات (F1) والمخزن (F7)
+            // 11. محرك اختصارات الكيبورد الشامل + حماية المرتجعات (F1) والمخزن (F10)
             // =========================================================================
 function handleExitPos() {
     if ($('#cart-items .cart-item-row').length > 0) {
@@ -4136,10 +4430,108 @@ function handleExitPos() {
             }
 
             function openProtectedWarehouseScreen() {
-                requirePermissionOrManager('inventory.items', 'الانتقال إلى شاشة أصناف المخزن (F7)', function() {
+                requirePermissionOrManager('inventory.items', 'الانتقال إلى شاشة أصناف المخزن (F10)', function() {
                     window.location.href = '/inventory/items';
                 });
             }
+
+            const productEditModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('posProductEditModal'));
+            let activeProductEdit = null;
+            $('#posProductEditModal').on('hidden.bs.modal', function() {
+                activeProductEdit = null;
+            });
+
+            function openSelectedInventoryProductEditor() {
+                const row = $('#cart-items .cart-item-row.active-row').first();
+                if (!row.length) {
+                    showPosToast('حدد صنفاً من الفاتورة أولاً', 'error');
+                    return;
+                }
+                if (row.attr('data-is-external') === 'true') {
+                    showPosToast('الأصناف الخارجية لا تملك بيانات مخزن لتعديلها', 'error');
+                    return;
+                }
+
+                const itemId = String(row.attr('data-item-id') || '');
+                if (!/^\d+$/.test(itemId)) {
+                    showPosToast('لم يتم العثور على رقم صنف مخزني صالح', 'error');
+                    return;
+                }
+
+                requirePermissionOrManager('inventory.items', 'تعديل بيانات صنف من شاشة البيع (F7)', function() {
+                    activeProductEdit = catalogProducts.find(product => String(product.id) === itemId) || {
+                        id: itemId,
+                        name: row.attr('data-raw-name') || '',
+                        desc: row.attr('data-description') || '',
+                        barcode: row.attr('data-barcode') || '',
+                        stock: Number(row.attr('data-stock')) || 0,
+                        buyPrice: Number(row.attr('data-buy-price')) || 0,
+                        retailPrice: Number(row.find('.item-price').text()) || 0,
+                        semiWholesalePrice: null,
+                        wholesalePrice: null,
+                        unit: row.attr('data-unit') || 'قطعة'
+                    };
+                    $('#pos-edit-product-name').val(activeProductEdit.name || '');
+                    $('#pos-edit-product-barcode').val(activeProductEdit.barcode || '');
+                    $('#pos-edit-product-unit').val(activeProductEdit.unit || 'قطعة');
+                    $('#pos-edit-product-buy-price').val(Number(activeProductEdit.buyPrice) || 0);
+                    $('#pos-edit-product-retail-price').val(Number(activeProductEdit.retailPrice ?? activeProductEdit.salePrice) || 0);
+                    $('#pos-edit-product-semi-price').val(activeProductEdit.semiWholesalePrice ?? '');
+                    $('#pos-edit-product-wholesale-price').val(activeProductEdit.wholesalePrice ?? '');
+                    $('#pos-edit-product-description').val(activeProductEdit.desc || '');
+                    $('#pos-edit-product-stock').text(`المخزون الحالي: ${Number(activeProductEdit.stock) || 0} ${activeProductEdit.unit || 'قطعة'}`);
+                    productEditModal.show();
+                    setTimeout(() => $('#pos-edit-product-name').trigger('focus').trigger('select'), 180);
+                });
+            }
+
+            $('#pos-product-edit-form').on('submit', async function(event) {
+                event.preventDefault();
+                if (!activeProductEdit) return;
+
+                const payload = {
+                    name: $('#pos-edit-product-name').val().trim(),
+                    barcode: toEnglishDigits($('#pos-edit-product-barcode').val()).trim(),
+                    unit: $('#pos-edit-product-unit').val(),
+                    lastBuyPrice: normalizeNumericInput($('#pos-edit-product-buy-price').val()),
+                    retailPrice: normalizeNumericInput($('#pos-edit-product-retail-price').val()),
+                    semiWholesalePrice: normalizeNumericInput($('#pos-edit-product-semi-price').val()),
+                    wholesalePrice: normalizeNumericInput($('#pos-edit-product-wholesale-price').val()),
+                    description: $('#pos-edit-product-description').val().trim()
+                };
+                if (!payload.name || payload.lastBuyPrice === '' || payload.retailPrice === '') {
+                    showPosToast('اسم الصنف وسعر الشراء وسعر القطاعي حقول مطلوبة', 'error');
+                    return;
+                }
+
+                const $saveButton = $('#btn-save-pos-product').prop('disabled', true);
+                try {
+                    const response = await fetch(`/api/inventory/items/${encodeURIComponent(activeProductEdit.id)}/quick-update-pos`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json().catch(() => ({}));
+                    if (!response.ok) throw new Error(result.message || 'تعذر حفظ تعديلات الصنف');
+
+                    const updatedProduct = result.item;
+                    const index = catalogProducts.findIndex(product => String(product.id) === String(updatedProduct.id));
+                    if (index >= 0) catalogProducts[index] = updatedProduct;
+                    else catalogProducts.push(updatedProduct);
+                    buildCatalogIndexes();
+
+                    productEditModal.hide();
+                    showPosToast('تم حفظ بيانات الصنف للمبيعات القادمة');
+                } catch (error) {
+                    showPosToast(error.message || 'تعذر حفظ تعديلات الصنف', 'error');
+                } finally {
+                    $saveButton.prop('disabled', false);
+                }
+            });
 
             $('#btn-exit-pos').on('click', handleExitPos);
             $('#btn-warehouse-items').on('click', openProtectedWarehouseScreen);
@@ -4284,9 +4676,10 @@ function handleExitPos() {
                 if (e.key === 'F3') { e.preventDefault(); $('#item-search-input').trigger('focus').trigger('select'); return; }
                 if (e.key === 'F4') { e.preventDefault(); openExternalItemModal(null); return; }
                 if (e.key === 'F6') { e.preventDefault(); openNewProductModal(); return; }
-                if (e.key === 'F7') { e.preventDefault(); openProtectedWarehouseScreen(); return; }
+                if (e.key === 'F7') { e.preventDefault(); openSelectedInventoryProductEditor(); return; }
                 if (e.key === 'F8') { e.preventDefault(); openSuspendedKeyboardManager(); return; }
                 if (e.key === 'F9') { e.preventDefault(); suspendInvoice(); return; }
+                if (e.key === 'F10') { e.preventDefault(); openProtectedWarehouseScreen(); return; }
                 if (e.key === 'F12') { e.preventDefault(); openCheckoutModal(); return; }
 
                 if ($(e.target).is('#item-search-input') && String($('#item-search-input').val()).trim() !== '') return;
@@ -4336,3 +4729,4 @@ function handleExitPos() {
     </script>
 </body>
 </html>
+

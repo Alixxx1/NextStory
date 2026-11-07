@@ -164,8 +164,31 @@
             margin: 0;
             border-collapse: separate;
             border-spacing: 0;
-            min-width: 1250px;
+            min-width: 1080px;
         }
+
+        .pos-customer-selection-mode .customers-table { min-width: 620px; table-layout: fixed; }
+        .pos-customer-selection-mode .customers-table th,
+        .pos-customer-selection-mode .customers-table td { padding: 7px 5px; font-size: 12px; }
+        .pos-customer-selection-mode .customers-table th:nth-child(1),
+        .pos-customer-selection-mode .customers-table td:nth-child(1) { width: 5%; }
+        .pos-customer-selection-mode .customers-table th:nth-child(2),
+        .pos-customer-selection-mode .customers-table td:nth-child(2) { width: 10%; }
+        .pos-customer-selection-mode .customers-table th:nth-child(3),
+        .pos-customer-selection-mode .customers-table td:nth-child(3) { width: 15%; }
+        .pos-customer-selection-mode .customers-table th:nth-child(4),
+        .pos-customer-selection-mode .customers-table td:nth-child(4) { width: 20%; }
+        .pos-customer-selection-mode .customers-table th:nth-child(6),
+        .pos-customer-selection-mode .customers-table td:nth-child(6) { width: 30%; }
+        .pos-customer-selection-mode .customers-table th:nth-child(7),
+        .pos-customer-selection-mode .customers-table td:nth-child(7) { width: 10%; }
+        .pos-customer-selection-mode .customers-table th:nth-child(10),
+        .pos-customer-selection-mode .customers-table td:nth-child(10) { width: 10%; }
+        .pos-customer-selection-mode .customers-table td:nth-child(6) { overflow-wrap: anywhere; }
+        .pos-customer-selection-mode .btn-select-pos-customer { padding: 4px 5px; }
+        .pos-customer-selection-mode .customer-management-column { display: none !important; }
+        .pos-customer-selection-mode .pos-picker-only { display: table-cell !important; }
+        .pos-customer-selection-mode .bottom-master-bar { display: none; }
 
         .customers-table th {
             background: var(--dark);
@@ -206,6 +229,55 @@
             font-weight: 900;
             box-shadow: inset 0 1px #168343, inset 0 -1px #168343;
         }
+
+        .customer-address-details-row > td {
+            background: #f0fdf4 !important;
+            text-align: right !important;
+            padding: 12px 18px !important;
+        }
+
+        .customer-address-detail {
+            display: inline-flex;
+            flex-direction: column;
+            gap: 3px;
+            min-width: 220px;
+            margin: 4px 8px;
+            padding: 9px 12px;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            background: #fff;
+        }
+
+        .customer-address-more {
+            border: 0;
+            border-radius: 6px;
+            padding: 5px 8px;
+            background: #fff7cc;
+            color: #854d0e;
+            font-size: 12px;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .customer-address-more:hover { background: #fde68a; }
+
+        .pos-selection-banner {
+            border: 1px solid #86efac;
+            border-right: 5px solid var(--primary);
+            border-radius: 8px;
+            padding: 8px 14px;
+            background: #f0fdf4;
+            color: #14532d;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .pos-picker-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+        .pos-picker-only { display: none !important; }
 
         .area-badge {
             display: inline-block;
@@ -332,12 +404,24 @@
     <div class="customers-header">
         <h3 class="customers-title">
             <i class="fas fa-users text-success"></i>
-            <span>سجل وبيانات العملاء الموحد</span>
+            <span id="customer-page-title">سجل وبيانات العملاء الموحد</span>
         </h3>
         <button type="button" class="exit-btn" id="btn-exit">
             <i class="fas fa-arrow-right-from-bracket"></i>
             <span>خروج (Esc)</span>
         </button>
+    </div>
+
+    <div class="pos-selection-banner d-none" id="pos-selection-banner">
+        <span>اختر العميل للفاتورة؛ اختيار العميل سيعيدك مباشرة إلى شاشة البيع.</span>
+        <div class="pos-picker-actions">
+            <button type="button" class="btn btn-outline-success btn-sm fw-bold" id="btn-pos-new-customer">
+                <i class="fas fa-user-plus me-1"></i> عميل جديد
+            </button>
+            <button type="button" class="btn btn-success btn-sm fw-bold" id="btn-select-cash-customer">
+                <i class="fas fa-money-bill-wave me-1"></i> عميل نقدي
+            </button>
+        </div>
     </div>
 
     <div class="customers-content">
@@ -349,18 +433,18 @@
                 <span class="search-shortcut">F3</span>
             </div>
 
-            <select class="form-select filter-select" id="filter-account-type">
+            <select class="form-select filter-select customer-management-column" id="filter-account-type">
                 <option value="all">كل الحسابات</option>
                 <option value="debit">مدين (عليه مبالغ)</option>
                 <option value="credit">دائن (له رصيد)</option>
                 <option value="zero">حساب خالص (0)</option>
             </select>
 
-            <select class="form-select filter-select" id="filter-area">
+            <select class="form-select filter-select customer-management-column" id="filter-area">
                 <option value="all">كل مناطق التوصيل</option>
             </select>
 
-            <div class="form-check d-flex align-items-center gap-1 ms-1 mb-0">
+            <div class="form-check d-flex align-items-center gap-1 ms-1 mb-0 customer-management-column">
                 <input class="form-check-input" type="checkbox" id="toggle-deleted">
                 <label class="form-check-label fw-bold text-danger small" for="toggle-deleted">
                     <i class="fas fa-trash-can"></i> المحذوفات
@@ -377,15 +461,15 @@
                 <thead>
                     <tr>
                         <th width="3%">م</th>
-                        <th width="6%">الكود</th>
-                        <th width="14%">الاسم</th>
-                        <th width="12%">أرقام التليفون</th>
-                        <th width="9%">منطقة التوصيل</th>
-                        <th width="18%">العنوان الرئيسي</th>
-                        <th width="13%">عنوان بديل</th>
-                        <th width="11%">عنوان بديل 2</th>
-                        <th width="7%">ملاحظة</th>
-                        <th width="7%">الحساب</th>
+                        <th width="8%">الكود</th>
+                        <th width="14%">رقم التليفون</th>
+                        <th width="17%">اسم العميل</th>
+                        <th width="10%" class="customer-management-column">منطقة التوصيل</th>
+                        <th width="30%">العنوان الرئيسي</th>
+                        <th width="12%">عناوين إضافية</th>
+                        <th width="10%" class="customer-management-column">ملاحظة</th>
+                        <th width="9%" class="customer-management-column">الحساب</th>
+                        <th width="10%" class="pos-picker-only">اختيار</th>
                     </tr>
                 </thead>
                 <tbody id="customers-tbody"></tbody>
@@ -587,6 +671,17 @@
             let customers = [];
             let selectedCustomerId = null;
             let editingCustomerId = null;
+            const pageQuery = new URLSearchParams(window.location.search);
+            const posCustomerSelectionMode = pageQuery.get('selectForPos') === '1';
+            const posPickerToken = pageQuery.get('pickerToken') || '';
+
+            if (posCustomerSelectionMode) {
+                $('body').addClass('pos-customer-selection-mode');
+                $('#pos-selection-banner').removeClass('d-none');
+                $('#customer-page-title').text('اختيار عميل للفاتورة');
+                $('#btn-exit span').text('إغلاق والعودة للبيع');
+                $('#customer-search').attr('placeholder', 'ابحث بالكود أو التليفون أو الاسم أو العنوان...');
+            }
 
             // مسودة الـ 3 عناوين أثناء فتح الفورم
             let formAddressesDraft = [];
@@ -801,35 +896,52 @@
 
                 const $tbody = $('#customers-tbody');
                 if (!filtered.length) {
-                    $tbody.html('<tr><td colspan="10" class="py-5 text-muted">لا يوجد عملاء مطابقون.</td></tr>');
+                    $tbody.html(`<tr><td colspan="${posCustomerSelectionMode ? 7 : 9}" class="py-5 text-muted">لا يوجد عملاء مطابقون.</td></tr>`);
                 } else {
                     if (!selectedCustomerId || !filtered.some(c => String(c.id) === String(selectedCustomerId))) {
                         selectedCustomerId = String(filtered[0].id);
                     }
 
                     $tbody.html(filtered.map((c, idx) => {
-                        const phones = [c.phone1, c.phone2].filter(Boolean).join(' - ') || '•';
+                        const phones = [c.phone1, c.phone2].filter(Boolean).join(' - ') || 'بدون هاتف';
                         const a0 = (c.addresses && c.addresses[0]) || {};
-                        const a1 = (c.addresses && c.addresses[1]) || {};
-                        const a2 = (c.addresses && c.addresses[2]) || {};
+                        const extraAddresses = (c.addresses || [])
+                            .slice(1)
+                            .map((address, addressIndex) => ({ ...address, label: address.label || `عنوان بديل ${addressIndex + 1}` }))
+                            .filter(address => String(address.fullAddress || '').trim());
                         const bal = Number(c.balance) || 0;
                         const balHtml = bal <= 0 ? '•' : (c.balanceType === 'debit'
                             ? `<span class="text-debt en-digit">مدين / ${bal.toFixed(2)}</span>`
                             : `<span class="text-credit en-digit">دائن / ${bal.toFixed(2)}</span>`);
+                        const extraAddressesHtml = extraAddresses.length
+                            ? `<button type="button" class="customer-address-more btn-toggle-customer-addresses" data-id="${escapeHtml(c.id)}" aria-expanded="false"><i class="fas fa-map-location-dot me-1"></i> لديه ${extraAddresses.length} عنوان إضافي</button>`
+                            : '<span class="text-muted">—</span>';
+                        const addressDetailsHtml = extraAddresses.map(address => `
+                            <span class="customer-address-detail">
+                                <strong class="text-success">${escapeHtml(address.label)}</strong>
+                                <span>${escapeHtml(address.fullAddress)}</span>
+                                <small class="text-muted">${escapeHtml(address.zoneName || 'بدون منطقة')}${address.deliveryNote ? ` — ${escapeHtml(address.deliveryNote)}` : ''}</small>
+                            </span>
+                        `).join('');
 
                         return `
                             <tr class="customer-row ${String(c.id) === String(selectedCustomerId) ? 'active-row' : ''}" data-id="${escapeHtml(c.id)}">
                                 <td class="en-digit text-muted">${idx + 1}</td>
                                 <td class="en-digit text-primary">${escapeHtml(c.code)}</td>
-                                <td class="fw-bold text-dark text-start">${escapeHtml(c.name)}</td>
                                 <td class="en-digit">${escapeHtml(phones)}</td>
-                                <td>${a0.zoneName ? `<span class="area-badge">${escapeHtml(a0.zoneName)}</span>` : '-'}</td>
-                                <td class="text-start">${escapeHtml(a0.fullAddress || '•')}</td>
-                                <td>${escapeHtml(a1.fullAddress || '•')}</td>
-                                <td>${escapeHtml(a2.fullAddress || '•')}</td>
-                                <td>${escapeHtml(c.invoiceNote || c.contactNote || '•')}</td>
-                                <td>${balHtml}</td>
+                                <td class="fw-bold text-dark text-start">${escapeHtml(c.name)}</td>
+                                <td class="customer-management-column">${a0.zoneName ? `<span class="area-badge">${escapeHtml(a0.zoneName)}</span>` : '-'}</td>
+                                <td class="text-start">${escapeHtml(a0.fullAddress || 'بدون عنوان مسجل')}</td>
+                                <td>${extraAddressesHtml}</td>
+                                <td class="customer-management-column">${escapeHtml(c.invoiceNote || c.contactNote || '•')}</td>
+                                <td class="customer-management-column">${balHtml}</td>
+                                <td class="pos-picker-only">
+                                    <button type="button" class="btn btn-success btn-sm fw-bold btn-select-pos-customer" data-id="${escapeHtml(c.id)}">
+                                        <i class="fas fa-check me-1"></i> اختيار
+                                    </button>
+                                </td>
                             </tr>
+                            ${extraAddresses.length ? `<tr class="customer-address-details-row d-none" data-id="${escapeHtml(c.id)}"><td colspan="${posCustomerSelectionMode ? 7 : 9}">${addressDetailsHtml}</td></tr>` : ''}
                         `;
                     }).join(''));
                 }
@@ -985,12 +1097,61 @@
             }
 
             $('#btn-new-customer').on('click', () => openCustomerModal(null));
+            $('#btn-pos-new-customer').on('click', () => openCustomerModal(null));
             $('#btn-edit-customer').on('click', () => {
                 const c = customers.find(item => String(item.id) === String(selectedCustomerId));
                 if (c) openCustomerModal(c);
             });
             $('#btn-delete-customer').on('click', handleDeleteOrRestoreSelected);
             $('#btn-refresh-list').on('click', fetchInitDataFromDB);
+
+            $('#customers-tbody').on('click', '.btn-toggle-customer-addresses', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const customerId = String($(this).attr('data-id'));
+                const $details = $('#customers-tbody .customer-address-details-row').filter(function() {
+                    return String($(this).attr('data-id')) === customerId;
+                });
+                const expanded = $details.hasClass('d-none');
+                $details.toggleClass('d-none', !expanded);
+                $(this).attr('aria-expanded', expanded ? 'true' : 'false');
+            });
+
+            $('#customers-tbody').on('click', '.btn-select-pos-customer', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!posCustomerSelectionMode) return;
+                const customerId = String($(this).attr('data-id'));
+                const customer = customers.find(item => String(item.id) === customerId && !item.deleted);
+                if (!customer) {
+                    Swal.fire('تعذر الاختيار', 'ارجع إلى شاشة البيع وافتح اختيار العميل مرة أخرى.', 'warning');
+                    return;
+                }
+
+                sendCustomerSelectionToPos(customer.id);
+            });
+
+            function sendCustomerSelectionToPos(customerId) {
+                if (!posPickerToken) {
+                    Swal.fire('تعذر الاختيار', 'ارجع إلى شاشة البيع وافتح اختيار العميل مرة أخرى.', 'warning');
+                    return;
+                }
+
+                const selection = {
+                    type: 'nextstore:pos-customer-selected',
+                    pickerToken: posPickerToken,
+                    customerId: String(customerId)
+                };
+                if (window.parent === window) {
+                    Swal.fire('تعذر الاختيار', 'تعذر إرسال العميل إلى شاشة البيع. اترك النافذة مفتوحة وحاول مرة أخرى.', 'error');
+                    return;
+                }
+                window.parent.postMessage(selection, window.location.origin);
+            }
+
+            $('#btn-select-cash-customer').on('click', function() {
+                if (posCustomerSelectionMode) sendCustomerSelectionToPos('cash-customer');
+            });
 
             $('#customers-tbody').on('click', '.customer-row', function() {
                 selectedCustomerId = $(this).attr('data-id');
@@ -999,13 +1160,32 @@
                 $('#btn-edit-customer, #btn-delete-customer').prop('disabled', false);
             }).on('dblclick', '.customer-row', function() {
                 selectedCustomerId = $(this).attr('data-id');
-                const c = customers.find(item => String(item.id) === String(selectedCustomerId));
-                if (c) openCustomerModal(c);
+                if (posCustomerSelectionMode) {
+                    $('#customers-tbody .btn-select-pos-customer').filter(function() {
+                        return String($(this).attr('data-id')) === String(selectedCustomerId);
+                    }).trigger('click');
+                } else {
+                    const c = customers.find(item => String(item.id) === String(selectedCustomerId));
+                    if (c) openCustomerModal(c);
+                }
             });
 
             $('#customer-search, #filter-account-type, #filter-area, #toggle-deleted').on('input change', renderCustomersTable);
 
-            $('#btn-exit').on('click', () => window.history.length > 1 ? window.history.back() : window.location.href = '/');
+            $('#btn-exit').on('click', () => {
+                if (posCustomerSelectionMode) {
+                    if (window.parent !== window) {
+                        window.parent.postMessage({
+                            type: 'nextstore:pos-customer-picker-cancelled',
+                            pickerToken: posPickerToken
+                        }, window.location.origin);
+                    } else {
+                        window.location.href = '/pos/sales';
+                    }
+                    return;
+                }
+                window.history.length > 1 ? window.history.back() : window.location.href = '/';
+            });
 
             $(document).on('keydown', function(e) {
                 if ($('.modal.show').length || Swal.isVisible()) return;
@@ -1031,10 +1211,14 @@
                     renderCustomersTable();
                     const activeEl = $('#customers-tbody .customer-row.active-row')[0];
                     if (activeEl) activeEl.scrollIntoView({ block: 'nearest' });
-                } else if (e.key === 'Enter' && idx >= 0 && !$(e.target).is('input')) {
+                } else                 if (e.key === 'Enter' && idx >= 0 && (!$(e.target).is('input') || posCustomerSelectionMode)) {
                     e.preventDefault();
                     const c = customers.find(item => String(item.id) === String(selectedCustomerId));
-                    if (c) openCustomerModal(c);
+                    if (posCustomerSelectionMode && c) {
+                        $('#customers-tbody .btn-select-pos-customer[data-id="' + selectedCustomerId + '"]').trigger('click');
+                    } else if (c) {
+                        openCustomerModal(c);
+                    }
                 } else if (e.key === 'Delete' && idx >= 0 && !$(e.target).is('input')) {
                     e.preventDefault();
                     handleDeleteOrRestoreSelected();

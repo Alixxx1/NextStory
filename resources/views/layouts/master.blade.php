@@ -143,7 +143,7 @@
             position: absolute;
             top: calc(100% + 6px);
             right: 0;
-            min-width: 255px;
+            min-width: 265px;
             margin: 0;
             padding: 8px;
             list-style: none;
@@ -201,7 +201,7 @@
             position: absolute;
             top: -6px;
             right: calc(100% + 6px);
-            min-width: 235px;
+            min-width: 245px;
             margin: 0;
             padding: 8px;
             list-style: none;
@@ -216,6 +216,12 @@
             transition: all .16s ease;
             z-index: 1200;
         }
+        /* للقوائم الفرعية الموجودة في قائمة الإدارة على اليسار حتى تفتح لليمين داخل الشاشة */
+        .custom-dropdown-menu.align-left .custom-submenu {
+            right: auto;
+            left: calc(100% + 6px);
+            box-shadow: 12px 16px 36px rgba(21, 39, 58, .22);
+        }
         .has-submenu:hover > .custom-submenu,
         .has-submenu.submenu-open > .custom-submenu {
             opacity: 1;
@@ -223,7 +229,7 @@
             pointer-events: auto;
         }
 
-        /* 2. شريط الاختصارات السريعة المكبّر والمطابق للصورة المرفقة */
+        /* 2. شريط الاختصارات السريعة المكبّر */
         .quick-toolbar {
             background: linear-gradient(180deg, #ffffff 0%, #eff3f8 100%);
             border-bottom: 2px solid #cbd5e1;
@@ -276,7 +282,6 @@
             transform: scale(1.1);
         }
 
-        /* تلوين الأيقونات المهمة لسهولة العين والسرعة */
         .toolbar-icon-box.pos-sale-shortcut {
             background: linear-gradient(135deg, #16a34a, #119744);
             border-color: #0d7a36;
@@ -306,7 +311,6 @@
             color: #065f46;
         }
 
-        /* شريط معلومات المستخدم والوردية على اليسار كما في الصورة */
         .shift-status-strip {
             display: flex;
             align-items: center;
@@ -351,6 +355,26 @@
             font-weight: 900;
             font-size: 13.5px;
         }
+
+        /* كروت نافذة صلاحيات المدير (نسخ احتياطي / استعادة / تصفير النظام) */
+        .mgr-power-card {
+            border: 1.5px solid #cbd5e1;
+            border-radius: 10px;
+            background: #ffffff;
+            padding: 16px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.16s ease;
+        }
+        .mgr-power-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+        }
+        .mgr-power-card.backup-card { border-top: 4px solid #119744; }
+        .mgr-power-card.restore-card { border-top: 4px solid #0284c7; }
+        .mgr-power-card.reset-card { border-top: 4px solid #dc2626; background: #fffafa; }
     </style>
 </head>
 <body>
@@ -412,7 +436,7 @@
             </div>
             <ul class="custom-dropdown-menu">
                 <li><a class="custom-dropdown-item fw-bold text-success" href="/pos/sales" data-perm="pos.sales" data-perm-title="شاشة البيع"><i class="fas fa-desktop text-success"></i> شاشة البيع (F2)</a></li>
-                <li><a class="custom-dropdown-item fw-bold" href="/orders/archive" data-perm="orders.archive" data-perm-title="سجل وأرشيف الطلبات"><i class="fas fa-list-alt text-primary"></i> ارشيف الطلبات</a></li>
+                <li><a class="custom-dropdown-item fw-bold" href="/orders/archive" data-perm="orders.archive" data-perm-title="سجل وأرشيف الطلبات"><i class="fas fa-list-alt text-primary"></i> أرشيف الطلبات</a></li>
                 <div class="custom-dropdown-divider"></div>
                 <li><a class="custom-dropdown-item" href="/returns/log" data-perm="returns.log" data-perm-title="سجل المرتجعات"><i class="fas fa-clipboard-list"></i> سجل المرتجعات</a></li>
                 <li><a class="custom-dropdown-item" href="#" id="open-sales-return" data-perm="pos.returns" data-perm-title="عمل مرتجع مبيعات"><i class="fas fa-undo"></i> مرتجع مبيعات</a></li>
@@ -433,7 +457,7 @@
             </ul>
         </div>
 
-        <!-- 3. مخزن -->
+        <!-- 3. مخزن (تم نقل الاستيراد لقسم الأدوات كما طلبت) -->
         <div class="nav-item-wrapper">
             <div class="nav-item-title" tabindex="0">
                 <i class="fas fa-boxes-stacked"></i>مخزن
@@ -557,7 +581,7 @@
             </ul>
         </div>
 
-        <!-- 8. أدوات -->
+        <!-- 8. أدوات (تضم الآن الثلاث استيرادات: المخزون، العملاء، الموردين) -->
         <div class="nav-item-wrapper">
             <div class="nav-item-title" tabindex="0">
                 <i class="fas fa-toolbox"></i>أدوات
@@ -567,21 +591,53 @@
                 <li><a class="custom-dropdown-item" href="/tools/scale-barcode-print"><i class="fas fa-weight-scale"></i> طباعة باركود الموازين</a></li>
                 <div class="custom-dropdown-divider"></div>
                 <li><a class="custom-dropdown-item fw-bold text-success" href="/tools/stocktaking" data-perm="inventory.stocktaking" data-perm-title="جرد الأصناف"><i class="fas fa-clipboard-check text-success"></i> جرد الأصناف</a></li>
+                <div class="custom-dropdown-divider"></div>
+                <li><a class="custom-dropdown-item fw-bold text-primary" href="/tools/import-items" data-perm="inventory.items" data-perm-title="استيراد المخزون من إكسيل"><i class="fas fa-boxes-stacked text-success"></i> استيراد المخزون (Excel)</a></li>
+                <li><a class="custom-dropdown-item fw-bold text-info" href="/tools/import-customers" data-perm="customers.manage" data-perm-title="استيراد العملاء من إكسيل"><i class="fas fa-users text-info"></i> استيراد العملاء (Excel)</a></li>
+                <li><a class="custom-dropdown-item fw-bold text-warning" href="/tools/import-suppliers" data-perm="suppliers.manage" data-perm-title="استيراد الموردين من إكسيل"><i class="fas fa-truck text-warning"></i> استيراد الموردين (Excel)</a></li>
             </ul>
         </div>
 
-        <!-- 9. الإدارة والإعدادات -->
+        <!-- 9. الإدارة والإعدادات (تضم قسم "صلاحيات المدير" للنسخ الاحتياطي والاستعادة وتصفير النظام) -->
         <div class="nav-item-wrapper">
             <div class="nav-item-title" tabindex="0">
                 <i class="fas fa-gears"></i>الإدارة
             </div>
-            <ul class="custom-dropdown-menu" style="left: 0; right: auto;">
+            <ul class="custom-dropdown-menu align-left" style="left: 0; right: auto;">
                 <li><a class="custom-dropdown-item fw-bold" href="/admin/users" data-require-manager="1" data-perm-title="إدارة المستخدمين والصلاحيات"><i class="fas fa-user-gear text-primary"></i> المستخدمين</a></li>
                 <li><a class="custom-dropdown-item fw-bold" href="/admin/shifts-log" data-perm="admin.shifts" data-perm-title="سجل الورديات"><i class="fas fa-business-time text-warning"></i> سجل الورديات</a></li>
                 <li><a class="custom-dropdown-item fw-bold" href="/admin/login-log" data-perm="admin.login_log" data-perm-title="سجل دخول المستخدمين"><i class="fas fa-clock-rotate-left text-info"></i> سجل دخول المستخدمين</a></li>
                 <div class="custom-dropdown-divider"></div>
                 <li><a class="custom-dropdown-item fw-bold" href="/admin/safes" data-perm="admin.safes" data-perm-title="إدارة الخزائن"><i class="fas fa-vault text-success"></i> إدارة الخزائن</a></li>
                 <li><a class="custom-dropdown-item" href="/customers/delivery-areas" data-perm="customers.manage" data-perm-title="تحرير مناطق التوصيل"><i class="fas fa-map-location-dot text-info"></i> تحرير مناطق التوصيل</a></li>
+                <div class="custom-dropdown-divider"></div>
+
+                <!-- قسم صلاحيات المدير (نسخة احتياطية / استيراد نسخة احتياطية / تصفير النظام) -->
+                <li class="has-submenu">
+                    <a class="custom-dropdown-item fw-bold text-danger" href="#" id="trigger-manager-powers-menu">
+                        <i class="fas fa-user-shield text-danger"></i> صلاحيات المدير
+                        <i class="fas fa-caret-right submenu-arrow"></i>
+                    </a>
+                    <ul class="custom-submenu">
+                        <li>
+                            <a class="custom-dropdown-item fw-bold text-success" href="/admin/backup/download" data-require-manager="1" data-perm-title="عمل وتحميل نسخة احتياطية للداتابيز" data-ui-action="backup_download">
+                                <i class="fas fa-download text-success"></i> عمل نسخة احتياطية للداتابيز
+                            </a>
+                        </li>
+                        <li>
+                            <a class="custom-dropdown-item fw-bold text-primary" href="/admin/backup/restore" data-require-manager="1" data-perm-title="استيراد واستعادة نسخة احتياطية" data-ui-action="backup_restore">
+                                <i class="fas fa-upload text-primary"></i> استيراد النسخة الاحتياطية
+                            </a>
+                        </li>
+                        <div class="custom-dropdown-divider"></div>
+                        <li>
+                            <a class="custom-dropdown-item fw-bold text-danger" href="/admin/system/factory-reset" data-require-manager="1" data-perm-title="تصفير النظام بالكامل (إرجاع الأرصدة والحركات أصفار)" data-ui-action="system_zero_reset">
+                                <i class="fas fa-eraser text-danger"></i> تصفير النظام (Zero Reset)
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
                 <div class="custom-dropdown-divider"></div>
                 <li><a class="custom-dropdown-item fw-bold" href="/settings" data-perm="settings.manage" data-perm-title="الإعدادات العامة"><i class="fas fa-sliders-h text-primary"></i> الإعدادات</a></li>
             </ul>
@@ -594,7 +650,7 @@
         </button>
     </div>
 
-    <!-- 2. شريط الأدوات السريع المكبّر والمطابق للصورة المرفقة -->
+    <!-- 2. شريط الأدوات السريع المكبّر -->
     <div class="quick-toolbar">
         <div class="toolbar-icons-strip">
             <!-- 1. شاشة البيع (F2) -->
@@ -603,21 +659,21 @@
                 <span>شاشة البيع (F2)</span>
             </a>
 
-            <!-- 2. تبديل المستخدم / الكاشير (الرجل وعليه سهمين) -->
+            <!-- 2. تبديل المستخدم / الكاشير -->
             <a href="/logout" class="toolbar-icon-box switch-user-shortcut" title="تبديل المستخدم / تغيير الكاشير">
                 <i class="fa-solid fa-user-check"></i>
                 <i class="fa-solid fa-arrows-rotate" style="font-size: 13px;"></i>
                 <span>تبديل الكاشير</span>
             </a>
 
-            <!-- 3. تقفيل / إنهاء الوردية (المستخدم وعليه المفتاح) -->
+            <!-- 3. تقفيل / إنهاء الوردية -->
             <button type="button" class="toolbar-icon-box close-shift-shortcut" id="btn-open-close-shift-modal" title="إنهاء وتقفيل الوردية الحالية وتسليم الدرج">
                 <i class="fa-solid fa-user-lock"></i>
                 <i class="fa-solid fa-key" style="font-size: 14px; color:#d97706;"></i>
                 <span>تقفيل الوردية</span>
             </button>
 
-            <!-- 4. المصروفات (علامة المحفظة بداخلها الدولار) -->
+            <!-- 4. المصروفات -->
             <a href="/expenses" class="toolbar-icon-box expenses-shortcut" data-perm="expenses.manage" data-perm-title="المصروفات" title="تسجيل ومراجعة المصروفات">
                 <i class="fa-solid fa-wallet"></i>
                 <i class="fa-solid fa-sack-dollar" style="font-size: 14px;"></i>
@@ -641,7 +697,7 @@
                 <i class="fa-solid fa-file-invoice-dollar text-success"></i>
             </a>
 
-            <!-- 8. الإعدادات وتخصيص صورة المكان -->
+            <!-- 8. الإعدادات -->
             <a href="/settings" class="toolbar-icon-box" data-perm="settings.manage" data-perm-title="الإعدادات" title="الإعدادات وتخصيص صورة المتجر">
                 <i class="fa-solid fa-sliders text-secondary"></i>
             </a>
@@ -652,7 +708,7 @@
             </button>
         </div>
 
-        <!-- شريط معلومات المستخدم والوردية وبدايتها كما في أعلى يسار الصورة -->
+        <!-- شريط معلومات المستخدم والوردية وبدايتها -->
         <div class="shift-status-strip">
             <span class="current-user-box">
                 المستخدم الحالي: <strong id="current-user" class="text-primary">{{ $posSessionUser['full_name'] }}</strong>
@@ -710,6 +766,90 @@
                     </div>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- مودال 2: نافذة UI "صلاحيات المدير" (النسخ الاحتياطي / الاستعادة / تصفير النظام) -->
+    <!-- ========================================================================= -->
+    <div class="modal fade" id="managerSystemPowersModal" tabindex="-1" aria-hidden="true">
+        
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg overflow-hidden">
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, #17283d, #223d59); border-bottom: 3px solid #f59e0b;">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fas fa-user-shield text-warning me-2"></i> صلاحيات المدير وإدارة قاعدة البيانات
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body p-4 bg-light">
+                    <div class="row g-3">
+                        <!-- 1. عمل نسخة احتياطية -->
+                        <div class="col-md-4">
+                            <div class="mgr-power-card backup-card">
+                                <div>
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <i class="fas fa-download fs-4 text-success"></i>
+                                        <h6 class="m-0 fw-bold text-dark">نسخة احتياطية للداتابيز</h6>
+                                    </div>
+                                    <p class="text-muted small fw-bold mb-3">
+                                        تنزيل ملف نسخة احتياطية كاملة من قاعدة البيانات الحالية لحفظها على جهازك.
+                                    </p>
+                                </div>
+                                <a href="/admin/backup/download" id="btnUiDownloadBackup" class="btn btn-success fw-bold w-100">
+                                    <i class="fas fa-file-arrow-down me-1"></i> تحميل النسخة الآن
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- 2. استيراد نسخة احتياطية -->
+                        <div class="col-md-4">
+                            <div class="mgr-power-card restore-card">
+                                <div>
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <i class="fas fa-upload fs-4 text-primary"></i>
+                                        <h6 class="m-0 fw-bold text-dark">استيراد النسخة الاحتياطية</h6>
+                                    </div>
+                                    <p class="text-muted small fw-bold mb-2">
+                                        اختر ملف النسخة الاحتياطية السابق لاسترجاع كافة البيانات كما كانت.
+                                    </p>
+                                    <input type="file" id="backupRestoreFileInput" class="form-control form-control-sm mb-2" accept=".nsbak">
+
+                                </div>
+                                <button type="button" id="btnUiRestoreBackup" class="btn btn-primary fw-bold w-100">
+                                    <i class="fas fa-rotate me-1"></i> استعادة النسخة
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 3. تصفير النظام (Zero Reset) -->
+                        <div class="col-md-4">
+                            <div class="mgr-power-card reset-card">
+                                <div>
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <i class="fas fa-eraser fs-4 text-danger"></i>
+                                        <h6 class="m-0 fw-bold text-danger">تصفير النظام بالكامل</h6>
+                                    </div>
+                                    <p class="text-muted small fw-bold mb-3">
+                                        يبقي الأصناف والعملاء والموردين كما هم، ولكن يصفر جميع الأرصدة والفواتير والحركات كأنه برنامج جديد (زيرو).
+                                    </p>
+                                </div>
+                                <button type="button" id="btnUiZeroResetSystem" class="btn btn-danger fw-bold w-100">
+                                    <i class="fas fa-triangle-exclamation me-1"></i> تصفير الأرصدة والحركات
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-white justify-content-between">
+                    <small class="text-muted fw-bold">
+                        <i class="fas fa-lock text-warning me-1"></i> جميع العمليات في هذه النافذة محمية بصلاحيات المدير فقط.
+                    </small>
+                    <button type="button" class="btn btn-secondary fw-bold px-4" data-bs-dismiss="modal">إغلاق</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -794,6 +934,9 @@
             // محرك فحص صلاحيات المدير وتقفيل الوردية
             const mgrModalEl = document.getElementById('managerAuthModal');
             const mgrModal = bootstrap.Modal.getOrCreateInstance(mgrModalEl);
+            const mgrPowersModalEl = document.getElementById('managerSystemPowersModal');
+            const mgrPowersModal = bootstrap.Modal.getOrCreateInstance(mgrPowersModalEl);
+
             const mgrForm = document.getElementById('manager-auth-form');
             const mgrPassInput = document.getElementById('mgr-auth-password-input');
             const mgrTitle = document.getElementById('mgr-auth-permission-title');
@@ -804,6 +947,7 @@
             let pendingTargetUrl = '';
             let pendingActionTitle = '';
             let pendingCallback = null;
+            let pendingPermissionKey = '';
 
             function userHasPermission(permKey) {
                 if (!permKey) return true;
@@ -812,11 +956,12 @@
                 return perms.includes('*') || perms.includes(permKey);
             }
 
-            function openManagerAuthDialog(mode, titleText, targetUrl = '', callback = null) {
+            function openManagerAuthDialog(mode, titleText, targetUrl = '', callback = null, permissionKey = '') {
                 pendingAuthMode = mode;
                 pendingActionTitle = titleText;
                 pendingTargetUrl = targetUrl;
                 pendingCallback = callback;
+                pendingPermissionKey = permissionKey;
 
                 mgrTitle.textContent = `-- ${titleText} ---`;
                 mgrPassInput.value = '';
@@ -829,27 +974,208 @@
 
             document.querySelectorAll('a[data-perm], a[data-require-manager]').forEach(link => {
                 link.addEventListener('click', function (e) {
+                    if (this.parentElement.classList.contains('has-submenu') && !this.parentElement.classList.contains('submenu-open')) {
+                        return;
+                    }
+
                     const requireMgrAlways = this.getAttribute('data-require-manager') === '1';
                     const permKey = this.getAttribute('data-perm');
                     const permTitle = this.getAttribute('data-perm-title') || this.textContent.trim();
                     const href = this.getAttribute('href');
+                    const uiAction = this.getAttribute('data-ui-action');
 
                     if (requireMgrAlways || !userHasPermission(permKey)) {
                         e.preventDefault();
                         e.stopPropagation();
 
-                        if (href === '#' && this.id === 'open-sales-return') {
+                        if (uiAction) {
+                            openManagerAuthDialog('callback', `صلاحية ${permTitle}`, '', () => {
+                                mgrPowersModal.show();
+                            });
+                        } else if (href === '#' && this.id === 'open-sales-return') {
                             openManagerAuthDialog('callback', `صلاحية ${permTitle}`, '', () => {
                                 openSalesReturnModalAfterAuth();
                             });
                         } else {
-                            openManagerAuthDialog('url', `صلاحية الدخول إلى: ${permTitle}`, href);
+                            openManagerAuthDialog('url', `صلاحية الدخول إلى: ${permTitle}`, href, null, requireMgrAlways ? 'admin.users' : permKey);
                         }
                     }
                 });
             });
 
-            // زر تقفيل وتغيير الوردية (الخطوة 1: باسورد المدير -> الخطوة 2: جرد الدرج -> الخطوة 3: شاشة تسجيل الدخول)
+            // أزرار الـ UI داخل نافذة صلاحيات المدير (نسخ احتياطي / استعادة / تصفير النظام)
+            // document.getElementById('btnUiDownloadBackup')?.addEventListener('click', function (e) {
+            //     e.preventDefault();
+            //     Swal.fire({
+            //         icon: 'success',
+            //         title: 'تجهيز النسخة الاحتياطية',
+            //         text: 'جاري تجهيز وتنزيل ملف النسخة الاحتياطية لقاعدة البيانات...',
+            //         confirmButtonColor: '#119744',
+            //         confirmButtonText: 'حسناً'
+            //     }).then(() => {
+            //         window.location.href = '/admin/backup/download';
+            //     });
+            // });
+
+            // 1. تحميل النسخة الاحتياطية المشفرة (.nsbak)
+            document.getElementById('btnUiDownloadBackup')?.addEventListener('click', function (e) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'info',
+                    title: 'جاري تشفير وتنزيل النسخة الاحتياطية...',
+                    text: 'سيتم الآن تنزيل ملف (.nsbak) مشفر بالكامل لحماية بياناتك.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                window.location.href = '/admin/backup/download';
+            });
+
+            // 2. رفع واستعادة النسخة الاحتياطية المشفرة (.nsbak)
+            document.getElementById('btnUiRestoreBackup')?.addEventListener('click', function () {
+                const fileInp = document.getElementById('backupRestoreFileInput');
+                if (!fileInp.files || !fileInp.files.length) {
+                    Swal.fire('تنبيه', 'يرجى اختيار ملف النسخة الاحتياطية المشفرة (.nsbak) أولاً', 'warning');
+                    return;
+                }
+
+                const file = fileInp.files[0];
+                Swal.fire({
+                    icon: 'question',
+                    title: 'تأكيد استعادة النسخة الاحتياطية',
+                    text: `سيتم فك تشفير الملف (${file.name}) واسترجاع كافة البيانات والأرصدة والفواتير كما كانت، هل أنت متأكد؟`,
+                    showCancelButton: true,
+                    confirmButtonColor: '#0284c7',
+                    confirmButtonText: 'نعم، استرجاع البيانات الآن',
+                    cancelButtonText: 'إلغاء'
+                }).then(async (result) => {
+                    if (!result.isConfirmed) return;
+
+                    const formData = new FormData();
+                    formData.append('backup_file', file);
+
+                    Swal.fire({
+                        title: 'جاري فك التشفير واستعادة الداتابيز...',
+                        allowOutsideClick: false,
+                        didOpen: () => Swal.showLoading()
+                    });
+
+                    try {
+                        const res = await fetch('/admin/backup/restore', {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken
+                            },
+                            body: formData
+                        });
+                        const data = await res.json().catch(() => ({}));
+                        if (!res.ok || !data.ok) {
+                            throw new Error(data.message || 'فشل استرجاع النسخة الاحتياطية');
+                        }
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'تمت الاستعادة بنجاح!',
+                            text: data.message,
+                            confirmButtonColor: '#119744',
+                            confirmButtonText: 'تحديث النظام'
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    } catch (err) {
+                        Swal.fire('خطأ', err.message, 'error');
+                    }
+                });
+            });
+
+            // 3. تصفير النظام بالكامل (Zero Reset)
+            document.getElementById('btnUiZeroResetSystem')?.addEventListener('click', function () {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'تأكيد تصفير النظام بالكامل (Zero Reset)',
+                    html: `
+                        <div class="text-end small fw-bold">
+                            <p class="text-danger mb-2">تحذير هام: هذه العملية ستقوم بـ:</p>
+                            <ul class="text-secondary mb-2">
+                                <li>مسح كافة الفواتير والمبيعات والمشتريات والمرتجعات والمصروفات.</li>
+                                <li>تصفير أرصدة جميع الأصناف والعملاء والموردين والخزائن (ترجع 0).</li>
+                                <li>الإبقاء على أسماء الأصناف والتصنيفات والعملاء والموردين والمستخدمين كما هم.</li>
+                            </ul>
+                            <p class="text-dark m-0">ننصح بتحميل نسخة احتياطية قبل التصفير. هل تريد المتابعة؟</p>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    confirmButtonText: 'نعم، تصفير النظام الآن',
+                    cancelButtonText: 'إلغاء'
+                }).then(async (result) => {
+                    if (!result.isConfirmed) return;
+
+                    Swal.fire({
+                        title: 'جاري تصفير الأرصدة والحركات...',
+                        allowOutsideClick: false,
+                        didOpen: () => Swal.showLoading()
+                    });
+
+                    try {
+                        const res = await fetch('/admin/system/factory-reset', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken
+                            }
+                        });
+                        const data = await res.json().catch(() => ({}));
+                        if (!res.ok || !data.ok) {
+                            throw new Error(data.message || 'فشل تصفير النظام');
+                        }
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'تم تصفير النظام (Zero Reset)!',
+                            text: data.message,
+                            confirmButtonColor: '#119744',
+                            confirmButtonText: 'إعادة تحميل النظام'
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    } catch (err) {
+                        Swal.fire('خطأ', err.message, 'error');
+                    }
+                });
+            });
+
+            document.getElementById('btnUiRestoreBackup')?.addEventListener('click', function () {
+                const fileInp = document.getElementById('backupRestoreFileInput');
+                if (!fileInp.files || !fileInp.files.length) {
+                    Swal.fire('تنبيه', 'يرجى اختيار ملف النسخة الاحتياطية أولاً', 'warning');
+                    return;
+                }
+                Swal.fire({
+                    icon: 'question',
+                    title: 'تأكيد استيراد النسخة الاحتياطية',
+                    text: `سيتم استعادة البيانات من الملف (${fileInp.files[0].name})، هل أنت متأكد؟`,
+                    showCancelButton: true,
+                    confirmButtonColor: '#0284c7',
+                    confirmButtonText: 'نعم، استعادة الآن',
+                    cancelButtonText: 'إلغاء'
+                });
+            });
+
+            document.getElementById('btnUiZeroResetSystem')?.addEventListener('click', function () {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'تأكيد تصفير النظام بالكامل (Zero Reset)',
+                    html: `<div class="text-end small fw-bold text-danger">سيتم تصفير جميع الأرصدة والكميات والفواتير والحركات وإرجاع البرنامج كأنه جديد زيرو مع بقاء أسماء الأصناف والعملاء والموردين. هل أنت متأكد؟</div>`,
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    confirmButtonText: 'نعم، تصفير النظام بالكامل',
+                    cancelButtonText: 'إلغاء'
+                });
+            });
+
+            // زر تقفيل وتغيير الوردية
             document.getElementById('btn-open-close-shift-modal').addEventListener('click', () => {
                 openManagerAuthDialog('close_shift', 'صلاحية تغيير وتقفيل الوردية');
             });
@@ -860,7 +1186,7 @@
                 const password = toEnglishDigits(mgrPassInput.value).trim();
 
                 try {
-                    const res = await fetch('/api/auth/verify-override', {
+                    const res = await fetch('/api/auth/authorize-manager', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -869,12 +1195,12 @@
                         },
                         body: JSON.stringify({
                             password: password,
-                            operation_name: pendingActionTitle,
-                            permission_key: ''
+                            action_name: pendingActionTitle,
+                            permission: pendingPermissionKey
                         })
                     });
                     const data = await res.json().catch(() => ({}));
-                    if (!res.ok) {
+                    if (!res.ok || !data.ok) {
                         mgrErr.textContent = data.message || 'كلمة مرور المدير غير صحيحة!';
                         mgrErr.classList.remove('d-none');
                         return;

@@ -1509,7 +1509,6 @@
         'use strict';
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-
         // البيانات الحقيقية المحملة مباشرة من قاعدة البيانات عبر Laravel Controller
         let categories = @json($initialCategories ?? []);
         let products = @json($initialProducts ?? []);
