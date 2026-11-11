@@ -1,0 +1,11 @@
+/vendor/
+/node_modules/
+/public/build/
+/public/storage/
+/storage/
+/bootstrap/cache/
+*.log
+*.nsbak
+*.sqlite
+package-lock.json
+composer.lock

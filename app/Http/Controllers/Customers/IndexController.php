@@ -77,7 +77,7 @@ class IndexController extends Controller
             'status'    => 'success',
             'zones'     => $zones->values(),
             'customers' => $customers->values(),
-        ]);
+        ], 200, [], JSON_UNESCAPED_UNICODE); // العربي من غير escapes: الرد نص الحجم تقريبا
     }
 
     /**
@@ -284,9 +284,7 @@ class IndexController extends Controller
             $zoneId = (string) ($a['zoneId'] ?? ($i === 0 && $c->primary_zone_id ? $c->primary_zone_id : ''));
             $zoneName = (string) ($a['zoneName'] ?? ($i === 0 && $c->primary_zone_name ? $c->primary_zone_name : ''));
 
-            $matchedZone = $zones->first(function ($z) use ($zoneId, $zoneName) {
-                return ($zoneId !== '' && (string) $z['id'] === $zoneId) || ($zoneName !== '' && $z['name'] === $zoneName);
-            });
+            $matchedZone = ($zoneId !== '' ? $zones->firstWhere('id', $zoneId) : null) ?? ($zoneName !== '' ? $zones->firstWhere('name', $zoneName) : null);
 
             $addresses[] = [
                 'label'        => $a['label'] ?? $defaultLabels[$i],

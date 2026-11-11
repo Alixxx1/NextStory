@@ -329,15 +329,23 @@ class WorkReportController extends Controller
         $source = $request->query('source', 'all'); // all | drawer | bank
         $user = $request->query('user', 'all');
 
+        // اختيار وردية محددة: المبيعات والمرتجعات بـ shift_id، وباقي الحركات بنافذة وقت الوردية
+        $shiftParam = $request->query('shift_id');
+        $shift = $shiftParam === 'current'
+            ? DB::table('pos_shifts')->where('status', 'open')->orderByDesc('id')->first()
+            : (is_numeric($shiftParam) ? DB::table('pos_shifts')->find((int) $shiftParam) : null);
+        $window = $shift ? [$shift->started_at, $shift->ended_at ?: now()] : null;
+        $byDay = fn ($q, string $dateColumn) => $shift ? $q->whereBetween('created_at', $window) : $q->whereDate($dateColumn, $date);
+
         // 1) المبيعات في تاريخ الوردية
         $salesList = [];
         $salesDrawer = 0.0;
         $salesBank = 0.0;
 
         if (Schema::hasTable('sales_invoices')) {
+            // تشمل الفواتير التي أُلغيت لاحقاً: البيع دخل الدرج فعلاً، والإلغاء يُخصم في بند "فواتير ملغاة"
             $sQuery = DB::table('sales_invoices')
-                ->whereNull('deleted_at')
-                ->whereDate('invoice_date', $date);
+                ->when($shift, fn ($q) => $q->where('shift_id', $shift->id), fn ($q) => $q->whereDate('invoice_date', $date));
 
             $salesRows = $sQuery->orderByDesc('id')->get();
             foreach ($salesRows as $row) {
@@ -355,6 +363,7 @@ class WorkReportController extends Controller
                     'total' => (float) $row->net_value,
                     'paid' => $paid,
                     'method' => $method === 'cash' ? 'الدرج (كاش)' : 'حساب بنكي / محفظة',
+                    'cancelled' => !is_null($row->deleted_at),
                 ];
             }
         }
@@ -365,10 +374,7 @@ class WorkReportController extends Controller
         $custPayBank = 0.0;
 
         if (Schema::hasTable('customer_transactions')) {
-            $cTxRows = DB::table('customer_transactions')
-                ->where('type', 'payment')
-                ->whereDate('transaction_date', $date)
-                ->get();
+            $cTxRows = $byDay(DB::table('customer_transactions')->whereNull('deleted_at')->where('type', 'payment'), 'transaction_date')->get();
 
             foreach ($cTxRows as $tx) {
                 $amt = (float) $tx->amount;
@@ -393,10 +399,7 @@ class WorkReportController extends Controller
         $expensesTotal = 0.0;
 
         if (Schema::hasTable('expenses')) {
-            $expRows = DB::table('expenses')
-                ->whereNull('deleted_at')
-                ->whereDate('expense_date', $date)
-                ->get();
+            $expRows = $byDay(DB::table('expenses')->whereNull('deleted_at'), 'expense_date')->get();
 
             foreach ($expRows as $e) {
                 $amt = (float) $e->amount;
@@ -416,10 +419,7 @@ class WorkReportController extends Controller
         $purchasesPaidTotal = 0.0;
 
         if (Schema::hasTable('purchase_invoices')) {
-            $pRows = DB::table('purchase_invoices')
-                ->whereNull('deleted_at')
-                ->whereDate('invoice_date', $date)
-                ->get();
+            $pRows = $byDay(DB::table('purchase_invoices')->whereNull('deleted_at'), 'invoice_date')->get();
 
             foreach ($pRows as $p) {
                 $paid = (float) $p->paid;
@@ -440,11 +440,7 @@ class WorkReportController extends Controller
         $supplierCollectedTotal = 0.0;
 
         if (Schema::hasTable('supplier_transactions')) {
-            $sRows = DB::table('supplier_transactions')
-                ->whereNull('deleted_at')
-                ->whereIn('type', ['payment', 'collection', 'refund'])
-                ->whereDate('transaction_date', $date)
-                ->get();
+            $sRows = $byDay(DB::table('supplier_transactions')->whereNull('deleted_at')->whereIn('type', ['payment', 'collection', 'refund']), 'transaction_date')->get();
 
             foreach ($sRows as $st) {
                 $amt = (float) $st->amount;
@@ -467,11 +463,28 @@ class WorkReportController extends Controller
         // 6) مرتجعات المبيعات النقدية في تاريخ الوردية
         $salesReturnsRefund = 0.0;
         if (Schema::hasTable('sales_returns')) {
-            $salesReturnsRefund = (float) DB::table('sales_returns')
-                ->whereNull('deleted_at')
-                ->whereDate('return_date', $date)
+            $salesReturnsRefund = (float) DB::table('sales_returns')->whereNull('deleted_at')
+                ->when($shift,
+                    fn ($q) => $q->where(fn ($w) => $w->where('shift_id', $shift->id)->orWhere(fn ($o) => $o->whereNull('shift_id')->whereBetween('created_at', $window))),
+                    fn ($q) => $q->whereDate('return_date', $date))
                 ->sum('cash_refund');
         }
+
+        // 7) فواتير أُلغيت خلال الوردية/اليوم: ما دُفع فيها (ناقص ما رُد سابقاً) يخرج من الدرج
+        $cancelledList = [];
+        $cancelledTotal = 0.0;
+        $cancelled = DB::table('sales_invoices')->whereNotNull('cancelled_at')
+            ->when($shift, fn ($q) => $q->where('cancelled_shift_id', $shift->id), fn ($q) => $q->whereDate('cancelled_at', $date))->get();
+        foreach ($cancelled as $c) {
+            $refunded = (float) DB::table('sales_returns')->where('sales_invoice_id', $c->id)->whereNull('deleted_at')->sum('cash_refund');
+            $out = $c->payment_method === 'cash' ? max(0, (float) $c->paid_amount - $refunded) : 0;
+            $cancelledTotal += $out;
+            $cancelledList[] = ['orderNo' => $c->order_no, 'customer' => $c->customer_name, 'amount' => $out, 'reason' => $c->cancel_reason, 'by' => $c->cancelled_by];
+        }
+
+        $shiftsOfDay = DB::table('pos_shifts')->whereDate('shift_date', $date)
+            ->orWhere(fn ($q) => $q->where('status', 'open'))->orderByDesc('id')->get()
+            ->map(fn ($s) => ['id' => $s->id, 'label' => "وردية {$s->shift_no} — {$s->started_by_name} — " . ($s->status === 'open' ? 'مفتوحة' : 'مقفولة')]);
 
         $inflowDrawer = round($salesDrawer + $custPayDrawer + $supplierCollectedTotal, 3);
         $inflowBank = round($salesBank + $custPayBank, 3);
@@ -483,18 +496,23 @@ class WorkReportController extends Controller
         }
 
         $totalInflow = round($inflowDrawer + $inflowBank, 3);
-        $totalOutflow = round($expensesTotal + $purchasesPaidTotal + $supplierPaidTotal + $salesReturnsRefund, 3);
+        $totalOutflow = round($expensesTotal + $purchasesPaidTotal + $supplierPaidTotal + $salesReturnsRefund + $cancelledTotal, 3);
         $netShift = round($totalInflow - $totalOutflow, 3);
 
         return response()->json([
             'status' => 'success',
             'date' => $date,
+            'shift' => $shift ? ['id' => $shift->id, 'no' => $shift->shift_no, 'status' => $shift->status] : null,
+            'shifts' => $shiftsOfDay,
+            'cancelled' => $cancelledList,
+            'expectedDrawer' => $shift ? \App\Support\Drawer::expected($shift) : null,
             'totals' => [
                 'totalInflow' => $totalInflow,
                 'drawerInflow' => $inflowDrawer,
                 'bankInflow' => $inflowBank,
                 'extraDrawer' => 0,
                 'totalOutflow' => $totalOutflow,
+                'cancelledTotal' => round($cancelledTotal, 3),
                 'netShift' => $netShift,
             ],
             'stats' => [

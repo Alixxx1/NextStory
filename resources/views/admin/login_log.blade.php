@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>سجل دخول المستخدمين | NextStore SaaS</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="/vendor/fonts/fonts.css" rel="stylesheet">
+    <link rel="stylesheet" href="/vendor/bootstrap/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
     <style>
         * { box-sizing: border-box; font-family: 'Cairo', sans-serif; user-select: none; }
         body { background: #e2e8f0; height: 100vh; margin: 0; padding: 14px; display: flex; flex-direction: column; overflow: hidden; }
@@ -24,8 +24,9 @@
         .status-cell-fail { background: #f87171 !important; color: #fff !important; font-weight: 900; }
         .win-footer { padding: 9px 16px; background: #e9eef3; border-top: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center; }
     </style>
+    <link rel="stylesheet" href="/css/nextstore-erp.css">
 </head>
-<body>
+<body class="ns-erp">
 
     <div class="log-window">
         <div class="win-header">
@@ -182,5 +183,7 @@
             fetchLogs();
         })();
     </script>
+    <script src="/js/nextstore-nav.js"></script>
+    <script src="/js/nextstore-alerts.js"></script>
 </body>
 </html>

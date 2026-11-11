@@ -5,12 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>NextStore POS - شاشة البيع الاحترافية</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link href="/vendor/fonts/fonts.css" rel="stylesheet">
+    <link rel="stylesheet" href="/vendor/bootstrap/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="/vendor/sweetalert2/sweetalert2.min.css">
     <style>
         :root {
             --primary: #119744;
@@ -605,6 +603,102 @@
         .cart-action-main { flex: 1; }
         .btn-action { flex: 1; font-size: 13px; font-weight: 800; padding: 8px 10px; border-radius: 7px; white-space: nowrap; }
         .btn-row-action { font-size: 13px; font-weight: 800; padding: 8px 12px; border-radius: 7px; }
+        .rounding-row { display: flex; justify-content: space-between; padding: 2px 4px 0; font-size: 12px; font-weight: 600; color: #64748b; }
+        .rounding-row.d-none { display: none !important; }
+        .rounding-row b { font-weight: 700; color: #475569; }
+        .customer-info-bar { display: flex; align-items: center; gap: 8px 18px; flex-wrap: wrap; background: #f0faf4; border: 1px solid #bfe5cd; border-right: 4px solid #119744; border-radius: 8px; padding: 7px 12px; margin-bottom: 6px; }
+        .customer-info-bar.d-none { display: none !important; }
+        .customer-info-bar.cib-flash { animation: cibFlash 1.2s ease-out; }
+        @keyframes cibFlash { 0% { background: #c9efd7; } 100% { background: #f0faf4; } }
+        .cib-main { display: flex; align-items: center; gap: 8px; }
+        .cib-code { font-size: 12px; font-weight: 700; color: #0d7a36; background: #fff; border: 1px solid #bfe5cd; border-radius: 6px; padding: 1px 8px; }
+        .cib-name { font-weight: 800; color: #0f172a; font-size: 16px; }
+        .cib-field { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 14px; font-weight: 700; color: #0f172a; }
+        .cib-field i { color: #119744; font-size: 13px; }
+        .cib-address { flex: 1 1 260px; background: #fff; border: 1px solid #d5dde6; border-radius: 6px; padding: 3px 10px; }
+        .cib-address span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cib-label { font-size: 12px; font-weight: 600; color: #64748b; }
+        .cib-muted { font-size: 13px; font-weight: 600; color: #475569; }
+        .cib-debt { color: #b45309; font-weight: 800; }
+        .cib-actions { display: flex; gap: 6px; margin-right: auto; }
+        .cib-btn { height: 30px; border: 1px solid #cbd5e1; background: #fff; color: #334155; border-radius: 6px; font-size: 12.5px; font-weight: 700; padding: 0 10px; }
+        .cib-btn:hover { background: #f8fafc; border-color: #94a3b8; }
+        .pd-dialog { max-width: min(620px, 94vw); }
+        #productDetailsModal .modal-content { border-radius: 10px; overflow: hidden; }
+        .pd-head { display: flex; align-items: flex-start; gap: 12px; background: #17283d; color: #fff; padding: 12px 16px; }
+        .pd-head-text { flex: 1; min-width: 0; }
+        .pd-head h5 { margin: 0; font-size: 17px; font-weight: 800; }
+        .pd-head-meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 4px; font-size: 12px; color: #cbd5e1; font-weight: 600; }
+        .pd-chip { background: rgba(255,255,255,.14); color: #fff; border-radius: 999px; padding: 1px 10px; font-weight: 700; }
+        .pd-body { padding: 16px; }
+        .pd-info { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 8px; }
+        .pd-info-cell { display: flex; flex-direction: column; gap: 3px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; margin: 0; font-size: 12px; font-weight: 700; color: #64748b; }
+        .pd-info-cell b { font-size: 15px; font-weight: 800; color: #0f172a; }
+        .pd-price { background: #fff; border-color: #cbd5e1; }
+        .pd-price-input { display: flex; align-items: center; gap: 6px; }
+        .pd-price-input input { width: 100%; border: 0; outline: none; font-size: 17px; font-weight: 800; color: #0f172a; padding: 0; background: transparent; }
+        .pd-price-input small { color: #94a3b8; font-weight: 700; white-space: nowrap; }
+        .pd-price:focus-within { border-color: #119744; box-shadow: 0 0 0 3px rgba(17,151,68,.12); }
+        .pd-tiers { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 14px; }
+        .pd-tiers:empty { display: none; }
+        .pd-tier { border: 1px solid #cbd5e1; background: #fff; color: #334155; border-radius: 999px; padding: 2px 12px; font-size: 12.5px; font-weight: 700; }
+        .pd-tier:hover { border-color: #119744; color: #0d7a36; }
+        .pd-entry { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 10px; }
+        .pd-entry-field { display: flex; flex-direction: column; gap: 5px; margin: 0; font-size: 13px; font-weight: 700; color: #334155; }
+        .pd-entry-field.d-none { display: none !important; }
+        .pd-big { display: flex; align-items: center; height: 56px; border: 1.5px solid #cbd5e1; border-radius: 8px; background: #fff; padding: 0 8px 0 12px; gap: 6px; }
+        .pd-big:focus-within { border-color: #119744; box-shadow: 0 0 0 3px rgba(17,151,68,.12); }
+        .pd-big input { flex: 1; min-width: 0; border: 0; outline: none; text-align: center; font-size: 26px; font-weight: 800; color: #0f172a; background: transparent; }
+        .pd-big select { border: 0; background: #f1f5f9; border-radius: 6px; font-size: 13px; font-weight: 700; color: #334155; height: 34px; padding: 0 8px; outline: none; }
+        .pd-big em { font-style: normal; font-size: 13px; font-weight: 700; color: #94a3b8; }
+        .pd-hint { font-size: 12px; font-weight: 600; color: #64748b; margin-top: 6px; }
+        .pd-notes { display: flex; flex-direction: column; gap: 5px; margin: 14px 0 0; font-size: 13px; font-weight: 700; color: #334155; }
+        .pd-notes input { height: 40px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0 10px; font-size: 14px; font-weight: 600; outline: none; }
+        .pd-notes input:focus { border-color: #119744; box-shadow: 0 0 0 3px rgba(17,151,68,.12); }
+        .pd-notes input::placeholder { color: #94a3b8; font-weight: 500; }
+        .pd-foot { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+        .pd-total { margin-left: auto; display: flex; flex-direction: column; }
+        .pd-total span { font-size: 12px; font-weight: 700; color: #64748b; }
+        .pd-total b { font-size: 22px; font-weight: 800; color: #0d7a36; }
+        .pd-cancel { height: 42px; border: 1px solid #cbd5e1; background: #fff; color: #334155; border-radius: 8px; font-weight: 700; padding: 0 14px; }
+        .pd-add { height: 42px; border: 0; background: #119744; color: #fff; border-radius: 8px; font-weight: 800; padding: 0 18px; }
+        .pd-add:hover { background: #0d7a36; }
+        .cp-dialog { max-width: min(860px, 94vw); }
+        .as-dialog { max-width: min(560px, 94vw); }
+        #addressSelectorModal .modal-content { border-radius: 10px; overflow: hidden; }
+        .as-list { display: flex; flex-direction: column; gap: 8px; }
+        .as-item { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 12px; align-items: start; padding: 10px 12px; border: 1px solid #d5dde6; border-radius: 8px; background: #fff; cursor: pointer; }
+        .as-item:hover { border-color: #94a3b8; }
+        .as-item.kb-active { border-color: #119744; background: #f0faf4; box-shadow: 0 0 0 1px #119744; }
+        .as-num { width: 28px; height: 28px; border-radius: 50%; background: #f1f5f9; color: #475569; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+        .as-item.kb-active .as-num { background: #119744; color: #fff; }
+        .as-label { font-size: 12px; font-weight: 700; color: #64748b; }
+        .as-text { font-size: 15px; font-weight: 800; color: #0f172a; line-height: 1.5; }
+        .as-meta { font-size: 12.5px; font-weight: 600; color: #475569; margin-top: 2px; }
+        #customerModal .modal-content { border-radius: 10px; overflow: hidden; }
+        .cp-head { display: flex; align-items: center; gap: 10px; background: #17283d; color: #fff; padding: 10px 16px; }
+        .cp-head h5 { font-size: 16px; font-weight: 800; }
+        .cp-count { font-size: 12px; color: #cbd5e1; font-weight: 700; }
+        .cp-search-row { display: flex; gap: 8px; margin-bottom: 10px; }
+        .cp-search { position: relative; flex: 1; }
+        .cp-search i { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #64748b; }
+        .cp-search input { width: 100%; height: 44px; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 0 42px 0 12px; font-size: 15px; font-weight: 600; background: #f8fafc; outline: none; }
+        .cp-search input:focus { border-color: #119744; background: #fff; box-shadow: 0 0 0 3px rgba(17,151,68,.12); }
+        .cp-btn-new { height: 44px; border: 0; border-radius: 8px; background: #119744; color: #fff; font-weight: 700; padding: 0 16px; white-space: nowrap; }
+        .cp-btn-new:hover { background: #0d7a36; }
+        .cp-list { height: min(430px, 55vh); overflow-y: auto; border: 1px solid #d5dde6; border-radius: 8px; background: #fff; }
+        .cp-item { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 9px 14px; border-bottom: 1px solid #edf1f5; cursor: pointer; }
+        .cp-item:hover { background: #f6faf7; }
+        .cp-item.kb-active { background: #e3f5ea; box-shadow: inset -4px 0 0 #119744; }
+        .cp-code { font-size: 12px; font-weight: 700; color: #475569; background: #f1f5f9; border-radius: 6px; text-align: center; padding: 3px 0; }
+        .cp-name { font-size: 14.5px; font-weight: 800; color: #1e293b; }
+        .cp-meta { font-size: 12.5px; font-weight: 600; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cp-meta i { margin-inline-start: 3px; }
+        .cp-side { text-align: left; font-size: 12px; font-weight: 700; white-space: nowrap; }
+        .cp-debt { color: #b45309; }
+        .cp-addrs { color: #64748b; display: block; }
+        .cp-more { padding: 10px; text-align: center; color: #64748b; font-weight: 600; font-size: 12.5px; }
+        .cp-hint { display: flex; gap: 16px; margin-top: 8px; font-size: 12px; color: #64748b; font-weight: 600; }
         .kb-list-container { max-height: 350px; overflow-y: auto; border: 1.5px solid #cbd5e1; border-radius: 8px; }
         .kb-list-item {
             display: flex;
@@ -654,41 +748,38 @@
             transform: scale(1.05);
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
-        .address-tabs-bar {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            background: #e2e8f0;
-            padding: 6px;
-            border-radius: 8px;
-        }
-        .addr-tab-btn {
-            border: none;
-            background: transparent;
-            padding: 8px 10px;
-            border-radius: 6px;
-            font-weight: 800;
-            font-size: 13px;
-            color: #334155;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            transition: 0.15s;
-        }
-        .addr-tab-btn.active {
-            background: var(--dark);
-            color: #fff;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-        }
-        .addr-tab-btn .has-data-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #22c55e;
-            display: none;
-        }
+        .cf-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .cf-head h6 { font-size: 16px; font-weight: 800; color: #0f172a; }
+        .cf-code { font-size: 12px; font-weight: 700; color: #475569; background: #f1f5f9; border-radius: 6px; padding: 2px 8px; }
+        .cf-code:empty { display: none; }
+        .cf-back { margin-right: auto; height: 32px; border: 1px solid #cbd5e1; background: #fff; color: #334155; border-radius: 6px; font-size: 13px; font-weight: 700; padding: 0 12px; }
+        .cf-back:hover { background: #f8fafc; }
+        .cf-section { padding: 12px 0; border-top: 1px solid #edf1f5; }
+        .cf-section-title { font-size: 13px; font-weight: 800; color: #334155; margin-bottom: 8px; }
+        .cf-grid { display: grid; gap: 10px 12px; }
+        .cf-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .cf-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .cf-span-2 { grid-column: span 2; }
+        .cf-span-3 { grid-column: span 3; }
+        .cf-field { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; font-weight: 700; color: #475569; margin: 0; }
+        .cf-field b { color: #dc2626; font-weight: 700; }
+        .cf-field input, .cf-field select { height: 38px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0 10px; font-size: 14px; font-weight: 600; color: #0f172a; background: #fff; outline: none; width: 100%; }
+        .cf-field input:focus, .cf-field select:focus { border-color: #119744; box-shadow: 0 0 0 3px rgba(17,151,68,.12); }
+        .cf-field input::placeholder { color: #94a3b8; font-weight: 500; }
+        #pos-cust-name { font-size: 15px; font-weight: 700; }
+        .cf-inline { display: flex; gap: 6px; }
+        .cf-icon-btn { width: 38px; flex: none; border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; color: #334155; }
+        .cf-icon-btn:hover { background: #f8fafc; }
+        .cf-actions { padding-top: 12px; border-top: 1px solid #edf1f5; }
+        .cf-save { width: 100%; height: 44px; border: 0; border-radius: 8px; background: #119744; color: #fff; font-size: 15px; font-weight: 800; }
+        .cf-save:hover { background: #0d7a36; }
+        .cf-save:disabled { opacity: .6; }
+        .address-tabs-bar { display: inline-flex; gap: 4px; background: #f1f5f9; padding: 3px; border-radius: 8px; }
+        .addr-tab-btn { border: 0; background: transparent; padding: 5px 14px; border-radius: 6px; font-weight: 700; font-size: 13px; color: #475569; display: flex; align-items: center; gap: 6px; }
+        .addr-tab-btn.active { background: #fff; color: #0f172a; box-shadow: 0 1px 2px rgba(15,23,42,.12); }
+        .addr-tab-btn .has-data-dot { width: 7px; height: 7px; border-radius: 50%; background: #119744; display: none; }
         .addr-tab-btn.filled .has-data-dot { display: inline-block; }
+        @media (max-width: 700px) { .cf-grid-3, .cf-grid-2 { grid-template-columns: 1fr; } .cf-span-2, .cf-span-3 { grid-column: auto; } }
         /* ================= ستايل نافذة الدفع الاحترافية (F12) ================= */
         .checkout-input {
             font-size: 30px;
@@ -854,8 +945,6 @@
             gap: 10px;
         }
         .modal-form-row label { font-weight: 800; color: var(--ns-navy); font-size: 13px; margin: 0; }
-        #posCustomerPickerModal .modal-content { height: 100vh; height: 100dvh; }
-        .pos-customer-picker-frame { display: block; width: 100%; height: 100%; border: 0; background: var(--bg-color); }
         #posProductEditModal .modal-dialog { max-width: 760px; }
         #posProductEditModal .modal-content { height: auto; max-height: 92vh; border: 0; border-radius: 12px; }
         .pos-edit-product-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -1003,7 +1092,7 @@
         <div class="brand-name">
             <span class="brand-logo-text">
                 <i class="fas fa-cash-register"></i>
-                <span>Next<span class="accent">Store</span></span>
+                <span>{{ $systemSettings['shop_name'] ?? 'NextStore' }}</span>
             </span>
             <span class="header-divider"></span>
             <span class="current-order-number">
@@ -1064,6 +1153,22 @@
         <div class="cart-section">
             <div class="cart-workspace">
                 <div class="products-panel">
+                    <div class="customer-info-bar d-none" id="customer-info-bar" aria-live="polite">
+                        <div class="cib-main">
+                            <span class="cib-code en-digit" id="cib-code"></span>
+                            <span class="cib-name" id="cib-name"></span>
+                        </div>
+                        <div class="cib-field"><i class="fas fa-phone"></i><span class="en-digit" id="cib-phones"></span></div>
+                        <div class="cib-field cib-address"><i class="fas fa-location-dot"></i><span class="cib-label" id="cib-address-label"></span><span id="cib-address"></span></div>
+                        <div class="cib-field cib-muted" id="cib-zone-wrap"><i class="fas fa-motorcycle"></i><span id="cib-zone"></span></div>
+                        <div class="cib-field cib-muted" id="cib-balance-wrap"><i class="fas fa-wallet"></i><span id="cib-balance"></span></div>
+                        <div class="cib-actions">
+                            <button type="button" class="cib-btn d-none" id="cib-change-address" title="اختيار عنوان آخر للعميل"><i class="fas fa-map-location-dot"></i> العنوان</button>
+                            <button type="button" class="cib-btn" id="cib-edit" title="تعديل بيانات العميل"><i class="fas fa-pen"></i> تعديل العميل</button>
+                            <button type="button" class="cib-btn" id="cib-change" title="تغيير العميل (F2)"><i class="fas fa-user-group"></i> تغيير</button>
+                            <button type="button" class="cib-btn" id="cib-clear" title="الرجوع لعميل نقدي"><i class="fas fa-xmark"></i></button>
+                        </div>
+                    </div>
                     {{-- حقل البحث والباركود + أزرار F4 و F6 --}}
                     <div class="search-input-container">
                         <div class="input-group search-bar-box">
@@ -1119,8 +1224,14 @@
                             <button class="btn btn-success btn-action" id="btn-checkout">
                                 <i class="fas fa-cash-register"></i> دفع وإنهاء (F12)
                             </button>
+                            <button class="btn btn-outline-dark btn-action fw-bold" id="btn-print-draft" type="button" title="طباعة نسخة مبدئية من الفاتورة قبل الحفظ">
+                                <i class="fas fa-print"></i> نسخة (Ctrl+P)
+                            </button>
                             <button class="btn btn-warning btn-action" id="btn-suspend">
                                 <i class="fas fa-pause-circle"></i> تعليق (F9)
+                            </button>
+                            <button class="btn btn-action fw-bold text-white" id="btn-dispatch" type="button" style="background:#17283d" onclick="NextStoreDispatch.open()">
+                                <i class="fas fa-motorcycle"></i> طيار
                             </button>
                             <button class="btn btn-dark btn-action" id="btn-manage-suspended" type="button">
                                 <i class="fas fa-layer-group text-warning"></i> المعلقة (F8)
@@ -1176,6 +1287,10 @@
                                 <input type="text" id="delivery-fee-input" class="form-control text-center numeric-input" placeholder="0.00" autocomplete="off">
                                 <span class="input-group-text">ج.م</span>
                             </div>
+                        </div>
+                        <div class="rounding-row d-none" id="rounding-row">
+                            <span>قبل التقريب <b class="en-digit" id="total-before-rounding">0.00</b></span>
+                            <span>تقريب <b class="en-digit" id="rounding-adjustment">0.00</b></span>
                         </div>
                         <div class="invoice-total-row net-total-row">
                             <span>الإجمالي النهائي</span>
@@ -1264,7 +1379,10 @@
                 <div class="modal-body p-4" id="suspended-preview-body"></div>
                 <div class="modal-footer justify-content-between bg-light">
                     <small class="text-muted fw-bold">اضغط <span class="keycap">Esc</span> أو <span class="keycap">Enter</span> للإغلاق</small>
-                    <button type="button" class="btn btn-secondary fw-bold" data-bs-dismiss="modal">إغلاق (Esc)</button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-success fw-bold" id="btn-print-suspended-draft"><i class="fas fa-print"></i> طباعة نسخة (P)</button>
+                        <button type="button" class="btn btn-secondary fw-bold" data-bs-dismiss="modal">إغلاق (Esc)</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1569,14 +1687,6 @@
         </div>
     </div>
 
-    <div class="modal fade" id="posCustomerPickerModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-fullscreen m-0">
-            <div class="modal-content border-0">
-                <iframe id="pos-customer-picker-frame" title="اختيار العميل للفاتورة" class="pos-customer-picker-frame"></iframe>
-            </div>
-        </div>
-    </div>
-
     <div class="modal fade" id="posProductEditModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <form class="modal-content shadow-lg" id="pos-product-edit-form">
@@ -1644,98 +1754,85 @@
 
     {{-- ================= مودال 4: اختيار العميل أو إضافة عميل بـ 3 عناوين مربوط بقاعدة البيانات (F2) ================= --}}
     <div class="modal fade" id="customerModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-dark text-white py-2">
-                    <h5 class="modal-title fw-bold"><i class="fas fa-users text-warning me-2"></i> اختيار أو تسجيل عميل في قاعدة البيانات (F2)</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <div class="modal-dialog modal-dialog-centered cp-dialog">
+            <div class="modal-content border-0 shadow">
+                <div class="cp-head">
+                    <h5 class="m-0"><i class="fas fa-users ms-2"></i> <span id="cp-head-title">اختيار العميل</span></h5>
+                    <span class="cp-count en-digit" id="customer-picker-count"></span>
+                    <button type="button" class="btn-close btn-close-white me-auto" data-bs-dismiss="modal" aria-label="إغلاق"></button>
                 </div>
                 <div class="modal-body p-3">
                     <div id="customer-picker-panel">
-                        <div class="d-flex gap-2 mb-2">
-                            <input type="search" class="form-control fw-bold" id="customer-search-input" placeholder="ابحث بالاسم، الكود، أو رقم الهاتف ثم انزل بالسهم واضغط Enter..." autocomplete="off">
-                            <button type="button" class="btn btn-success fw-bold flex-shrink-0" id="btn-show-customer-form">
-                                <i class="fas fa-user-plus"></i> عميل جديد (F2)
-                            </button>
+                        <div class="cp-search-row">
+                            <div class="cp-search">
+                                <i class="fas fa-magnifying-glass"></i>
+                                <input type="search" id="customer-search-input" placeholder="اكتب الاسم أو الكود أو رقم التليفون أو العنوان" autocomplete="off">
+                            </div>
+                            <button type="button" class="cp-btn-new" id="btn-show-customer-form"><i class="fas fa-user-plus"></i> عميل جديد (F2)</button>
                         </div>
-                        <div class="small text-muted fw-bold mb-2">
-                            تنقل بـ <span class="keycap">⬆️</span> <span class="keycap">⬇️</span> واضغط <span class="keycap">Enter</span> للاختيار.
+                        <div class="cp-list" id="customer-picker-list"></div>
+                        <div class="cp-hint">
+                            <span><span class="keycap">↑</span> <span class="keycap">↓</span> للتنقل</span>
+                            <span><span class="keycap">Enter</span> اختيار</span>
+                            <span><span class="keycap">Esc</span> إغلاق</span>
                         </div>
-                        <div class="kb-list-container" id="customer-picker-list"></div>
                     </div>
-                    <form id="new-customer-form" class="d-none">
-                        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-                            <h6 class="fw-bold mb-0 text-success"><i class="fas fa-user-plus me-1"></i> تسجيل عميل جديد في قاعدة البيانات</h6>
-                            <button type="button" class="btn btn-sm btn-outline-secondary fw-bold" id="btn-cancel-customer-form">العودة للقائمة</button>
+                    <form id="new-customer-form" class="cf d-none" autocomplete="off">
+                        <div class="cf-head">
+                            <h6 class="m-0" id="cf-title">عميل جديد</h6>
+                            <span class="cf-code en-digit" id="cf-code-chip"></span>
+                            <button type="button" class="cf-back" id="btn-cancel-customer-form"><i class="fas fa-arrow-right"></i> رجوع</button>
                         </div>
-                        <div class="row g-2 mb-3">
-                            <div class="col-md-2">
-                                <label class="form-label fw-bold small">الكود</label>
-                                <input type="text" class="form-control form-control-sm numeric-input bg-light" id="pos-cust-code" readonly>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold small">اسم العميل <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control form-control-sm fw-bold" id="pos-cust-name" required>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold small">التليفون الأول <span class="text-danger">*</span></label>
-                                <input type="tel" class="form-control form-control-sm numeric-input" id="pos-cust-phone1" required placeholder="01xxxxxxxxx">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold small">التليفون الثاني</label>
-                                <input type="tel" class="form-control form-control-sm numeric-input" id="pos-cust-phone2" placeholder="اختياري">
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label fw-bold small">بيانات الاتصال / ملاحظة عامة</label>
-                                <input type="text" class="form-control form-control-sm" id="pos-cust-contact-note" placeholder="ملاحظة تواصل...">
+                        <input type="hidden" id="pos-cust-code">
+                        <div class="cf-section">
+                            <div class="cf-grid cf-grid-3">
+                                <label class="cf-field cf-span-3"><span>اسم العميل <b>*</b></span>
+                                    <input type="text" id="pos-cust-name" required>
+                                </label>
+                                <label class="cf-field"><span>التليفون <b>*</b></span>
+                                    <input type="tel" class="numeric-input en-digit" id="pos-cust-phone1" required placeholder="01xxxxxxxxx">
+                                </label>
+                                <label class="cf-field">تليفون آخر
+                                    <input type="tel" class="numeric-input en-digit" id="pos-cust-phone2" placeholder="اختياري">
+                                </label>
+                                <label class="cf-field">ملاحظة تواصل
+                                    <input type="text" id="pos-cust-contact-note" placeholder="اختياري">
+                                </label>
                             </div>
                         </div>
-                        <div class="address-tabs-bar mb-3">
-                            <button type="button" class="addr-tab-btn active" data-addr-tab="0">
-                                <span class="has-data-dot"></span>
-                                <i class="fas fa-house"></i> <span>العنوان الرئيسي</span>
-                            </button>
-                            <button type="button" class="addr-tab-btn" data-addr-tab="1">
-                                <span class="has-data-dot"></span>
-                                <i class="fas fa-location-dot"></i> <span>عنوان بديل</span>
-                            </button>
-                            <button type="button" class="addr-tab-btn" data-addr-tab="2">
-                                <span class="has-data-dot"></span>
-                                <i class="fas fa-map-pin"></i> <span>عنوان بديل 2</span>
-                            </button>
-                        </div>
-                        <div class="p-3 bg-light border rounded-3 mb-3">
-                            <div class="row g-2">
-                                <div class="col-md-12">
-                                    <label class="form-label fw-bold small" id="pos-active-addr-label">العنوان بالكامل (الرئيسي)</label>
-                                    <input type="text" class="form-control form-control-sm fw-bold" id="pos-addr-full" placeholder="اكتب العنوان بالتفصيل...">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold small">اللوكيشن</label>
-                                    <input type="text" class="form-control form-control-sm" id="pos-addr-location" placeholder="رابط الخريطة أو وصف...">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold small">منطقة التوصيل</label>
-                                    <div class="input-group input-group-sm">
-                                        <select class="form-select fw-bold" id="pos-addr-zone"></select>
-                                        <button type="button" class="btn btn-primary fw-bold" id="btn-pos-quick-add-zone" title="إضافة منطقة توصيل جديدة">
-                                            <i class="fas fa-plus"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="col-md-12">
-                                    <label class="form-label fw-bold small">ملاحظة التوصيل لهذا العنوان</label>
-                                    <input type="text" class="form-control form-control-sm" id="pos-addr-delivery-note" placeholder="اختياري...">
-                                </div>
+                        <div class="cf-section">
+                            <div class="cf-section-title">العناوين</div>
+                            <div class="address-tabs-bar">
+                                <button type="button" class="addr-tab-btn active" data-addr-tab="0"><span class="has-data-dot"></span>الرئيسي</button>
+                                <button type="button" class="addr-tab-btn" data-addr-tab="1"><span class="has-data-dot"></span>عنوان ثاني</button>
+                                <button type="button" class="addr-tab-btn" data-addr-tab="2"><span class="has-data-dot"></span>عنوان ثالث</button>
+                            </div>
+                            <div class="cf-grid cf-grid-2 mt-2">
+                                <label class="cf-field cf-span-2"><span id="pos-active-addr-label">العنوان بالتفصيل</span>
+                                    <input type="text" id="pos-addr-full" placeholder="مثال: 328 ن ش 13 الدور الثالث">
+                                </label>
+                                <label class="cf-field">منطقة التوصيل
+                                    <span class="cf-inline">
+                                        <select id="pos-addr-zone"></select>
+                                        <button type="button" class="cf-icon-btn" id="btn-pos-quick-add-zone" title="إضافة منطقة توصيل جديدة"><i class="fas fa-plus"></i></button>
+                                    </span>
+                                </label>
+                                <label class="cf-field">اللوكيشن
+                                    <input type="text" id="pos-addr-location" placeholder="رابط الخريطة (اختياري)">
+                                </label>
+                                <label class="cf-field cf-span-2">ملاحظة للمندوب
+                                    <input type="text" id="pos-addr-delivery-note" placeholder="اختياري">
+                                </label>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold small text-primary"><i class="fas fa-receipt me-1"></i> ملاحظة تطبع على الفاتورة لهذا العميل</label>
-                            <input type="text" class="form-control form-control-sm" id="pos-cust-invoice-note" placeholder="تظهر تلقائياً عند اختيار العميل...">
+                        <div class="cf-section">
+                            <label class="cf-field">ملاحظة تُطبع على فواتير العميل
+                                <input type="text" id="pos-cust-invoice-note" placeholder="تظهر تلقائياً عند اختيار العميل">
+                            </label>
                         </div>
-                        <button type="submit" class="btn btn-success w-100 fw-bold">
-                            <i class="fas fa-check-circle me-1"></i> حفظ العميل في قاعدة البيانات واختياره (Enter)
-                        </button>
+                        <div class="cf-actions">
+                            <button type="submit" class="cf-save" id="cf-save-btn"><i class="fas fa-check"></i> <span id="cf-save-text">حفظ واختيار العميل</span> (Enter)</button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -1744,19 +1841,19 @@
 
     {{-- مودال 5: اختيار العنوان بالكيبورد إذا كان للعميل أكثر من عنوان --}}
     <div class="modal fade" id="addressSelectorModal" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-warning text-dark py-2">
-                    <h5 class="modal-title fw-bold">
-                        <i class="fas fa-map-location-dot me-2"></i> اختر عنوان التوصيل للعميل
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal-dialog modal-dialog-centered as-dialog">
+            <div class="modal-content border-0 shadow">
+                <div class="cp-head">
+                    <h5 class="m-0"><i class="fas fa-location-dot ms-2"></i> عنوان التوصيل</h5>
+                    <span class="cp-count" id="addr-Modal-cust-name"></span>
+                    <button type="button" class="btn-close btn-close-white me-auto" data-bs-dismiss="modal" aria-label="إغلاق"></button>
                 </div>
                 <div class="modal-body p-3">
-                    <div class="fw-bold mb-2 text-dark">
-                        العميل <span class="text-primary" id="addr-Modal-cust-name"></span> مسجل له أكثر من عنوان، اختر بـ <span class="keycap">⬆️</span> <span class="keycap">⬇️</span> ثم <span class="keycap">Enter</span>:
+                    <div class="as-list" id="address-selector-list"></div>
+                    <div class="cp-hint">
+                        <span><span class="keycap">↑</span> <span class="keycap">↓</span> أو رقم العنوان</span>
+                        <span><span class="keycap">Enter</span> اختيار</span>
                     </div>
-                    <div class="kb-list-container" id="address-selector-list"></div>
                 </div>
             </div>
         </div>
@@ -1802,6 +1899,8 @@
     </div>
 
     {{-- ================= مودال الدفع المطور الشامل (F12): المبلغ التلقائي + نقدي/آجل + الـ 4 طرق دفع ================= --}}
+    @include('partials.dispatch-modal')
+    @include('partials.invoice-viewer', ['noReceiptKit' => true])
     <div class="modal fade" id="checkoutModal" data-bs-backdrop="static" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
@@ -1817,6 +1916,7 @@
                         </div>
                         <h6 class="text-muted mb-1">الإجمالي المطلوب سداده</h6>
                         <h1 class="text-success fw-bold mb-1 en-digit" id="modal-grand-total">0.00 ج.م</h1>
+                        <div class="text-muted small fw-semibold" id="modal-rounding-note"></div>
                         <div class="small fw-bold text-secondary" id="modal-breakdown-hint"></div>
                     </div>
 
@@ -1893,70 +1993,62 @@
 
     {{-- مودال تفاصيل الصنف قبل إضافته للسلة --}}
     <div class="modal fade" id="productDetailsModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-dialog modal-dialog-centered pd-dialog">
             <div class="modal-content border-0 shadow">
-                <div class="modal-header bg-dark text-white py-2">
-                    <div>
-                        <h5 class="modal-title fw-bold" id="product-details-title">تفاصيل الصنف</h5>
-                        <div class="small text-light" id="product-detail-description"></div>
+                <div class="pd-head">
+                    <div class="pd-head-text">
+                        <h5 id="product-details-title">تفاصيل الصنف</h5>
+                        <div class="pd-head-meta">
+                            <span class="pd-chip" id="product-detail-type"></span>
+                            <span class="en-digit" id="product-detail-barcode"></span>
+                            <span id="product-detail-description"></span>
+                        </div>
                     </div>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="إغلاق"></button>
                 </div>
-                <div class="modal-body p-3">
-                    <div class="p-3 border rounded bg-light">
-                        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-                            <span class="badge bg-primary" id="product-detail-type"></span>
-                            <div class="d-flex gap-1" id="product-detail-tier-pills"></div>
-                            <span class="text-muted fw-bold">الباركود: <strong class="text-dark en-digit" id="product-detail-barcode"></strong></span>
-                        </div>
-                        <div class="row g-2 mb-3 text-center">
-                            <div class="col-md-4">
-                                <div class="p-2 bg-white border rounded">
-                                    <small class="text-muted d-block">سعر البيع للوحدة</small>
-                                    <div class="input-group input-group-sm mt-1">
-                                        <input type="text" inputmode="decimal" class="form-control text-center numeric-input" id="product-detail-sale-price">
-                                        <span class="input-group-text product-detail-price-unit"></span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="p-2 bg-white border rounded">
-                                    <small class="text-muted d-block">آخر سعر شراء</small>
-                                    <strong class="fs-6 en-digit" id="product-detail-buy-price"></strong>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="p-2 bg-white border rounded">
-                                    <small class="text-muted d-block">المخزون المتاح</small>
-                                    <strong class="fs-6 en-digit" id="product-detail-stock"></strong>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="product-detail-quantity" class="form-label fw-bold" id="product-detail-quantity-label">الكمية</label>
-                            <div class="d-flex gap-2">
-                                <input type="text" inputmode="decimal" class="form-control form-control-lg text-center numeric-input" id="product-detail-quantity" value="1">
-                                <select class="form-select d-none" id="product-detail-weight-unit" style="max-width: 120px;">
+                <div class="modal-body pd-body">
+                    <div class="pd-info">
+                        <label class="pd-info-cell pd-price">
+                            <span>سعر البيع</span>
+                            <span class="pd-price-input">
+                                <input type="text" inputmode="decimal" class="numeric-input en-digit" id="product-detail-sale-price">
+                                <small class="product-detail-price-unit"></small>
+                            </span>
+                        </label>
+                        <div class="pd-info-cell"><span>آخر سعر شراء</span><b class="en-digit" id="product-detail-buy-price"></b></div>
+                        <div class="pd-info-cell"><span>المخزون</span><b class="en-digit" id="product-detail-stock"></b></div>
+                    </div>
+                    <div class="pd-tiers" id="product-detail-tier-pills"></div>
+
+                    <div class="pd-entry">
+                        <label class="pd-entry-field">
+                            <span id="product-detail-quantity-label">الكمية</span>
+                            <span class="pd-big">
+                                <input type="text" inputmode="decimal" class="numeric-input en-digit" id="product-detail-quantity" value="1">
+                                <select id="product-detail-weight-unit" class="d-none" aria-label="وحدة الوزن">
                                     <option value="kg">كيلو</option>
                                     <option value="g">جرام</option>
                                 </select>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="product-detail-notes" class="form-label fw-bold small">ملاحظات على الصنف</label>
-                            <input type="text" class="form-control" id="product-detail-notes" placeholder="اختياري...">
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="fw-bold">إجمالي الصنف</span>
-                            <div class="bg-success-subtle text-success fw-bold fs-4 rounded px-3 py-1 en-digit"><span id="product-detail-total">0.00</span> ج.م</div>
-                        </div>
+                            </span>
+                        </label>
+                        <label class="pd-entry-field d-none" id="product-detail-amount-wrap">
+                            <span>أو اكتب المبلغ</span>
+                            <span class="pd-big">
+                                <input type="text" inputmode="decimal" class="numeric-input en-digit" id="product-detail-amount" placeholder="0">
+                                <em>ج.م</em>
+                            </span>
+                        </label>
                     </div>
+                    <div class="pd-hint d-none" id="product-detail-amount-hint">اكتب المبلغ اللي العميل عايزه والوزن هيتحسب لوحده.</div>
+
+                    <label class="pd-notes">ملاحظة على الصنف
+                        <input type="text" id="product-detail-notes" placeholder="اختياري — تُطبع مع الصنف في الفاتورة">
+                    </label>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء (Esc)</button>
-                    <button type="button" class="btn btn-success fw-bold px-4" id="btn-confirm-product-add">
-                        <i class="fas fa-circle-plus"></i> إضافة للسلة (Enter)
-                    </button>
+                <div class="pd-foot">
+                    <div class="pd-total"><span>إجمالي الصنف</span><b><span class="en-digit" id="product-detail-total">0.00</span> ج.م</b></div>
+                    <button type="button" class="pd-cancel" data-bs-dismiss="modal">إلغاء (Esc)</button>
+                    <button type="button" class="pd-add" id="btn-confirm-product-add"><i class="fas fa-plus"></i> إضافة للفاتورة (Enter)</button>
                 </div>
             </div>
         </div>
@@ -1964,12 +2056,27 @@
 
     <div id="thermal-print-receipt"></div>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/vendor/jquery/jquery-3.6.0.min.js"></script>
+    <script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+    <script src="/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+    <script src="/js/nextstore-printer.js"></script>
+    <script src="/js/nextstore-receipt.js"></script>
+    <script src="/vendor/jsbarcode/JsBarcode.all.min.js"></script>
+    <script src="/vendor/qrcode/qrcode.js"></script>
     <script>
         $(document).ready(function() {
+            // أول ما الشاشة تفتح: المؤشر في خانة الباركود على طول
+            const focusSearch = () => { if (!$('.modal.show').length) $('#item-search-input').trigger('focus').trigger('select'); };
+            setTimeout(focusSearch, 150);
+            $(window).one('load', focusSearch);
             'use strict';
+            const systemSettings = @json($systemSettings);
+            window.NextStoreReceiptConfig = { settings: systemSettings }; // عارض الفاتورة (Ctrl+F1) يطبع بنفس إعدادات الطابعة
+            const salesInvoiceTemplate = systemSettings.print_templates && systemSettings.print_templates.sales_invoice
+                ? systemSettings.print_templates.sales_invoice
+                : {};
+            const salesInvoicePaper = salesInvoiceTemplate.paper || systemSettings.receipt_paper || '80mm';
+            const posUserName = @json($posUser['name'] ?? 'كاشير');
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
             const CUSTOMERS_STORAGE_KEY = 'nextstore_customers_list_v1';
@@ -2158,6 +2265,16 @@
             let currentStoreSubTotal = 0;
             let currentExternalSubTotal = 0;
             let currentGrandTotal = 0;
+            let currentTotalBeforeRounding = 0;
+            let currentRoundingAdjustment = 0;
+
+            // تقريب الإجمالي لأقرب جنيه/نصف جنيه حسب الإعدادات (بالقروش لتفادي أخطاء الكسور العشرية)
+            function roundInvoiceTotal(total) {
+                const step = { '1': 100, '0.5': 50 }[String(systemSettings.invoice_rounding ?? '1')];
+                const cents = Math.round(total * 100);
+                if (!step || cents <= 0) return total;
+                return Math.max(step, Math.round(cents / step) * step) / 100;
+            }
             let appliedDiscountValue = 0;
             let deliveryFeeValue = 0;
             let currentInvoiceNumber = Number(@json($initialNextInvoiceNumber ?? 1)) || 1;
@@ -2352,6 +2469,13 @@
                 const code = toEnglishDigits(rawInput).trim();
                 if (!code) return false;
 
+                const dispatchNo = window.NextStoreDispatch && NextStoreDispatch.match(code);
+                if (dispatchNo) {
+                    clearProductSearch();
+                    NextStoreDispatch.add(dispatchNo);
+                    return true;
+                }
+
                 if (/^2\d{12}$/.test(code)) {
                     const itemCode6 = code.substring(1, 7);
                     const weightDigits = code.substring(7, 12);
@@ -2364,15 +2488,7 @@
                         clearProductSearch();
                         return true;
                     } else {
-                        Swal.fire({
-                            toast: true,
-                            position: 'top-start',
-                            icon: 'warning',
-                            title: `باركود ميزان: لم يتم العثور على صنف مسجل بالكود (${itemCode6.replace(/^0+/, '') || itemCode6})`,
-                            showConfirmButton: false,
-                            timer: 2600
-                        });
-                        clearProductSearch();
+                        promptRegisterUnknownBarcode({ barcode: itemCode6, unit: 'كيلو', weight: weightKg > 0 ? weightKg : 0, scale: true });
                         return true;
                     }
                 }
@@ -2697,10 +2813,47 @@
                     $('#order-notes-input').val(selectedCustomer.invoiceNote);
                 }
 
+                renderCustomerInfoBar(activeAddr);
                 $('#header-fulfillment-select').toggleClass('is-delivery', fulfillment === 'توصيل');
                 $('#delivery-fee-row').toggleClass('d-none', fulfillment !== 'توصيل');
                 updateTotals();
             }
+
+            function renderCustomerInfoBar(activeAddr) {
+                const $bar = $('#customer-info-bar');
+                if (selectedCustomer.isCash) { $bar.addClass('d-none'); return; }
+                const phones = [selectedCustomer.phone1, selectedCustomer.phone2].filter(Boolean).join(' / ');
+                const address = String(activeAddr.fullAddress || '').trim();
+                const bal = Number(selectedCustomer.balance) || 0;
+                $('#cib-code').text(`#${selectedCustomer.code}`);
+                $('#cib-name').text(selectedCustomer.name);
+                $('#cib-phones').text(phones || 'بدون تليفون');
+                $('#cib-address-label').text(address && activeAddr.label ? `${activeAddr.label}:` : '');
+                $('#cib-address').text(address || 'بدون عنوان مسجل').attr('title', address);
+                $('#cib-zone').text(activeAddr.zoneName ? `${activeAddr.zoneName} · ${Number(deliveryFeeValue || activeAddr.fee || 0).toFixed(2)} ج.م` : '');
+                $('#cib-zone-wrap').toggleClass('d-none', !activeAddr.zoneName);
+                $('#cib-balance').html(bal <= 0 ? 'لا يوجد رصيد'
+                    : selectedCustomer.balanceType === 'credit' ? `له <span class="en-digit">${bal.toFixed(2)}</span> ج.م`
+                    : `<span class="cib-debt">عليه <span class="en-digit">${bal.toFixed(2)}</span> ج.م</span>`);
+                $('#cib-change-address').toggleClass('d-none', getFilledAddresses(selectedCustomer).length < 2);
+                const key = `${selectedCustomer.id}|${selectedAddressIndex}`;
+                if ($bar.data('key') !== key) {
+                    $bar.data('key', key).removeClass('cib-flash');
+                    void $bar[0].offsetWidth;
+                    $bar.addClass('cib-flash');
+                }
+                $bar.removeClass('d-none');
+            }
+
+            $('#cib-change').on('click', () => $('#btn-select-customer').trigger('click'));
+            $('#cib-edit').on('click', () => !selectedCustomer.isCash && openCustomerForm(selectedCustomer));
+            $('#cib-clear').on('click', () => selectCustomerFromPicker(cashCustomer));
+            $('#cib-change-address').on('click', function() {
+                pendingAddressCustomer = selectedCustomer;
+                pendingAddressOptions = getFilledAddresses(selectedCustomer);
+                pendingAddressActiveIdx = Math.max(0, pendingAddressOptions.findIndex(a => a.index === selectedAddressIndex));
+                openAddressSelectorModal();
+            });
 
             // =========================================================================
             // 5. مودال اختيار العميل وتسجيل عميل حقيقي في قاعدة البيانات (F2)
@@ -2708,42 +2861,93 @@
             let customerPickerMatches = [];
             let customerPickerActiveIndex = 0;
 
-            function renderCustomerPicker(query = '') {
-                const q = normalizeSearchText(query);
-                const pool = [cashCustomer, ...customers.filter(c => !c.deleted)];
-                customerPickerMatches = pool.filter(c => {
-                    if (!q) return true;
-                    const addrText = (c.addresses || []).map(a => `${a.fullAddress} ${a.zoneName}`).join(' ');
-                    return normalizeSearchText(`${c.code} ${c.name} ${c.phone1} ${c.phone2} ${addrText}`).includes(q);
-                });
+            const CUSTOMER_PICKER_LIMIT = 80;
+            const customerSearchIndex = new WeakMap();
+            // توحيد النص للبحث: أرقام إنجليزية، أ/إ/آ = ا، ة = ه، ى = ي، بدون تشكيل
+            const foldArabic = value => toEnglishDigits(value).toLowerCase()
+                .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
+                .replace(/[أإآٱ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/ؤ/g, 'و').replace(/ئ/g, 'ي');
+            // نسخة "ملزوقة" بدون مسافات أو علامات حتى تتطابق "328ن" مع "328 ن"
+            const compactText = value => value.replace(/[^\p{L}\p{N}]+/gu, '');
 
+            function customerIndex(c) {
+                let idx = customerSearchIndex.get(c);
+                if (!idx) {
+                    const addresses = (c.addresses || []).map(a => `${a.fullAddress || ''} ${a.zoneName || ''}`).join(' | ');
+                    const name = foldArabic(c.name || '');
+                    idx = {
+                        code: toEnglishDigits(c.code || '').toLowerCase(),
+                        codeNum: String(parseInt(toEnglishDigits(c.code || ''), 10) || ''),
+                        phones: [c.phone1, c.phone2].map(ph => toEnglishDigits(ph || '').replace(/\D/g, '')).filter(Boolean),
+                        name, nameCompact: compactText(name), nameWords: name.split(/\s+/),
+                        addr: compactText(foldArabic(addresses))
+                    };
+                    customerSearchIndex.set(c, idx);
+                }
+                return idx;
+            }
+
+            // ترتيب النتائج: كود مطابق ← بداية كود ← تليفون ← اسم ← عنوان
+            function scoreCustomer(c, q) {
+                if (c.isCash) return q.compact && !'عميلنقدي'.includes(q.compact) && !'نقدي'.includes(q.compact) ? 0 : 1;
+                const x = customerIndex(c);
+                if (q.digits) {
+                    const d = q.compact;
+                    if (x.code === d || x.codeNum === String(parseInt(d, 10))) return 1000;
+                    if (x.code.startsWith(d) || x.codeNum.startsWith(d)) return 900 - x.code.length;
+                    if (x.phones.some(ph => ph === d || ph.replace(/^0/, '') === d.replace(/^0/, ''))) return 850;
+                    if (d.length >= 3 && x.phones.some(ph => ph.startsWith(d) || ph.endsWith(d))) return 700;
+                    if (d.length >= 4 && x.phones.some(ph => ph.includes(d))) return 600;
+                    if (x.code.includes(d)) return 450;
+                    if (x.addr.includes(d)) return 300;
+                    return x.nameCompact.includes(d) ? 150 : 0;
+                }
+                if (!q.tokens.every(tok => x.nameCompact.includes(tok) || x.addr.includes(tok) || x.code === tok || (tok.length >= 4 && x.phones.some(ph => ph.includes(tok))))) {
+                    return x.addr.includes(q.compact) ? 280 : 0;
+                }
+                if (x.name === q.text) return 800;
+                if (x.nameCompact.startsWith(q.compact)) return 750;
+                if (x.nameWords.some(w => w.startsWith(q.tokens[0]))) return 650;
+                if (x.nameCompact.includes(q.compact)) return 550;
+                if (q.tokens.every(tok => x.nameCompact.includes(tok))) return 500;
+                if (x.addr.includes(q.compact)) return 350;
+                return 250;
+            }
+
+            function renderCustomerPicker(query = '') {
+                const text = foldArabic(query).trim().replace(/\s+/g, ' ');
+                const compact = compactText(text);
+                const q = { text, compact, digits: /^\d+$/.test(compact), tokens: text.split(' ').map(compactText).filter(Boolean) };
+                const pool = [cashCustomer, ...customers.filter(c => !c.deleted)];
+                const all = !compact ? pool : pool
+                    .map(c => ({ c, s: scoreCustomer(c, q) }))
+                    .filter(r => r.s > 0)
+                    .sort((a, b) => b.s - a.s || (parseInt(a.c.code, 10) || 0) - (parseInt(b.c.code, 10) || 0))
+                    .map(r => r.c);
+                customerPickerMatches = all.slice(0, CUSTOMER_PICKER_LIMIT);
                 customerPickerActiveIndex = 0;
+                $('#customer-picker-count').text(`${customers.filter(c => !c.deleted).length} عميل`);
                 const $list = $('#customer-picker-list');
                 if (!customerPickerMatches.length) {
-                    $list.html('<div class="p-4 text-center text-muted fw-bold">لا يوجد عميل مطابق لبحثك. اضغط F2 لإضافة عميل جديد.</div>');
+                    $list.html('<div class="p-5 text-center text-muted fw-bold">لا يوجد عميل بهذا البحث. اضغط F2 لتسجيل عميل جديد.</div>');
                     return;
                 }
-
-                $list.html(customerPickerMatches.map((c, idx) => {
-                    const filledCount = getFilledAddresses(c).length;
-                    const primaryAddr = c.addresses && c.addresses[0] ? c.addresses[0].fullAddress : '';
+                $list[0].innerHTML = customerPickerMatches.map((c, idx) => {
+                    const addr = (c.addresses || []).find(a => String(a.fullAddress || '').trim());
+                    const filled = getFilledAddresses(c).length;
                     const bal = Number(c.balance) || 0;
-                    return `
-                        <div class="kb-list-item customer-picker-item ${idx === 0 ? 'kb-active' : ''}" data-index="${idx}">
-                            <div>
-                                <span class="badge bg-dark me-1 en-digit">${escapeHtml(c.code || 'نقدي')}</span>
-                                <span class="fw-bold">${escapeHtml(c.name)}</span>
-                                ${filledCount > 1 ? `<span class="badge bg-warning text-dark ms-2 en-digit">${filledCount} عناوين</span>` : ''}
-                                ${bal > 0 ? `<span class="badge bg-danger ms-2 en-digit">عليه: ${bal.toFixed(2)} ج.م</span>` : ''}
-                                <small class="d-block text-muted mt-1">
-                                    <span class="en-digit">${escapeHtml(c.phone1 || 'بدون هاتف')}</span>
-                                    ${primaryAddr ? ` — <i class="fas fa-location-dot text-danger"></i> ${escapeHtml(primaryAddr)}` : ''}
-                                </small>
-                            </div>
-                            <span class="keycap">Enter</span>
+                    const meta = c.isCash ? 'بيع بدون تسجيل بيانات عميل'
+                        : `<i class="fas fa-phone"></i><span class="en-digit">${escapeHtml(c.phone1 || 'بدون تليفون')}</span>`
+                          + (addr ? ` &nbsp;|&nbsp; <i class="fas fa-location-dot"></i>${escapeHtml(addr.fullAddress)}${addr.zoneName ? ` (${escapeHtml(addr.zoneName)})` : ''}` : '');
+                    return `<div class="cp-item customer-picker-item ${idx === 0 ? 'kb-active' : ''}" data-index="${idx}">
+                        <span class="cp-code en-digit">${c.isCash ? 'نقدي' : escapeHtml(c.code)}</span>
+                        <div style="min-width:0"><div class="cp-name">${escapeHtml(c.name)}</div><div class="cp-meta">${meta}</div></div>
+                        <div class="cp-side">
+                            ${bal > 0 ? `<span class="cp-debt">عليه <span class="en-digit">${bal.toFixed(2)}</span></span>` : ''}
+                            ${filled > 1 ? `<span class="cp-addrs"><span class="en-digit">${filled}</span> عناوين</span>` : ''}
                         </div>
-                    `;
-                }).join(''));
+                    </div>`;
+                }).join('') + (all.length > CUSTOMER_PICKER_LIMIT ? `<div class="cp-more">يظهر أول <span class="en-digit">${CUSTOMER_PICKER_LIMIT}</span> من <span class="en-digit">${all.length}</span> — اكتب للبحث عن الباقي</div>` : '');
             }
 
             let pendingAddressCustomer = null;
@@ -2791,17 +2995,13 @@
 
             function renderAddressSelectorItems() {
                 $('#address-selector-list').html(pendingAddressOptions.map((addr, i) => `
-                    <div class="kb-list-item addr-option-item ${i === pendingAddressActiveIdx ? 'kb-active' : ''}" data-opt-index="${i}">
+                    <div class="as-item addr-option-item ${i === pendingAddressActiveIdx ? 'kb-active' : ''}" data-opt-index="${i}">
+                        <span class="as-num en-digit">${i + 1}</span>
                         <div>
-                            <div class="fw-bold text-dark">
-                                <i class="fas fa-location-dot text-danger me-1"></i>
-                                ${escapeHtml(addr.label)}: ${escapeHtml(addr.fullAddress)}
-                            </div>
-                            <small class="text-muted fw-bold">
-                                المنطقة: ${escapeHtml(addr.zoneName || 'غير محددة')} | رسوم التوصيل: <span class="en-digit">${Number(addr.fee || 0).toFixed(2)}</span> ج.م
-                            </small>
+                            <div class="as-label">${escapeHtml(addr.label)}</div>
+                            <div class="as-text">${escapeHtml(addr.fullAddress)}</div>
+                            <div class="as-meta">${addr.zoneName ? `${escapeHtml(addr.zoneName)} · توصيل <span class="en-digit">${Number(addr.fee || 0).toFixed(2)}</span> ج.م` : 'بدون منطقة توصيل'}${addr.deliveryNote ? ` · ${escapeHtml(addr.deliveryNote)}` : ''}</div>
                         </div>
-                        <span class="keycap">Enter</span>
                     </div>
                 `).join(''));
             }
@@ -2854,7 +3054,7 @@
                 posActiveAddrTab = tabIdx;
                 const d = posFormAddressesDraft[tabIdx];
                 $('.addr-tab-btn').removeClass('active').filter(`[data-addr-tab="${tabIdx}"]`).addClass('active');
-                $('#pos-active-addr-label').text(`العنوان بالكامل (${d.label})`);
+                $('#pos-active-addr-label').text(`العنوان بالتفصيل (${['الرئيسي', 'الثاني', 'الثالث'][tabIdx]})`);
                 $('#pos-addr-full').val(d.fullAddress || '');
                 $('#pos-addr-location').val(d.location || '');
                 $('#pos-addr-delivery-note').val(d.deliveryNote || '');
@@ -2919,24 +3119,53 @@
                 return String(max + 1).padStart(3, '0');
             }
 
-            $('#btn-show-customer-form').on('click', function() {
+            let editingCustomerId = null;
+            const emptyAddress = label => ({ label, fullAddress: '', location: '', deliveryNote: '', zoneId: '', zoneName: '', fee: 0 });
+
+            function openCustomerForm(customer = null, seed = '') {
+                editingCustomerId = customer ? customer.id : null;
                 $('#new-customer-form')[0].reset();
-                $('#pos-cust-code').val(getNextCustomerCode());
-                posFormAddressesDraft = [
-                    { label: 'العنوان الرئيسي', fullAddress: '', location: '', deliveryNote: '', zoneId: '', zoneName: '', fee: 0 },
-                    { label: 'عنوان بديل', fullAddress: '', location: '', deliveryNote: '', zoneId: '', zoneName: '', fee: 0 },
-                    { label: 'عنوان بديل 2', fullAddress: '', location: '', deliveryNote: '', zoneId: '', zoneName: '', fee: 0 }
-                ];
+                $('#cf-title').text(customer ? 'تعديل بيانات العميل' : 'عميل جديد');
+                $('#cp-head-title').text('بيانات العميل');
+                $('#cf-save-text').text(customer ? 'حفظ التعديلات' : 'حفظ واختيار العميل');
+                const code = customer ? customer.code : getNextCustomerCode();
+                $('#pos-cust-code').val(code);
+                $('#cf-code-chip').text(`#${code}`);
+                $('#pos-cust-name').val(customer ? customer.name : '');
+                $('#pos-cust-phone1').val(customer ? customer.phone1 : '');
+                $('#pos-cust-phone2').val(customer ? customer.phone2 : '');
+                $('#pos-cust-contact-note').val(customer ? customer.contactNote : '');
+                $('#pos-cust-invoice-note').val(customer ? customer.invoiceNote : '');
+                const labels = ['العنوان الرئيسي', 'عنوان بديل', 'عنوان بديل 2'];
+                posFormAddressesDraft = labels.map((label, i) => {
+                    const saved = (customer && customer.addresses && customer.addresses[i]) || {};
+                    const merged = { ...emptyAddress(label), label };
+                    Object.keys(merged).forEach(k => { if (k !== 'label' && saved[k] != null) merged[k] = k === 'fee' ? Number(saved[k]) || 0 : String(saved[k]); });
+                    return merged;
+                });
+                if (!customer && seed) {
+                    const raw = toEnglishDigits(String(seed)).trim();
+                    const compact = raw.replace(/[\s-]/g, '');
+                    if (/^\+?\d{6,}$/.test(compact)) $('#pos-cust-phone1').val(compact);   // رقم تليفون
+                    else if (!/\d/.test(raw)) $('#pos-cust-name').val(raw);                // حروف بس = اسم
+                    else posFormAddressesDraft[0].fullAddress = raw;                       // حروف وأرقام = عنوان
+                }
                 renderPosZoneSelect();
-                loadPosAddrTabDraft(0);
+                loadPosAddrTabDraft(customer ? Math.max(0, selectedAddressIndex) : 0);
                 $('#customer-picker-panel').addClass('d-none');
                 $('#new-customer-form').removeClass('d-none');
-                setTimeout(() => $('#pos-cust-name').trigger('focus'), 150);
-            });
+                if (!$('#customerModal').hasClass('show')) customerModal.show();
+                setTimeout(() => document.getElementById($('#pos-cust-name').val() ? 'pos-cust-phone1' : 'pos-cust-name').focus(), 200);
+            }
+
+            $('#btn-show-customer-form').on('click', () => openCustomerForm(null, $('#customer-search-input').val()));
+            $('#customerModal').on('hidden.bs.modal', () => { editingCustomerId = null; });
 
             $('#btn-cancel-customer-form').on('click', function() {
+                if (editingCustomerId) { customerModal.hide(); return; }
                 $('#new-customer-form').addClass('d-none');
                 $('#customer-picker-panel').removeClass('d-none');
+                $('#cp-head-title').text('اختيار العميل');
                 $('#customer-search-input').trigger('focus');
             });
 
@@ -2951,6 +3180,7 @@
                 }
 
                 const payload = {
+                    id: editingCustomerId && /^\d+$/.test(editingCustomerId) ? Number(editingCustomerId) : undefined,
                     code: $('#pos-cust-code').val(),
                     name: name,
                     phone1: phone1,
@@ -2978,6 +3208,10 @@
                 } catch (err) {}
 
                 if (!savedCustObj) {
+                    if (editingCustomerId) {
+                        Swal.fire('تعذر الحفظ', 'لم يتم حفظ تعديلات العميل، تأكد من الاتصال وحاول مرة أخرى.', 'error');
+                        return;
+                    }
                     savedCustObj = normalizeCustomerObject({
                         id: `c-${Date.now()}`,
                         ...payload,
@@ -2987,6 +3221,21 @@
                     }, customers.length);
                 }
 
+                const existingIdx = customers.findIndex(c => String(c.id) === String(editingCustomerId));
+                if (existingIdx !== -1) {
+                    savedCustObj.balance = savedCustObj.balance || customers[existingIdx].balance;
+                    customers[existingIdx] = savedCustObj;
+                    saveUnifiedCustomers();
+                    customerModal.hide();
+                    if (String(selectedCustomer.id) === String(savedCustObj.id)) {
+                        selectedCustomer = savedCustObj;
+                        if (!String(savedCustObj.addresses[selectedAddressIndex]?.fullAddress || '').trim()) selectedAddressIndex = 0;
+                        updateCustomerHeader();
+                    }
+                    Swal.fire({ toast: true, position: 'top-start', icon: 'success', title: 'تم حفظ بيانات العميل', showConfirmButton: false, timer: 1600 });
+                    editingCustomerId = null;
+                    return;
+                }
                 customers.push(savedCustObj);
                 saveUnifiedCustomers();
                 selectCustomerFromPicker(savedCustObj);
@@ -3001,21 +3250,50 @@
             let suspKbConfirmingDelete = false;
             let suspKbDeleteConfirmIdx = 1;
 
-            function loadSuspendedFromStorage() {
+            // الفواتير المعلقة محفوظة في قاعدة البيانات وتظهر لكل أجهزة الكاشير
+            async function suspendedApi(method, url = '', body = null) {
+                const res = await fetch(`/api/pos/suspended${url}`, {
+                    method,
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    body: body ? JSON.stringify(body) : null
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw Object.assign(new Error(data.message || 'تعذر الاتصال بالسيرفر.'), { data, status: res.status });
+                return data;
+            }
+
+            async function loadSuspendedFromStorage() {
+                // نقل أي فواتير معلقة قديمة كانت محفوظة في المتصفح إلى قاعدة البيانات مرة واحدة
                 try {
-                    const raw = localStorage.getItem(SUSPENDED_STORAGE_KEY);
-                    suspendedInvoices = raw ? JSON.parse(raw) : [];
-                    if (!Array.isArray(suspendedInvoices)) suspendedInvoices = [];
-                } catch (e) {
-                    suspendedInvoices = [];
-                }
+                    const legacy = JSON.parse(localStorage.getItem(SUSPENDED_STORAGE_KEY) || '[]');
+                    if (Array.isArray(legacy) && legacy.length) {
+                        for (const snap of legacy) await suspendedApi('POST', '', { snapshot: snap });
+                        localStorage.removeItem(SUSPENDED_STORAGE_KEY);
+                    }
+                } catch (e) {}
+                try {
+                    const data = await suspendedApi('GET');
+                    suspendedInvoices = Array.isArray(data.invoices) ? data.invoices : [];
+                } catch (e) {}
                 renderSuspendedSidebar();
             }
 
-            function saveSuspendedToStorage() {
-                localStorage.setItem(SUSPENDED_STORAGE_KEY, JSON.stringify(suspendedInvoices));
-                renderSuspendedSidebar();
+            async function persistSuspended(snapshot) {
+                await suspendedApi('POST', '', { snapshot });
+                await loadSuspendedFromStorage();
             }
+
+            async function removeSuspended(id) {
+                try {
+                    await suspendedApi('DELETE', `/${encodeURIComponent(id)}`);
+                } catch (e) {
+                    if (e.status === 403) Swal.fire('غير مسموح', e.message, 'warning');
+                    else Swal.fire('تعذر الحذف', e.message, 'error');
+                }
+                await loadSuspendedFromStorage();
+            }
+
+            setInterval(() => { if (!$('.modal.show').length) loadSuspendedFromStorage(); }, 20000);
 
             function formatElapsedDuration(suspendedAtIso) {
                 const startMs = new Date(suspendedAtIso).getTime();
@@ -3092,9 +3370,8 @@
                             cancelButtonText: 'إلغاء'
                         }).then(res => {
                             if (res.isConfirmed) {
-                                suspendedInvoices.splice(idx, 1);
                                 if (editingSuspendedInvoiceId === inv.id) editingSuspendedInvoiceId = null;
-                                saveSuspendedToStorage();
+                                removeSuspended(inv.id);
                             }
                         });
                     });
@@ -3148,16 +3425,11 @@
                     total: currentGrandTotal
                 };
 
-                const existingIdx = suspendedInvoices.findIndex(i => i.id === snapshot.id);
-                if (existingIdx >= 0) {
-                    suspendedInvoices[existingIdx] = snapshot;
-                } else {
-                    suspendedInvoices.unshift(snapshot);
-                }
-                editingSuspendedInvoiceId = null;
-                saveSuspendedToStorage();
-                performResetCurrentInvoice();
-                $('#item-search-input').trigger('focus');
+                persistSuspended(snapshot).then(() => {
+                    editingSuspendedInvoiceId = null;
+                    performResetCurrentInvoice();
+                    $('#item-search-input').trigger('focus');
+                }).catch(err => Swal.fire('تعذر تعليق الفاتورة', err.message || 'تحقق من الاتصال بالسيرفر. الفاتورة لسه مفتوحة.', 'error'));
             }
 
             function openSuspendedKeyboardManager() {
@@ -3236,12 +3508,11 @@
                 if (suspKbConfirmingDelete) {
                     if (suspKbDeleteConfirmIdx === 0) {
                         const targetRowIdx = suspKbSelectedRowIdx;
-                        requirePermissionOrManager('pos.delete_item', `حذف الفاتورة المعلقة رقم #${inv.invoiceNumber}`, function() {
-                            suspendedInvoices.splice(targetRowIdx, 1);
+                        requirePermissionOrManager('pos.delete_item', `حذف الفاتورة المعلقة رقم #${inv.invoiceNumber}`, async function() {
                             if (editingSuspendedInvoiceId === inv.id) editingSuspendedInvoiceId = null;
-                            saveSuspendedToStorage();
+                            await removeSuspended(inv.id);
                             suspKbConfirmingDelete = false;
-                            suspKbSelectedRowIdx = Math.max(0, Math.min(suspKbSelectedRowIdx, suspendedInvoices.length - 1));
+                            suspKbSelectedRowIdx = Math.max(0, Math.min(targetRowIdx, suspendedInvoices.length - 1));
                             renderSuspendedKeyboardList();
                         });
                     } else {
@@ -3263,7 +3534,11 @@
                 }
             }
 
+            let previewedSuspended = null;
+            $(document).on('click', '#btn-print-suspended-draft', () => previewedSuspended && printSuspendedDraft(previewedSuspended));
+
             function openSuspendedReadOnlyPreview(inv) {
+                previewedSuspended = inv;
                 $('#suspended-preview-title').html(`<i class="fas fa-eye me-2"></i> قراءة الفاتورة المعلقة رقم #${escapeHtml(inv.invoiceNumber)} — ${escapeHtml(inv.customerName)}`);
                 const rows = (inv.itemsSummary || []).map((item, i) => `
                     <tr>
@@ -3329,6 +3604,7 @@
 
             $('#btn-open-suspended-manager, #btn-manage-suspended').on('click', openSuspendedKeyboardManager);
             $('#btn-suspend').on('click', suspendInvoice);
+            $('#btn-print-draft').on('click', printOpenInvoiceDraft);
 
             // =========================================================================
             // 7. نافذة تعريف صنف مخزن جديد الموحدة (F6) — محمية بصلاحية المخزن
@@ -3349,14 +3625,38 @@
                 $sel.html(dbCategories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join(''));
             }
 
-            function openNewProductModal() {
+            // باركود اتضرب ومش متسجل: X تقفل، "تسجيل صنف" يفتح F6 والباركود في مكانه والمؤشر في الاسم
+            function promptRegisterUnknownBarcode(info) {
+                clearProductSearch();
+                const shown = info.scale ? `${info.barcode} (ميزان${info.weight ? ` · ${qtyLabel(info.weight)} كجم` : ''})` : info.barcode;
+                Swal.fire({
+                    icon: 'question',
+                    title: 'الصنف ده مش متسجل',
+                    html: `مفيش صنف بالباركود <b class="en-digit">${escapeHtml(shown)}</b>.<br>تحب تسجله دلوقتي؟`,
+                    showCloseButton: true,
+                    returnFocus: false, // المؤشر يروح لخانة الاسم مش يرجع للبحث
+                    confirmButtonText: '<i class="fas fa-plus"></i> تسجيل صنف جديد',
+                    confirmButtonColor: '#119744',
+                    focusConfirm: true
+                }).then(r => {
+                    if (r.isConfirmed) openNewProductModal(info);
+                    else $('#item-search-input').trigger('focus');
+                });
+            }
+
+            const qtyLabel = v => String(Number(Number(v).toFixed(3)));
+            let newProductPrefill = {};
+
+            function openNewProductModal(prefill) {
+                prefill = prefill && prefill.barcode ? prefill : {}; // لما تتنادي من زرار بتاخد event
                 requirePermissionOrManager('inventory.items', 'تعريف وإضافة صنف جديد للمخزن (F6)', function() {
+                    newProductPrefill = prefill;
                     populateModalCategories();
                     $('#formItemName').val('');
                     $('#formItemDesc').val('');
-                    $('#formMainUnit').val('قطعة');
-                    $('#formInitialCartQty').val('1');
-                    $('#formBarcode').val(generateAutoBarcode());
+                    $('#formMainUnit').val(prefill.unit || 'قطعة');
+                    $('#formInitialCartQty').val(prefill.weight ? qtyLabel(prefill.weight) : '1');
+                    $('#formBarcode').val(prefill.barcode || generateAutoBarcode());
                     $('#formQtyReadonly').val('0');
                     $('#formLastBuyPrice').val('0');
                     $('#formMinStock').val('0');
@@ -3545,9 +3845,16 @@
                         subUnits: saved.subUnits || []
                     };
                     catalogProducts.unshift(posProduct);
-                    addProductToCart({ ...posProduct, salePrice: getEffectiveProductPrice(posProduct) }, cartQty, '');
+                    buildCatalogIndexes(); // عشان نفس الباركود يتقرا على طول من غير ريفرش
                     $('#itemFormModal').removeClass('open');
                     clearProductSearch();
+                    if (newProductPrefill.scale) {
+                        addProductToCart({ ...posProduct, quantityType: 'weight', salePrice: getEffectiveProductPrice(posProduct) }, cartQty, '');
+                    } else {
+                        openProductDetails(posProduct);
+                        setTimeout(() => $('#product-detail-quantity').val(qtyLabel(cartQty)).trigger('focus').trigger('select'), 250);
+                    }
+                    newProductPrefill = {};
                     Swal.fire({
                         toast: true,
                         position: 'bottom-start',
@@ -3715,6 +4022,11 @@
                     if (tryHandleBarcodeScan(rawVal)) {
                         return;
                     }
+                    const scanned = toEnglishDigits(rawVal).trim();
+                    if (/^\d{6,}$/.test(scanned)) {
+                        promptRegisterUnknownBarcode({ barcode: scanned });
+                        return;
+                    }
                     if (hasPendingSearch && rawVal) renderSearchResults(rawVal);
                     dropdown = $('#search-results-dropdown');
                     items = dropdown.find('.search-result-item');
@@ -3748,7 +4060,7 @@
 
                 $('#product-details-title').text(cartRow ? `تعديل الصنف: ${product.name}` : product.name);
                 $('#product-detail-description').text(product.desc || '');
-                $('#product-detail-type').text(isWeight ? 'يباع بالوزن' : `يباع بـ (${unitName})`);
+                $('#product-detail-type').text(isWeight ? 'بالكيلو' : `بال${unitName}`);
                 $('#product-detail-barcode').text(product.barcode);
                 $('#product-detail-sale-price').val(effectivePrice.toFixed(2));
                 $('.product-detail-price-unit').text(`ج.م / ${unitName}`);
@@ -3756,18 +4068,21 @@
                 $('#product-detail-stock').text(`${product.stock} ${unitName}`);
                 $('#product-detail-quantity').val(cartRow ? parseFloat(cartRow.find('.item-qty').text()) || 1 : '1');
                 $('#product-detail-weight-unit').toggleClass('d-none', !isWeight).val('kg');
+                $('#product-detail-quantity-label').text(isWeight ? 'الوزن' : `الكمية (${unitName})`);
+                $('#product-detail-amount-wrap, #product-detail-amount-hint').toggleClass('d-none', !isWeight);
+                $('#product-detail-amount').val('');
                 $('#product-detail-notes').val(cartRow ? cartRow.attr('data-item-notes') || '' : '');
 
                 const pills = [];
                 const rP = Number(product.retailPrice ?? product.salePrice) || 0;
-                pills.push(`<button type="button" class="btn btn-sm btn-outline-success fw-bold py-0 px-2 tier-quick-pill" data-p="${rP}">قطاعي: ${rP}</button>`);
+                pills.push(`<button type="button" class="pd-tier tier-quick-pill" data-p="${rP}">قطاعي <span class="en-digit">${rP}</span></button>`);
                 if (product.semiWholesalePrice != null && Number(product.semiWholesalePrice) > 0) {
-                    pills.push(`<button type="button" class="btn btn-sm btn-outline-primary fw-bold py-0 px-2 tier-quick-pill" data-p="${product.semiWholesalePrice}">نص جملة: ${product.semiWholesalePrice}</button>`);
+                    pills.push(`<button type="button" class="pd-tier tier-quick-pill" data-p="${product.semiWholesalePrice}">نص جملة <span class="en-digit">${product.semiWholesalePrice}</span></button>`);
                 }
                 if (product.wholesalePrice != null && Number(product.wholesalePrice) > 0) {
-                    pills.push(`<button type="button" class="btn btn-sm btn-outline-dark fw-bold py-0 px-2 tier-quick-pill" data-p="${product.wholesalePrice}">جملة: ${product.wholesalePrice}</button>`);
+                    pills.push(`<button type="button" class="pd-tier tier-quick-pill" data-p="${product.wholesalePrice}">جملة <span class="en-digit">${product.wholesalePrice}</span></button>`);
                 }
-                $('#product-detail-tier-pills').html(pills.join(''));
+                $('#product-detail-tier-pills').html(pills.length > 1 ? pills.join('') : '');
 
                 updateProductDetailTotal();
                 $('#productDetailsModal').modal('show');
@@ -3788,6 +4103,21 @@
             }
 
             $('#product-detail-quantity, #product-detail-sale-price, #product-detail-weight-unit').on('input change', updateProductDetailTotal);
+
+            // للأصناف بالوزن: المبلغ المطلوب ÷ سعر الكيلو = الوزن (لأقرب جرام)
+            function syncWeightFromAmount() {
+                const amount = Number(normalizeNumericInput($('#product-detail-amount').val())) || 0;
+                const price = Number(normalizeNumericInput($('#product-detail-sale-price').val())) || 0;
+                if (amount <= 0 || price <= 0) return;
+                const kg = Math.round(amount / price * 1000) / 1000;
+                $('#product-detail-quantity').val($('#product-detail-weight-unit').val() === 'g' ? String(Math.round(kg * 1000)) : String(kg));
+                updateProductDetailTotal();
+            }
+            $('#product-detail-amount').on('input', syncWeightFromAmount);
+            $('#product-detail-sale-price, #product-detail-weight-unit').on('input change', function() {
+                if ($('#product-detail-amount').val()) syncWeightFromAmount();
+            });
+            $('#product-detail-quantity').on('input', () => $('#product-detail-amount').val(''));
 
             $('#productDetailsModal').on('keydown', function(e) {
                 if (e.key === 'Enter') {
@@ -3884,7 +4214,7 @@
                 $('.cart-item-row').each(function() {
                     let qty = parseFloat($(this).find('.item-qty').text()) || 0;
                     let price = parseFloat($(this).find('.item-price').text()) || 0;
-                    let rowTotal = qty * price;
+                    let rowTotal = Math.round(qty * price * 100) / 100;
                     $(this).find('.item-total').text(rowTotal.toFixed(2));
                     if ($(this).attr('data-is-external') === 'true') {
                         externalSubTotal += rowTotal;
@@ -3899,12 +4229,17 @@
                 currentSubTotal = storeSubTotal + externalSubTotal;
 
                 let dMode = $('#discount-mode-select').val();
-                let discount = dMode === 'percentage'
+                let discount = Math.round((dMode === 'percentage'
                     ? storeSubTotal * Math.min(appliedDiscountValue, 100) / 100
-                    : appliedDiscountValue;
+                    : appliedDiscountValue) * 100) / 100;
 
                 let deliveryFee = $('#header-fulfillment-select').val() === 'توصيل' ? deliveryFeeValue : 0;
-                currentGrandTotal = Math.max(0, storeSubTotal - discount) + externalSubTotal + deliveryFee;
+                currentTotalBeforeRounding = Math.round((Math.max(0, storeSubTotal - discount) + externalSubTotal + deliveryFee) * 100) / 100;
+                currentGrandTotal = roundInvoiceTotal(currentTotalBeforeRounding);
+                currentRoundingAdjustment = Math.round((currentGrandTotal - currentTotalBeforeRounding) * 100) / 100;
+                $('#rounding-row').toggleClass('d-none', !currentRoundingAdjustment);
+                $('#total-before-rounding').text(currentTotalBeforeRounding.toFixed(2));
+                $('#rounding-adjustment').text(`${currentRoundingAdjustment > 0 ? '+' : ''}${currentRoundingAdjustment.toFixed(2)}`);
 
                 $('#store-only-subtotal').text(storeSubTotal.toFixed(2));
                 $('#external-subtotal-val').text(externalSubTotal.toFixed(2));
@@ -3965,6 +4300,20 @@
                 }, row);
             }
 
+            function cartSnapshot(rows) {
+                const items = [], total = { v: 0 };
+                (rows || $('#cart-items .cart-item-row')).each(function() {
+                    const r = $(this), t = parseFloat(r.find('.item-total').text()) || 0;
+                    total.v += t;
+                    items.push(`${r.attr('data-raw-name') || 'صنف'} × ${r.find('.item-qty').text().trim()} = ${t.toFixed(2)}`);
+                });
+                return { items, total: Math.round(total.v * 100) / 100 };
+            }
+            window.nsReportCartLoss = (type) => {
+                const s = cartSnapshot();
+                if (s.items.length) NSSecurity.report(type, { 'عدد الأصناف': s.items.length, 'الأصناف': s.items.slice(0, 15).join(' | '), 'العميل': (typeof selectedCustomer !== 'undefined' && selectedCustomer && selectedCustomer.name) || '' }, s.total, String($('#current-order-number').text() || ''));
+            };
+
             function deleteSelectedCartRow() {
                 let rows = $('#cart-items .cart-item-row');
                 let selectedRow = rows.filter('.active-row').first();
@@ -3973,6 +4322,8 @@
 
                 const itemName = selectedRow.attr('data-raw-name') || 'صنف';
                 requirePermissionOrManager('pos.delete_item', `حذف الصنف (${itemName}) من الفاتورة الحالية`, function() {
+                    const sn = cartSnapshot(rows.eq(idx));
+                    NSSecurity.report('cart_item_removed', { 'الصنف': sn.items[0], 'مصرّح بواسطة': lastAuthorizedManagerName || 'صلاحية المستخدم', 'الفاتورة المفتوحة': cartSnapshot().total + ' ج.م' }, sn.total, String($('#current-order-number').text() || ''));
                     rows.eq(idx).remove();
                     let rem = $('#cart-items .cart-item-row');
                     if (rem.length) rem.eq(Math.min(idx, rem.length - 1)).addClass('active-row');
@@ -3998,6 +4349,7 @@
 
                 $('#modal-customer-badge').text(selectedCustomer.name);
                 $('#modal-grand-total').text(currentGrandTotal.toFixed(2) + ' ج.م');
+                $('#modal-rounding-note').text(currentRoundingAdjustment ? `قبل التقريب ${currentTotalBeforeRounding.toFixed(2)} ج.م` : '');
 
                 if (currentExternalSubTotal > 0) {
                     $('#modal-breakdown-hint').html(`(مبيعات المحل الأساسية: <span class="en-digit">${currentStoreSubTotal.toFixed(2)}</span> ج.م + خوارج: <span class="en-digit" style="color:var(--external-accent);">${currentExternalSubTotal.toFixed(2)}</span> ج.م)`);
@@ -4101,38 +4453,96 @@
                 return map[method] || 'نقدي';
             }
 
-            function buildThermalReceiptHtml(invoice) {
-                const waConfig = getWhatsAppSettings();
-                const rowsHtml = (invoice.items || []).map(item => `
-                    <tr>
-                        <td>${escapeHtml(item.name)} ${item.isExternal ? '<small>(خوارج)</small>' : ''}</td>
-                        <td class="en-digit">${item.quantity}</td>
-                        <td class="en-digit">${Number(item.price).toFixed(2)}</td>
-                        <td class="en-digit">${Number(item.total).toFixed(2)}</td>
-                    </tr>
-                `).join('');
+            // draftTitle: نسخة مبدئية قبل الحفظ (بدون باركود طيار ولا رصيد عميل)
+            function buildThermalReceiptHtml(invoice, draftTitle = '') {
+                const d = new Date();
+                const pad = n => String(n).padStart(2, '0');
+                const h = d.getHours() % 12 || 12;
+                const data = {
+                    number: invoice.number,
+                    date: `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(h)}:${pad(d.getMinutes())} ${d.getHours() >= 12 ? 'PM' : 'AM'}`,
+                    cashier: posUserName,
+                    customerName: (draftTitle ? invoice.isCash : selectedCustomer.isCash) ? '' : invoice.customerName,
+                    customerCode: !draftTitle && !selectedCustomer.isCash && $('#header-fulfillment-select').val() === 'توصيل' ? selectedCustomer.code : '',
+                    dispatchCode: !draftTitle && $('#header-fulfillment-select').val() === 'توصيل' ? `d${invoice.number}` : '',
+                    customerPhone: invoice.customerPhone,
+                    customerAddress: invoice.customerAddress,
+                    items: (invoice.items || []).map(i => ({ name: i.name, unit: i.quantityType === 'weight' ? 'كيلو' : 'قطعة', price: i.price, quantity: i.quantity, total: i.total })),
+                    subtotal: Number(invoice.storeSubTotal || 0) + Number(invoice.externalSubTotal || 0),
+                    discount: invoice.discount, deliveryFee: invoice.deliveryFee, total: invoice.total,
+                    totalBeforeRounding: invoice.totalBeforeRounding, rounding: invoice.roundingAdjustment,
+                    paid: invoice.paidAmount, due: invoice.dueAmount,
+                    customerBalanceBefore: draftTitle || selectedCustomer.isCash ? null : (invoice.customerBalanceBefore || 0),
+                    customerBalanceAfter: draftTitle || selectedCustomer.isCash ? null : (invoice.customerBalanceAfter ?? invoice.customerBalanceBefore ?? 0)
+                };
+                const root = document.getElementById('thermal-print-receipt');
+                root.innerHTML = window.NextStoreReceipt.sales(data, systemSettings, draftTitle ? { ...salesInvoiceTemplate, titleText: draftTitle } : salesInvoiceTemplate);
+                window.NextStoreReceipt.barcode(root, invoice.number);
+                return root.innerHTML;
+            }
 
-                $('#thermal-print-receipt').html(`
-                    <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:6px;">
-                        <h4 style="margin:0; font-weight:900;">${escapeHtml(waConfig.storeName || 'NextStore POS')}</h4>
-                        <div>فاتورة رقم: #${escapeHtml(invoice.number)} | ${escapeHtml(invoice.fulfillment)}</div>
-                        <div>الدفع: ${escapeHtml(getPaymentMethodArabicName(invoice.paymentMethod))} ${invoice.dueAmount > 0 ? '(آجل)' : ''}</div>
-                        <div>العميل: ${escapeHtml(invoice.customerName)} ${invoice.customerPhone ? `- ${escapeHtml(invoice.customerPhone)}` : ''}</div>
-                        ${invoice.customerAddress ? `<div>العنوان: ${escapeHtml(invoice.customerAddress)}</div>` : ''}
-                    </div>
-                    <table class="receipt-table">
-                        <thead>
-                            <tr><th>الصنف</th><th>كمية</th><th>سعر</th><th>إجمالي</th></tr>
-                        </thead>
-                        <tbody>${rowsHtml}</tbody>
-                    </table>
-                    <div style="border-top:1px solid #000; padding-top:4px; font-weight:800;">
-                        ${Number(invoice.externalSubTotal) > 0 ? `<div style="font-size:11.5px;">صافي المحل: ${Number(invoice.storeNetTotal).toFixed(2)} ج.م | خوارج: ${Number(invoice.externalSubTotal).toFixed(2)} ج.م</div>` : ''}
-                        ${Number(invoice.deliveryFee) > 0 ? `<div>التوصيل: ${Number(invoice.deliveryFee).toFixed(2)} ج.م</div>` : ''}
-                        <div style="font-size:15px;">الإجمالي النهائي: ${Number(invoice.total).toFixed(2)} ج.م</div>
-                        <div style="font-size:12.5px;">المدفوع: ${Number(invoice.paidAmount).toFixed(2)} ج.م ${Number(invoice.dueAmount) > 0 ? `| المتبقي (آجل): ${Number(invoice.dueAmount).toFixed(2)} ج.م` : ''}</div>
-                    </div>
-                `);
+            function cartItemsPayload() {
+                return $('#cart-items .cart-item-row').map(function() {
+                    const r = $(this);
+                    return {
+                        itemId: r.attr('data-item-id') || null,
+                        name: r.attr('data-raw-name'),
+                        barcode: r.attr('data-barcode') || '',
+                        buyPrice: Number(r.attr('data-buy-price')) || 0,
+                        price: Number(r.find('.item-price').text()) || 0,
+                        quantity: parseFloat(r.find('.item-qty').text()) || 0,
+                        quantityType: r.attr('data-quantity-type') || 'piece',
+                        total: Number(r.find('.item-total').text()) || 0,
+                        isExternal: r.attr('data-is-external') === 'true'
+                    };
+                }).get();
+            }
+
+            const DRAFT_TITLE = 'نسخة مبدئية - غير محفوظة';
+
+            // طباعة نسخة من الفاتورة المفتوحة قبل الحفظ (مش بتحفظ ولا بتأثر على المخزن)
+            function printOpenInvoiceDraft() {
+                const items = cartItemsPayload();
+                if (!items.length) return showPosToast('مفيش أصناف في الفاتورة');
+                const addr = (selectedCustomer.addresses || [])[selectedAddressIndex] || (selectedCustomer.addresses || [])[0] || {};
+                const isDelivery = $('#header-fulfillment-select').val() === 'توصيل';
+                const subtotal = currentStoreSubTotal + currentExternalSubTotal, fee = isDelivery ? deliveryFeeValue : 0;
+                printReceiptHtml(buildThermalReceiptHtml({
+                    number: currentInvoiceNumber, isCash: selectedCustomer.isCash, customerName: selectedCustomer.name,
+                    customerPhone: selectedCustomer.phone1 || selectedCustomer.phone2 || '', customerAddress: addr.fullAddress || '',
+                    items, storeSubTotal: currentStoreSubTotal, externalSubTotal: currentExternalSubTotal,
+                    discount: Math.max(0, Math.round((subtotal + fee - currentTotalBeforeRounding) * 100) / 100), deliveryFee: fee,
+                    total: currentGrandTotal, totalBeforeRounding: currentTotalBeforeRounding, roundingAdjustment: currentRoundingAdjustment,
+                    paidAmount: currentGrandTotal, dueAmount: 0
+                }, DRAFT_TITLE));
+                showPosToast('بيطبع نسخة مبدئية من الفاتورة');
+            }
+
+            // نسخة مبدئية من فاتورة معلقة من غير ما تتفتح
+            function printSuspendedDraft(inv) {
+                const c = customers.find(x => String(x.id) === String(inv.customerId)) || {};
+                const addr = (c.addresses || [])[inv.selectedAddressIndex || 0] || {};
+                const subtotal = Number(inv.storeSubTotal || 0) + Number(inv.externalSubTotal || 0);
+                const fee = inv.fulfillment === 'توصيل' ? Number(inv.deliveryFeeValue || 0) : 0;
+                printReceiptHtml(buildThermalReceiptHtml({
+                    number: inv.invoiceNumber, isCash: !inv.customerId || c.isCash, customerName: inv.customerName,
+                    customerPhone: c.phone1 || c.phone2 || '', customerAddress: addr.fullAddress || '',
+                    items: (inv.itemsSummary || []).map(it => ({ name: it.name, price: it.price, quantity: parseFloat(toEnglishDigits(String(it.qtyText || ''))) || 0, total: it.total, quantityType: String(it.qtyText).includes('.') ? 'weight' : 'piece' })),
+                    storeSubTotal: inv.storeSubTotal, externalSubTotal: inv.externalSubTotal,
+                    discount: Math.max(0, Math.round((subtotal + fee - Number(inv.total || 0)) * 100) / 100), deliveryFee: fee,
+                    total: inv.total, totalBeforeRounding: inv.total, roundingAdjustment: 0, paidAmount: inv.total, dueAmount: 0
+                }, DRAFT_TITLE));
+                showPosToast(`بيطبع نسخة مبدئية من المعلقة #${inv.invoiceNumber}`);
+            }
+
+            // Ctrl+F1: آخر فاتورة اتحفظت في عارض الفاتورة (طباعة نسخة / مرتجع / حساب العميل)
+            async function openLastSavedInvoice() {
+                try {
+                    const res = await fetch('/api/orders/last', { headers: { Accept: 'application/json' } });
+                    const d = await res.json();
+                    if (!res.ok || !d.order) throw new Error(d.message || 'مفيش فواتير محفوظة لسه');
+                    window.NextStoreInvoiceViewer.open(d.order);
+                } catch (e) { showPosToast(e.message); }
             }
 
             let isSavingOrder = false;
@@ -4173,11 +4583,12 @@
                 }
 
                 const dMode = $('#discount-mode-select').val();
-                const discountAmount = dMode === 'percentage'
+                const discountAmount = Math.round((dMode === 'percentage'
                     ? currentStoreSubTotal * Math.min(appliedDiscountValue, 100) / 100
-                    : appliedDiscountValue;
+                    : appliedDiscountValue) * 100) / 100;
 
                 const storeNetTotal = Math.max(0, currentStoreSubTotal - discountAmount);
+                const customerBalanceBefore = Number(selectedCustomer.balance) || 0;
 
                 const invoicePayload = {
                     requestId: currentInvoiceRequestId,
@@ -4192,25 +4603,14 @@
                     paymentType: finalPaymentType,
                     paymentMethod: activePaymentMethod,
                     authorizedByManager: lastAuthorizedManagerName || null,
-                    items: $('#cart-items .cart-item-row').map(function() {
-                        const r = $(this);
-                        return {
-                            itemId: r.attr('data-item-id') || null,
-                            name: r.attr('data-raw-name'),
-                            barcode: r.attr('data-barcode') || '',
-                            buyPrice: Number(r.attr('data-buy-price')) || 0,
-                            price: Number(r.find('.item-price').text()) || 0,
-                            quantity: parseFloat(r.find('.item-qty').text()) || 0,
-                            quantityType: r.attr('data-quantity-type') || 'piece',
-                            total: Number(r.find('.item-total').text()) || 0,
-                            isExternal: r.attr('data-is-external') === 'true'
-                        };
-                    }).get(),
+                    items: cartItemsPayload(),
                     storeSubTotal: currentStoreSubTotal,
                     storeNetTotal: storeNetTotal,
                     externalSubTotal: currentExternalSubTotal,
                     discount: discountAmount,
                     deliveryFee: currentFulfillment === 'توصيل' ? deliveryFeeValue : 0,
+                    totalBeforeRounding: currentTotalBeforeRounding,
+                    roundingAdjustment: currentRoundingAdjustment,
                     total: currentGrandTotal,
                     paidAmount: actualPaidToRecord,
                     dueAmount: dueAmount,
@@ -4239,12 +4639,15 @@
                     }
 
                     invoicePayload.number = String(out.invoiceNumber || currentInvoiceNumber);
+                    invoicePayload.customerBalanceBefore = selectedCustomer.isCash ? null : customerBalanceBefore;
                     nextInvoiceNumber = Number(out.nextInvoiceNumber) || (currentInvoiceNumber + 1);
                     if (!selectedCustomer.isCash && out.customerBalance !== undefined) {
+                        invoicePayload.customerBalanceAfter = Number(out.customerBalance) || 0;
                         const cIdx = customers.findIndex(c => String(c.id) === String(selectedCustomer.id));
                         if (cIdx !== -1) customers[cIdx].balance = Number(out.customerBalance);
+                    } else if (!selectedCustomer.isCash) {
+                        invoicePayload.customerBalanceAfter = customerBalanceBefore + dueAmount;
                     }
-                    fetchRealDatabaseItems();
                 } catch (e) {
                     isSavingOrder = false;
                     $('#btn-print-save, #btn-save-only').prop('disabled', false);
@@ -4257,25 +4660,17 @@
                     return;
                 }
 
-                try {
-                    const savedInv = JSON.parse(localStorage.getItem(INVOICES_STORAGE_KEY) || '[]');
-                    savedInv.push(invoicePayload);
-                    localStorage.setItem(INVOICES_STORAGE_KEY, JSON.stringify(savedInv));
-                } catch (e) {}
+                try { localStorage.removeItem(INVOICES_STORAGE_KEY); } catch (e) {}
 
                 if (editingSuspendedInvoiceId) {
-                    suspendedInvoices = suspendedInvoices.filter(i => i.id !== editingSuspendedInvoiceId);
+                    removeSuspended(editingSuspendedInvoiceId);
                     editingSuspendedInvoiceId = null;
-                    saveSuspendedToStorage();
                 }
 
                 sendSilentWhatsAppInvoice(invoicePayload);
 
-                if (action === 'print') {
-                    buildThermalReceiptHtml(invoicePayload);
-                    window.print();
-                }
-
+                // الحفظ خلص: نقفل ونفتح فاتورة جديدة فوراً، والطباعة تكمل في الخلفية
+                const receiptHtml = action === 'print' ? buildThermalReceiptHtml(invoicePayload) : '';
                 $('#checkoutModal').modal('hide');
                 performResetCurrentInvoice();
                 showPosToast(dueAmount > 0
@@ -4284,6 +4679,38 @@
                 setTimeout(() => $('#item-search-input').trigger('focus'), 200);
                 isSavingOrder = false;
                 $('#btn-print-save, #btn-save-only').prop('disabled', false);
+                // تحديث الأصناف بعد الطباعة عشان ما يزاحمش الطابعة على السيرفر
+                Promise.resolve(receiptHtml && printReceiptInBackground(receiptHtml, invoicePayload.number)).finally(fetchRealDatabaseItems);
+            }
+
+            function printReceiptHtml(html) {
+                const s = systemSettings;
+                return window.NextStorePrinter.silentPrint({
+                    html, paper: salesInvoicePaper, fontFamily: s.print_font_family, fontSize: s.print_font_size,
+                    printerName: s.printer_primary, backupPrinterName: s.printer_backup, useBackupOnFailure: s.printer_backup_auto,
+                    comPort: s.com_port, pageWidth: s.page_width_px, savePrintImages: s.save_print_images,
+                    margins: { left: s.margin_left, right: s.margin_right, top: s.margin_top, bottom: s.margin_bottom }, settings: s
+                }).catch(error => Swal.fire('تعذرت الطباعة', error.message || 'تحقق من إعدادات الطابعة.', 'error'));
+            }
+
+            async function printReceiptInBackground(receiptHtml, number) {
+                if (!systemSettings.print_silent) {
+                    const beforeDelay = Number(systemSettings.print_delay_before) || 0;
+                    if (beforeDelay) await new Promise(resolve => setTimeout(resolve, beforeDelay));
+                    return printReceiptHtml(receiptHtml);
+                }
+                const result = await Swal.fire({
+                    title: 'معاينة الفاتورة',
+                    html: receiptHtml,
+                    width: ['a4', 'a5'].includes(salesInvoicePaper) ? '800px' : '420px',
+                    confirmButtonText: 'إغلاق',
+                    showCancelButton: true,
+                    cancelButtonText: 'طباعة',
+                    didOpen: popup => {
+                        window.NextStoreReceipt.barcode(popup, number);
+                    }
+                });
+                if (result.dismiss === Swal.DismissReason.cancel) printReceiptHtml(receiptHtml);
             }
 
             $('#btn-print-save').on('click', () => finishOrder('print'));
@@ -4315,6 +4742,7 @@
             function resetCurrentInvoice() {
                 if ($('#cart-items .cart-item-row').length > 0) {
                     requirePermissionOrManager('pos.delete_item', 'إلغاء ومسح الفاتورة المفتوحة بالكامل (زر جديد)', function() {
+                        nsReportCartLoss('cart_cleared');
                         performResetCurrentInvoice();
                     });
                     return;
@@ -4324,65 +4752,20 @@
 
             $('#btn-new-invoice').on('click', resetCurrentInvoice);
 
-            let customerPickerToken = null;
-            const customerPickerModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('posCustomerPickerModal'));
-
-            $('#posCustomerPickerModal').on('hidden.bs.modal', function() {
-                customerPickerToken = null;
-            });
-
+            const customerModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('customerModal'));
             $('#btn-select-customer').on('click', function() {
-                customerPickerToken = createInvoiceRequestId();
-                const pickerUrl = new URL('/customers', window.location.origin);
-                pickerUrl.searchParams.set('selectForPos', '1');
-                pickerUrl.searchParams.set('pickerToken', customerPickerToken);
-                $('#pos-customer-picker-frame').attr('src', pickerUrl.href);
-                customerPickerModal.show();
+                $('#new-customer-form').addClass('d-none');
+                $('#customer-picker-panel').removeClass('d-none');
+                $('#customer-search-input').val('');
+                $('#cp-head-title').text('اختيار العميل');
+                renderCustomerPicker('');
+                customerModal.show();
+                // تحديث القائمة من قاعدة البيانات في الخلفية بدون تعطيل الفتح
+                fetchPosBootstrapData().then(() => {
+                    if ($('#customerModal').hasClass('show') && !$('#customer-picker-panel').hasClass('d-none')) renderCustomerPicker($('#customer-search-input').val());
+                });
             });
-
-            async function applyPosCustomerSelection(customerId) {
-                if (customerId !== 'cash-customer' && !/^\d+$/.test(customerId)) return;
-
-                customerPickerModal.hide();
-                customerPickerToken = null;
-
-                if (customerId === 'cash-customer') {
-                    selectCustomerFromPicker(cashCustomer);
-                    return;
-                }
-
-                let customer = customers.find(c => String(c.id) === customerId && !c.deleted);
-                if (!customer) {
-                    await fetchPosBootstrapData();
-                    customer = customers.find(c => String(c.id) === customerId && !c.deleted);
-                }
-                if (!customer) {
-                    Swal.fire({
-                        toast: true,
-                        position: 'top-start',
-                        icon: 'error',
-                        title: 'تعذر تحميل بيانات العميل المختار، حدّث قائمة العملاء وحاول مرة أخرى',
-                        showConfirmButton: false,
-                        timer: 3000
-                    });
-                    return;
-                }
-
-                selectCustomerFromPicker(customer);
-            }
-
-            window.addEventListener('message', async function(event) {
-                const pickerFrame = document.getElementById('pos-customer-picker-frame');
-                if (event.origin !== window.location.origin || event.source !== pickerFrame.contentWindow) return;
-                if (!event.data || !['nextstore:pos-customer-selected', 'nextstore:pos-customer-picker-cancelled'].includes(event.data.type)) return;
-                if (event.data.pickerToken !== customerPickerToken) return;
-                if (event.data.type === 'nextstore:pos-customer-picker-cancelled') {
-                    customerPickerModal.hide();
-                    customerPickerToken = null;
-                    return;
-                }
-                await applyPosCustomerSelection(String(event.data.customerId || ''));
-            });
+            $('#customerModal').on('shown.bs.modal', () => document.getElementById('customer-search-input').focus());
 
             $('#customer-search-input').on('input', function() {
                 renderCustomerPicker($(this).val());
@@ -4410,6 +4793,7 @@ function handleExitPos() {
             focusConfirm: true
         }).then((res) => {
             if (res.isConfirmed) {
+                nsReportCartLoss('cart_abandoned');
                 window.location.href = '/orders/archive';
             } else {
                 setTimeout(() => $('#item-search-input').trigger('focus'), 100);
@@ -4555,10 +4939,18 @@ function handleExitPos() {
                     if (e.key === 'Escape') {
                         e.preventDefault();
                         $('#itemFormModal').removeClass('open');
+                    } else if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
+                        const order = ['formItemName', 'formRetailPrice', 'formLastBuyPrice'];
+                        const i = order.indexOf(e.target.id);
+                        if (i === -1) return;
+                        e.preventDefault();
+                        if (i < order.length - 1) $('#' + order[i + 1]).trigger('focus').trigger('select');
+                        else $('#btnSaveItemForm').trigger('click');
                     }
                     return;
                 }
                 if ($('#suspendedPreviewModal').hasClass('show')) {
+                    if (e.key === 'p' || e.key === 'P' || e.key === 'ح') { e.preventDefault(); previewedSuspended && printSuspendedDraft(previewedSuspended); return; }
                     if (e.key === 'Escape' || e.key === 'Enter') {
                         e.preventDefault();
                         $('#suspendedPreviewModal').modal('hide');
@@ -4629,6 +5021,9 @@ function handleExitPos() {
                     } else if (e.key === 'Enter') {
                         e.preventDefault();
                         confirmPendingAddressSelection(pendingAddressActiveIdx);
+                    } else if (/^[1-9]$/.test(e.key) && Number(e.key) <= pendingAddressOptions.length) {
+                        e.preventDefault();
+                        confirmPendingAddressSelection(Number(e.key) - 1);
                     }
                     return;
                 }
@@ -4671,6 +5066,8 @@ function handleExitPos() {
                     handleExitPos();
                     return;
                 }
+                if (e.key === 'F1' && e.ctrlKey) { e.preventDefault(); openLastSavedInvoice(); return; }
+                if (e.ctrlKey && (e.key === 'p' || e.key === 'P' || e.key === 'ح')) { e.preventDefault(); printOpenInvoiceDraft(); return; }
                 if (e.key === 'F1') { e.preventDefault(); openProtectedReturnModal(); return; }
                 if (e.key === 'F2') { e.preventDefault(); $('#btn-select-customer').trigger('click'); return; }
                 if (e.key === 'F3') { e.preventDefault(); $('#item-search-input').trigger('focus').trigger('select'); return; }
@@ -4727,6 +5124,8 @@ function handleExitPos() {
             updateCustomerHeader();
         });
     </script>
+    <script>window.NS_NAV_KEYS = false; window.nsDirty = () => document.querySelectorAll('#cart-items .cart-item-row').length > 0; window.nsOnDiscard = () => window.nsReportCartLoss && nsReportCartLoss('cart_abandoned'); window.nsExitText = 'في أصناف في السلة — لو خرجت هتتمسح الفاتورة الحالية. متأكد؟';</script>
+    <script src="/js/nextstore-nav.js"></script>
+    <script src="/js/nextstore-alerts.js"></script>
 </body>
 </html>
-

@@ -2,6 +2,10 @@
 
 namespace App\Http\Controllers\Purchases;
 
+use App\Support\Balance;
+use App\Support\Money;
+use App\Support\PosAuth;
+use App\Support\Stock;
 use App\Http\Controllers\Controller;
 use App\Models\Item;
 use App\Models\ItemMovement;
@@ -73,14 +77,16 @@ class PurchaseController extends Controller
 
     private function buildCreatePayload(): array
     {
-        $products = Item::with('category')
+        $catNames = DB::table('categories')->pluck('name', 'id');
+        $products = DB::table('items')
+            ->whereNull('deleted_at')
             ->where('is_disabled', false)
             ->orderBy('name')
             ->get()
-            ->map(fn (Item $item) => [
+            ->map(fn ($item) => [
                 'id' => (string) $item->id,
                 'name' => $item->name,
-                'category' => $item->category ? $item->category->name : 'عام',
+                'category' => $catNames[$item->category_id] ?? 'عام',
                 'barcode' => $item->barcode ?? '',
                 'unit' => $item->unit ?: 'قطعة',
                 'quantityType' => in_array($item->unit, ['كيلو', 'لتر']) ? 'weight' : 'piece',
@@ -143,7 +149,7 @@ class PurchaseController extends Controller
         return [
             'id' => (string) $inv->id,
             'code' => (int) $inv->code,
-            'paperNumber' => $inv->paper_number ?: ('INV-' . str_pad((string) $inv->code, 4, '0', STR_PAD_LEFT)),
+            'paperNumber' => $inv->paper_number ?: (string) $inv->code,
             'date' => $inv->invoice_date ? $inv->invoice_date->format('Y-m-d') : now()->format('Y-m-d'),
             'createdAt' => $inv->created_at ? $inv->created_at->toIso8601String() : now()->toIso8601String(),
             'updatedAt' => $inv->updated_at ? $inv->updated_at->toIso8601String() : null,
@@ -192,7 +198,7 @@ class PurchaseController extends Controller
         $data = $request->validate([
             'id' => 'nullable',
             'code' => 'nullable|numeric',
-            'paperNumber' => 'nullable|string|max:80',
+            'paperNumber' => ['nullable', 'regex:/^\d+$/', 'max:20'],
             'date' => 'nullable|date',
             'supplierId' => 'nullable',
             'supplier' => 'nullable|string|max:150',
@@ -255,7 +261,7 @@ class PurchaseController extends Controller
 
             $maxCode = PurchaseInvoice::withTrashed()->max('code') ?? 780;
             $code = $invoice ? $invoice->code : max(781, ((int) $maxCode) + 1);
-            $paperNumber = !empty($data['paperNumber']) ? $data['paperNumber'] : ('INV-' . str_pad((string) $code, 4, '0', STR_PAD_LEFT));
+            $paperNumber = !empty($data['paperNumber']) ? $data['paperNumber'] : (string) $code;
             $invoiceDate = !empty($data['date']) ? $data['date'] : now()->toDateString();
 
             $payload = [
@@ -275,8 +281,8 @@ class PurchaseController extends Controller
                 'payment_method' => $paymentType === 'credit' ? 'credit' : $data['paymentMethod'],
                 'source' => $data['source'],
                 'notes' => implode('، ', array_slice($itemNames, 0, 8)),
-                'user_name' => 'مدير الفرع',
-                'shift_id' => $data['shiftId'] ?? 'current',
+                'user_name' => PosAuth::name(),
+                'shift_id' => (string) (PosAuth::openShift()->id ?? ($data['shiftId'] ?? 'current')),
                 'shift_open' => true,
                 'is_synced' => false,
             ];
@@ -288,7 +294,10 @@ class PurchaseController extends Controller
             }
 
             // حفظ أصناف الفاتورة وتزويد كميات المخزن وتحديث آخر سعر شراء وسعر البيع
-            foreach ($data['items'] as $row) {
+            $lineWeights = array_map(fn ($r) => max(0, Money::line($r['quantity'], $r['cost']) - Money::p($r['discount'] ?? 0)), $data['items']);
+            $discShares = Money::allocate(-Money::p($invDiscount), $lineWeights);
+            $extraShares = Money::allocate(Money::p($invExtra), $lineWeights);
+            foreach ($data['items'] as $rowIdx => $row) {
                 $prod = $row['product'];
                 $qty = (float) $row['quantity'];
                 $cost = (float) $row['cost'];
@@ -296,7 +305,8 @@ class PurchaseController extends Controller
                 $sell = (float) $row['sell'];
                 $origSell = (float) ($row['originalSell'] ?? $sell);
                 $lineTotal = round(max(0, ($qty * $cost) - $disc), 2);
-                $netUnitCost = $qty > 0 ? round($lineTotal / $qty, 2) : round($cost, 2);
+                $landedP = $lineWeights[$rowIdx] + $discShares[$rowIdx] + $extraShares[$rowIdx];
+                $netUnitCost = $qty > 0 ? round(Money::egp($landedP) / $qty, 2) : round($cost, 2);
 
                 $itemModel = is_numeric($prod['id']) ? Item::find($prod['id']) : null;
                 if (!$itemModel && !empty($prod['barcode'])) {
@@ -322,47 +332,20 @@ class PurchaseController extends Controller
                 ]);
 
                 if ($itemModel) {
-                    $beforeQty = (float) $itemModel->qty;
-                    $afterQty = $beforeQty + $qty;
-
+                    Stock::applyWeightedCost($itemModel, $qty, $netUnitCost);
                     $itemModel->update([
-                        'qty' => $afterQty,
                         'last_buy_price' => $netUnitCost,
-                        'avg_cost' => $netUnitCost,
                         'last_buy_date' => str_replace('-', '/', $invoiceDate),
                         'retail_price' => $sell > 0 ? $sell : $itemModel->retail_price,
                         'supplier_name' => $supplierName !== 'مورد نقدي عام' ? $supplierName : $itemModel->supplier_name,
                         'has_purchase_invoice' => true,
-                        'last_move_date' => now()->format('Y-m-d'),
-                        'is_synced' => false,
                     ]);
-
-                    ItemMovement::create([
-                        'item_id' => $itemModel->id,
-                        'move_date' => now()->format('Y/m/d h:i A'),
-                        'type' => $editingId ? 'تعديل فاتورة مشتريات' : 'فاتورة مشتريات',
-                        'ref_no' => $paperNumber,
-                        'party' => $supplierName,
-                        'user_name' => 'مدير الفرع',
-                        'before_qty' => $beforeQty,
-                        'in_qty' => $qty,
-                        'out_qty' => 0,
-                        'after_qty' => $afterQty,
-                        'price' => $netUnitCost,
-                    ]);
+                    Stock::move($itemModel, $qty, $editingId ? 'تعديل فاتورة مشتريات' : 'فاتورة مشتريات', $paperNumber, $supplierName, $netUnitCost);
                 }
             }
 
             // تحديث رصيد المورد في حال وجود مبلغ آجل متبقي (remaining > 0)
-            if ($supplierModel && $remaining > 0) {
-                $signedBal = ($supplierModel->balance_type === 'debit' ? -1 : 1) * (float) $supplierModel->balance;
-                $newSigned = $signedBal + $remaining; // موجب = دائن له فلوس علينا
-                $supplierModel->update([
-                    'balance' => abs($newSigned),
-                    'balance_type' => $newSigned < 0 ? 'debit' : 'credit',
-                    'is_synced' => false,
-                ]);
-            }
+            Balance::supplier($supplierModel?->id, $remaining);
 
             $invoice->load(['items', 'supplier']);
 
@@ -386,6 +369,7 @@ class PurchaseController extends Controller
             if ($invoice->trashed()) {
                 return response()->json(['message' => 'الفاتورة محذوفة بالفعل.'], 422);
             }
+            \App\Support\SecurityAlert::raise('purchase_deleted', "حذف فاتورة مشتريات #{$invoice->code}", ['المورد' => $invoice->supplier_name], (float) $invoice->total, (string) $invoice->code, 'danger');
 
             $this->reversePurchaseInventoryAndSupplierEffect($invoice);
 
@@ -402,47 +386,14 @@ class PurchaseController extends Controller
     private function reversePurchaseInventoryAndSupplierEffect(PurchaseInvoice $invoice): void
     {
         foreach ($invoice->items as $pItem) {
-            $itemModel = $pItem->item_id ? Item::find($pItem->item_id) : null;
-            if (!$itemModel && !empty($pItem->barcode)) {
-                $itemModel = Item::where('barcode', $pItem->barcode)->first();
-            }
-
+            $itemModel = Stock::find($pItem->item_id, $pItem->barcode);
             if ($itemModel) {
-                $beforeQty = (float) $itemModel->qty;
-                $afterQty = $beforeQty - (float) $pItem->quantity;
-                $itemModel->update([
-                    'qty' => $afterQty,
-                    'is_synced' => false,
-                ]);
-
-                ItemMovement::create([
-                    'item_id' => $itemModel->id,
-                    'move_date' => now()->format('Y/m/d h:i A'),
-                    'type' => 'عكس/حذف فاتورة مشتريات',
-                    'ref_no' => $invoice->paper_number ?: ('PUR-' . $invoice->code),
-                    'party' => $invoice->supplier_name,
-                    'user_name' => 'مدير الفرع',
-                    'before_qty' => $beforeQty,
-                    'in_qty' => 0,
-                    'out_qty' => (float) $pItem->quantity,
-                    'after_qty' => $afterQty,
-                    'price' => (float) $pItem->cost,
-                ]);
+                $unitCost = (float) $pItem->quantity > 0 ? (float) $pItem->total / (float) $pItem->quantity : (float) $pItem->cost;
+                Stock::applyWeightedCost($itemModel, -(float) $pItem->quantity, $unitCost);
+                Stock::move($itemModel, -(float) $pItem->quantity, 'عكس/حذف فاتورة مشتريات', $invoice->paper_number ?: ('PUR-' . $invoice->code), $invoice->supplier_name, (float) $pItem->cost);
             }
         }
-
-        if ($invoice->supplier_id && (float) $invoice->remaining > 0) {
-            $supplier = Supplier::find($invoice->supplier_id);
-            if ($supplier) {
-                $signedBal = ($supplier->balance_type === 'debit' ? -1 : 1) * (float) $supplier->balance;
-                $newSigned = $signedBal - (float) $invoice->remaining;
-                $supplier->update([
-                    'balance' => abs($newSigned),
-                    'balance_type' => $newSigned < 0 ? 'debit' : 'credit',
-                    'is_synced' => false,
-                ]);
-            }
-        }
+        Balance::supplier($invoice->supplier_id, -(float) $invoice->remaining);
     }
 
 
@@ -501,7 +452,7 @@ class PurchaseController extends Controller
                 ];
             }
 
-            $paperCode = $inv->paper_number ?: ('INV-' . str_pad((string) $inv->code, 4, '0', STR_PAD_LEFT));
+            $paperCode = $inv->paper_number ?: (string) $inv->code;
 
             foreach ($inv->items as $line) {
                 $purchasedQty = (float) $line->quantity;
@@ -534,6 +485,19 @@ class PurchaseController extends Controller
                     'lastCost' => $netUnitCost,
                 ];
             }
+        }
+
+        foreach (DB::table('suppliers')->whereNull('deleted_at')->orderBy('id')->get() as $s) {
+            $sid = (string) $s->id;
+            if (isset($suppliersMap[$sid])) continue;
+            $suppliersMap[$sid] = [
+                'id' => $sid,
+                'code' => $s->code ?: str_pad($sid, 3, '0', STR_PAD_LEFT),
+                'name' => $s->company ?: $s->contact,
+                'phone' => $s->phone ?: '-',
+                'balance' => ($s->balance_type === 'debit' ? -1 : 1) * (float) $s->balance,
+                'isCash' => false,
+            ];
         }
 
         $nextNumber = (PurchaseReturn::withTrashed()->max('id') ?? 0) + 1;
@@ -596,7 +560,7 @@ class PurchaseController extends Controller
                 $pInv = PurchaseInvoice::find($pItem->purchase_invoice_id);
                 if ($pInv) {
                     $firstInvoiceId = $firstInvoiceId ?: $pInv->id;
-                    $invoiceCodes[] = $pInv->paper_number ?: ('INV-' . str_pad((string) $pInv->code, 4, '0', STR_PAD_LEFT));
+                    $invoiceCodes[] = $pInv->paper_number ?: (string) $pInv->code;
                 }
 
                 $preparedLines[] = [
@@ -634,7 +598,7 @@ class PurchaseController extends Controller
                 'account_deduction' => $accountDeduction,
                 'source' => $data['safe'] ?? 'main_safe',
                 'notes' => $combinedNotes,
-                'user_name' => 'مدير الفرع',
+                'user_name' => PosAuth::name(),
                 'is_synced' => false,
             ]);
 
@@ -661,46 +625,11 @@ class PurchaseController extends Controller
                 }
 
                 // خصم الكمية المرتجعة للمورد من المخزن الفعلي وتسجيل حركة الصنف
-                $itemModel = $pItem->item_id ? Item::find($pItem->item_id) : null;
-                if (!$itemModel && !empty($pItem->barcode)) {
-                    $itemModel = Item::where('barcode', $pItem->barcode)->first();
-                }
-
-                if ($itemModel) {
-                    $beforeQty = (float) $itemModel->qty;
-                    $afterQty = $beforeQty - $qty;
-                    $itemModel->update([
-                        'qty' => $afterQty,
-                        'last_move_date' => now()->format('Y-m-d'),
-                        'is_synced' => false,
-                    ]);
-
-                    ItemMovement::create([
-                        'item_id' => $itemModel->id,
-                        'move_date' => now()->format('Y/m/d h:i A'),
-                        'type' => 'مرتجع مشتريات لمورد',
-                        'ref_no' => $returnNumber,
-                        'party' => $supplierName,
-                        'user_name' => 'مدير الفرع',
-                        'before_qty' => $beforeQty,
-                        'in_qty' => 0,
-                        'out_qty' => $qty,
-                        'after_qty' => $afterQty,
-                        'price' => $line['cost'],
-                    ]);
-                }
+                Stock::move(Stock::find($pItem->item_id, $pItem->barcode), -$qty, 'مرتجع مشتريات لمورد', $returnNumber, $supplierName, $line['cost']);
             }
 
             // خصم قيمة المرتجع من حساب المورد إذا كانت التسوية آجلة (خصم من حسابه)
-            if ($supplierModel && $accountDeduction > 0) {
-                $signedBal = ($supplierModel->balance_type === 'debit' ? -1 : 1) * (float) $supplierModel->balance;
-                $newSigned = $signedBal - $accountDeduction;
-                $supplierModel->update([
-                    'balance' => abs($newSigned),
-                    'balance_type' => $newSigned < 0 ? 'debit' : 'credit',
-                    'is_synced' => false,
-                ]);
-            }
+            Balance::supplier($supplierModel?->id, -$accountDeduction);
 
             return response()->json([
                 'status' => 'success',
@@ -789,48 +718,11 @@ class PurchaseController extends Controller
                 }
 
                 // إعادة الكمية للمخزن عند إلغاء مرتجع المشتريات
-                $itemModel = $ri->item_id ? Item::find($ri->item_id) : null;
-                if (!$itemModel && !empty($ri->barcode)) {
-                    $itemModel = Item::where('barcode', $ri->barcode)->first();
-                }
-
-                if ($itemModel) {
-                    $beforeQty = (float) $itemModel->qty;
-                    $afterQty = $beforeQty + (float) $ri->quantity;
-                    $itemModel->update([
-                        'qty' => $afterQty,
-                        'is_synced' => false,
-                    ]);
-
-                    ItemMovement::create([
-                        'item_id' => $itemModel->id,
-                        'move_date' => now()->format('Y/m/d h:i A'),
-                        'type' => 'إلغاء مرتجع مشتريات',
-                        'ref_no' => $ret->return_number,
-                        'party' => $ret->supplier_name,
-                        'user_name' => 'مدير الفرع',
-                        'before_qty' => $beforeQty,
-                        'in_qty' => (float) $ri->quantity,
-                        'out_qty' => 0,
-                        'after_qty' => $afterQty,
-                        'price' => (float) $ri->cost,
-                    ]);
-                }
+                Stock::move(Stock::find($ri->item_id, $ri->barcode), (float) $ri->quantity, 'إلغاء مرتجع مشتريات', $ret->return_number, $ret->supplier_name, (float) $ri->cost);
             }
 
             // إعادة المبلغ لحساب المورد إذا كان قد خُصم من حسابه
-            if ($ret->supplier_id && (float) $ret->account_deduction > 0) {
-                $supplier = Supplier::find($ret->supplier_id);
-                if ($supplier) {
-                    $signedBal = ($supplier->balance_type === 'debit' ? -1 : 1) * (float) $supplier->balance;
-                    $newSigned = $signedBal + (float) $ret->account_deduction;
-                    $supplier->update([
-                        'balance' => abs($newSigned),
-                        'balance_type' => $newSigned < 0 ? 'debit' : 'credit',
-                        'is_synced' => false,
-                    ]);
-                }
-            }
+            Balance::supplier($ret->supplier_id, (float) $ret->account_deduction);
 
             $ret->update(['is_synced' => false]);
             $ret->delete();

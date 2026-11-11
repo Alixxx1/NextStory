@@ -6,8 +6,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>تقارير المصروفات | NextStore SaaS</title>
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/vendor/bootstrap/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
 
     <style>
         :root {
@@ -496,8 +496,9 @@
             .report-table { min-width: 0; }
         }
     </style>
+    <link rel="stylesheet" href="/css/nextstore-erp.css">
 </head>
-<body>
+<body class="ns-erp">
 
     {{-- 1. الشريط العلوي --}}
     <header class="top-report-bar">
@@ -694,7 +695,7 @@
             <button type="button" class="btn btn-outline-danger bg-white btn-report-action" id="btn-delete-selected" disabled>
                 <i class="fas fa-times"></i> حذف (Del)
             </button>
-            <button type="button" class="btn btn-outline-dark bg-white btn-report-action" onclick="window.print()">
+            <button type="button" class="btn btn-outline-dark bg-white btn-report-action" onclick="NextStorePagePrint.print()">
                 <i class="fas fa-print text-primary"></i> طباعة التقرير
             </button>
             <button type="button" class="btn btn-outline-success bg-white btn-report-action" id="btn-export-excel">
@@ -1426,5 +1427,8 @@
         renderReport();
     })();
     </script>
+    @include('partials.page-print', ['page' => 'expenses_report'])
+    <script src="/js/nextstore-nav.js"></script>
+    <script src="/js/nextstore-alerts.js"></script>
 </body>
 </html>

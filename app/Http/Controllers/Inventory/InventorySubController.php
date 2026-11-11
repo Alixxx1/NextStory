@@ -458,108 +458,66 @@ class InventorySubController extends Controller
             ->values()
             ->all();
 
-        $items = Item::withTrashed()
-            ->with(['category', 'movements'])
-            ->orderBy('id', 'asc')
-            ->get();
+        $catNames = DB::table('categories')->pluck('name', 'id');
+        $sum = [];
+        foreach (DB::table('item_movements')->select('item_id', 'type', 'in_qty', 'out_qty')->orderBy('item_id')->orderBy('id')->cursor() as $mov) {
+            $t = (string) $mov->type;
+            $in = (float) $mov->in_qty;
+            $out = (float) $mov->out_qty;
+            $x = &$sum[$mov->item_id];
+            $x = $x ?? ['pur' => 0.0, 'purRet' => 0.0, 'sales' => 0.0, 'salesRet' => 0.0, 'adj' => 0.0, 'in' => 0.0, 'out' => 0.0];
 
-        $movementsSummary = $items->map(function (Item $item) {
-            $purchases = 0.0;
-            $purchaseReturns = 0.0;
-            $sales = 0.0;
-            $salesReturns = 0.0;
-            $adjustment = 0.0;
-            $supplyIn = 0.0;
-            $issueOut = 0.0;
-
-            $ledger = [];
-            $sortedMovements = $item->movements->sortBy('id')->values();
-
-            foreach ($sortedMovements as $mov) {
-                $type = (string) $mov->type;
-                $inQty = (float) $mov->in_qty;
-                $outQty = (float) $mov->out_qty;
-                $net = $inQty - $outQty;
-
-                if (str_contains($type, 'مرتجع مشتريات')) {
-                    $purchaseReturns += $outQty;
-                } elseif (str_contains($type, 'إلغاء مرتجع مشتريات')) {
-                    $purchaseReturns = max(0, $purchaseReturns - $inQty);
-                } elseif (str_contains($type, 'عكس/حذف فاتورة مشتريات')) {
-                    $purchases = max(0, $purchases - $outQty);
-                } elseif (str_contains($type, 'فاتورة مشتريات') || str_contains($type, 'تعديل فاتورة مشتريات')) {
-                    $purchases += $inQty;
-                } elseif (str_contains($type, 'حذف/تعديل مرتجع مبيعات')) {
-                    $salesReturns = max(0, $salesReturns - $outQty);
-                } elseif (str_contains($type, 'مرتجع مبيعات')) {
-                    $salesReturns += $inQty;
-                } elseif (str_contains($type, 'فاتورة مبيعات')) {
-                    $sales += $outQty;
-                } elseif (str_contains($type, 'تسوية') || str_contains($type, 'جرد')) {
-                    $adjustment += $net;
-                } elseif (str_contains($type, 'توريد') || str_contains($type, 'تصنيع')) {
-                    if ($inQty > 0) {
-                        $supplyIn += $inQty;
-                    } else {
-                        $issueOut += $outQty;
-                    }
-                } elseif (str_contains($type, 'صرف') || str_contains($type, 'إذن')) {
-                    if ($outQty > 0) {
-                        $issueOut += $outQty;
-                    } else {
-                        $supplyIn += $inQty;
-                    }
-                } elseif (!str_contains($type, 'رصيد افتتاحي')) {
-                    if ($inQty > 0) {
-                        $supplyIn += $inQty;
-                    }
-                    if ($outQty > 0) {
-                        $issueOut += $outQty;
-                    }
-                }
-
-                $ledger[] = [
-                    'date' => $mov->move_date ?: ($mov->created_at ? $mov->created_at->format('Y/m/d h:i A') : now()->format('Y/m/d h:i A')),
-                    'isoDate' => $mov->created_at ? $mov->created_at->format('Y-m-d') : now()->format('Y-m-d'),
-                    'type' => $type,
-                    'refNo' => $mov->ref_no ?: ('MOV-' . $mov->id),
-                    'party' => $mov->party ?: '-',
-                    'user' => $mov->user_name ?: 'مدير الفرع',
-                    'before' => round((float) $mov->before_qty, 3),
-                    'inQty' => round($inQty, 3),
-                    'outQty' => round($outQty, 3),
-                    'after' => round((float) $mov->after_qty, 3),
-                    'price' => round((float) $mov->price, 2),
-                ];
+            if (str_contains($t, 'مرتجع مشتريات')) {
+                $x['purRet'] += $out;
+            } elseif (str_contains($t, 'إلغاء مرتجع مشتريات')) {
+                $x['purRet'] = max(0, $x['purRet'] - $in);
+            } elseif (str_contains($t, 'عكس/حذف فاتورة مشتريات')) {
+                $x['pur'] = max(0, $x['pur'] - $out);
+            } elseif (str_contains($t, 'فاتورة مشتريات') || str_contains($t, 'تعديل فاتورة مشتريات')) {
+                $x['pur'] += $in;
+            } elseif (str_contains($t, 'حذف/تعديل مرتجع مبيعات')) {
+                $x['salesRet'] = max(0, $x['salesRet'] - $out);
+            } elseif (str_contains($t, 'مرتجع مبيعات')) {
+                $x['salesRet'] += $in;
+            } elseif (str_contains($t, 'فاتورة مبيعات')) {
+                $x['sales'] += $out;
+            } elseif (str_contains($t, 'تسوية') || str_contains($t, 'جرد')) {
+                $x['adj'] += $in - $out;
+            } elseif (str_contains($t, 'توريد') || str_contains($t, 'تصنيع')) {
+                $in > 0 ? $x['in'] += $in : $x['out'] += $out;
+            } elseif (str_contains($t, 'صرف') || str_contains($t, 'إذن')) {
+                $out > 0 ? $x['out'] += $out : $x['in'] += $in;
+            } elseif (!str_contains($t, 'رصيد افتتاحي')) {
+                $x['in'] += $in;
+                $x['out'] += $out;
             }
+            unset($x);
+        }
 
-            $currentQty = (float) $item->qty;
-            $movementsDelta = $purchases - $purchaseReturns - $sales + $salesReturns + $adjustment + $supplyIn - $issueOut;
-            $openingBalance = round($currentQty - $movementsDelta, 3);
-
-            $lastDate = $item->last_move_date
-                ?: ($item->updated_at ? $item->updated_at->format('Y-m-d') : now()->format('Y-m-d'));
+        $movementsSummary = DB::table('items')->orderBy('id')->get()->map(function ($item) use ($sum, $catNames) {
+            $x = $sum[$item->id] ?? ['pur' => 0.0, 'purRet' => 0.0, 'sales' => 0.0, 'salesRet' => 0.0, 'adj' => 0.0, 'in' => 0.0, 'out' => 0.0];
+            $delta = $x['pur'] - $x['purRet'] - $x['sales'] + $x['salesRet'] + $x['adj'] + $x['in'] - $x['out'];
+            $lastDate = $item->last_move_date ?: ($item->updated_at ?: now()->format('Y-m-d'));
 
             return [
                 'id' => (string) $item->id,
-                'categoryName' => $item->category ? $item->category->name : 'عام',
+                'categoryName' => $catNames[$item->category_id] ?? 'عام',
                 'name' => $item->name,
                 'barcode' => $item->barcode ?? '',
-                'purchases' => round($purchases, 3),
-                'purchaseReturns' => round($purchaseReturns, 3),
-                'sales' => round($sales, 3),
-                'salesReturns' => round($salesReturns, 3),
-                'adjustment' => round($adjustment, 3),
-                'supplyIn' => round($supplyIn, 3),
-                'issueOut' => round($issueOut, 3),
-                'openingBalance' => $openingBalance,
+                'purchases' => round($x['pur'], 3),
+                'purchaseReturns' => round($x['purRet'], 3),
+                'sales' => round($x['sales'], 3),
+                'salesReturns' => round($x['salesRet'], 3),
+                'adjustment' => round($x['adj'], 3),
+                'supplyIn' => round($x['in'], 3),
+                'issueOut' => round($x['out'], 3),
+                'openingBalance' => round((float) $item->qty - $delta, 3),
                 'unitCost' => (float) $item->last_buy_price,
                 'retailPrice' => (float) $item->retail_price,
                 'unit' => $item->unit ?: 'قطعة',
-                'isDeleted' => $item->trashed(),
-                'hasPurchaseInvoice' => (bool) ($item->has_purchase_invoice || $purchases > 0),
+                'isDeleted' => !empty($item->deleted_at),
+                'hasPurchaseInvoice' => (bool) ($item->has_purchase_invoice || $x['pur'] > 0),
                 'lastDate' => substr((string) $lastDate, 0, 10),
-                'ledger' => array_reverse($ledger),
             ];
         })->values()->all();
 
@@ -567,6 +525,24 @@ class InventorySubController extends Controller
             'initialCategories' => $categories,
             'initialMovements' => $movementsSummary,
         ];
+    }
+
+    /** دفتر حركة صنف واحد (يتحمل عند فتح التفاصيل فقط) */
+    public function movementLedgerApi(int $id)
+    {
+        return response()->json(DB::table('item_movements')->where('item_id', $id)->orderByDesc('id')->get()->map(fn ($m) => [
+            'date' => $m->move_date ?: substr((string) $m->created_at, 0, 10),
+            'isoDate' => substr((string) $m->created_at, 0, 10),
+            'type' => (string) $m->type,
+            'refNo' => $m->ref_no ?: ('MOV-' . $m->id),
+            'party' => $m->party ?: '-',
+            'user' => $m->user_name ?: 'مدير الفرع',
+            'before' => round((float) $m->before_qty, 3),
+            'inQty' => round((float) $m->in_qty, 3),
+            'outQty' => round((float) $m->out_qty, 3),
+            'after' => round((float) $m->after_qty, 3),
+            'price' => round((float) $m->price, 2),
+        ]));
     }
 
     // =========================================================================
@@ -614,14 +590,15 @@ class InventorySubController extends Controller
             ->values()
             ->all();
 
-        $products = Item::with('category')
+        $catNames = DB::table('categories')->pluck('name', 'id')->all();
+        $products = DB::table('items')->whereNull('deleted_at')
             ->orderBy('id', 'desc')
             ->get()
-            ->map(fn (Item $p) => [
+            ->map(fn ($p) => [
                 'id' => (string) $p->id,
                 'itemType' => $p->item_type ?: 'صنف مخزني',
                 'categoryId' => $p->category_id ? (string) $p->category_id : '',
-                'categoryName' => $p->category ? $p->category->name : 'عام',
+                'categoryName' => $catNames[$p->category_id] ?? 'عام',
                 'name' => $p->name,
                 'description' => $p->description ?? '',
                 'barcode' => $p->barcode ?? '',
@@ -1141,15 +1118,15 @@ class InventorySubController extends Controller
             ->values()
             ->all();
 
-        $products = Item::withTrashed()
-            ->with('category')
+        $catNames = DB::table('categories')->pluck('name', 'id')->all();
+        $products = DB::table('items')
             ->orderBy('id', 'asc')
             ->get()
-            ->map(fn (Item $p) => [
+            ->map(fn ($p) => [
                 'id' => (string) $p->id,
                 'itemType' => $p->item_type ?: 'صنف مخزني',
                 'categoryId' => $p->category_id ? (string) $p->category_id : '',
-                'categoryName' => $p->category ? $p->category->name : 'عام',
+                'categoryName' => $catNames[$p->category_id] ?? 'عام',
                 'name' => $p->name,
                 'barcode' => $p->barcode ?? '',
                 'unit' => $p->unit ?: 'كيلو',
@@ -1158,7 +1135,7 @@ class InventorySubController extends Controller
                 'avgCost' => round((float) ($p->avg_cost ?: $p->last_buy_price), 3),
                 'retailPrice' => round((float) $p->retail_price, 3),
                 'isDisabled' => (bool) $p->is_disabled,
-                'isDeleted' => $p->trashed(),
+                'isDeleted' => !empty($p->deleted_at),
             ])
             ->values()
             ->all();
@@ -1652,15 +1629,15 @@ class InventorySubController extends Controller
             ->values()
             ->all();
 
-        $products = Item::withTrashed()
-            ->with('category')
+        $catNames = DB::table('categories')->pluck('name', 'id')->all();
+        $products = DB::table('items')
             ->orderBy('id', 'asc')
-            ->get()
-            ->map(fn (Item $p) => [
+            ->get(['id', 'item_type', 'category_id', 'name', 'barcode', 'unit', 'qty', 'supplier_name', 'last_buy_price', 'retail_price', 'is_disabled', 'deleted_at'])
+            ->map(fn ($p) => [
                 'id' => (string) $p->id,
                 'itemType' => $p->item_type ?: 'صنف مخزني',
                 'categoryId' => $p->category_id ? (string) $p->category_id : '',
-                'categoryName' => $p->category ? $p->category->name : 'عام',
+                'categoryName' => $catNames[$p->category_id] ?? 'عام',
                 'name' => $p->name,
                 'barcode' => $p->barcode ?? '',
                 'unit' => $p->unit ?: 'قطعة',
@@ -1669,16 +1646,16 @@ class InventorySubController extends Controller
                 'lastBuyPrice' => round((float) $p->last_buy_price, 3),
                 'retailPrice' => round((float) $p->retail_price, 3),
                 'isDisabled' => (bool) $p->is_disabled,
-                'isDeleted' => $p->trashed(),
+                'isDeleted' => !empty($p->deleted_at),
             ])
             ->values()
             ->all();
 
         $suppliers = [];
         if (Schema::hasTable('suppliers')) {
-            $suppliers = Supplier::orderBy('id', 'asc')
-                ->get()
-                ->map(fn (Supplier $s) => [
+            $suppliers = DB::table('suppliers')->whereNull('deleted_at')->orderBy('id', 'asc')
+                ->get(['id', 'contact', 'company', 'phone'])
+                ->map(fn ($s) => [
                     'id' => (string) $s->id,
                     'name' => $s->contact ?: $s->company,
                     'company' => $s->company ?: ($s->contact ?? 'عام'),
@@ -2143,15 +2120,15 @@ class InventorySubController extends Controller
             ->values()
             ->all();
 
-        $products = Item::withTrashed()
-            ->with('category')
+        $catNames = DB::table('categories')->pluck('name', 'id')->all();
+        $products = DB::table('items')
             ->orderBy('id', 'asc')
             ->get()
-            ->map(fn (Item $p) => [
+            ->map(fn ($p) => [
                 'id' => (string) $p->id,
                 'itemType' => $p->item_type ?: 'صنف مخزني',
                 'categoryId' => $p->category_id ? (string) $p->category_id : '',
-                'categoryName' => $p->category ? $p->category->name : 'عام',
+                'categoryName' => $catNames[$p->category_id] ?? 'عام',
                 'name' => $p->name,
                 'barcode' => $p->barcode ?? '',
                 'unit' => $p->unit ?: 'قطعة',
@@ -2160,16 +2137,16 @@ class InventorySubController extends Controller
                 'lastBuyPrice' => round((float) $p->last_buy_price, 3),
                 'retailPrice' => round((float) $p->retail_price, 3),
                 'isDisabled' => (bool) $p->is_disabled,
-                'isDeleted' => $p->trashed(),
+                'isDeleted' => !empty($p->deleted_at),
             ])
             ->values()
             ->all();
 
         $suppliers = [];
         if (Schema::hasTable('suppliers')) {
-            $suppliers = Supplier::orderBy('id', 'asc')
-                ->get()
-                ->map(fn (Supplier $s) => [
+            $suppliers = DB::table('suppliers')->whereNull('deleted_at')->orderBy('id', 'asc')
+                ->get(['id', 'contact', 'company', 'phone'])
+                ->map(fn ($s) => [
                     'id' => (string) $s->id,
                     'name' => $s->contact ?: $s->company,
                     'company' => $s->company ?: ($s->contact ?? 'عام'),
@@ -2507,11 +2484,12 @@ class InventorySubController extends Controller
             'name' => $c->name,
         ])->values()->all();
 
-        $items = Item::with('category')
+        $catById = DB::table('categories')->get()->keyBy('id');
+        $items = DB::table('items')->whereNull('deleted_at')
             ->where('is_disabled', false)
             ->orderBy('id', 'asc')
             ->get()
-            ->map(function (Item $item) {
+            ->map(function ($item) use ($catById) {
                 $qty = round((float) $item->qty, 3);
                 $minStock = (float) ($item->min_stock ?? 0);
 
@@ -2527,7 +2505,7 @@ class InventorySubController extends Controller
                     $stockLevel = 'sufficient'; // رصيد كاف
                 }
 
-                $catObj = $item->category;
+                $catObj = $catById[$item->category_id] ?? null;
                 $parentCatId = $catObj && $catObj->parent_id ? (string) $catObj->parent_id : ($catObj ? (string) $catObj->id : '');
 
                 return [

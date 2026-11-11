@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>الأدوات والمخزن | جرد الأصناف - NextStore SaaS</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="/vendor/fonts/fonts.css" rel="stylesheet">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <script src="/vendor/sweetalert2/sweetalert2.all.min.js"></script>
 
     <style>
         :root {
@@ -386,9 +384,19 @@
             .audit-window { width: 100%; border: none; box-shadow: none; margin: 0; }
             .table-container { overflow: visible; border: none; }
         }
+        /* هوية موحدة: مسطح بدون تدرجات وبعرض الشاشة */
+        .audit-window { width: auto; max-width: none; margin: 0 12px 10px; background: #fff; border: 1px solid #d5dde6; border-radius: 10px; box-shadow: none; }
+        .win-titlebar { background: #fff; }
+        .top-controls-area { background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+        .win-select, .stock-filter-btn, .balance-cell-btn, .win-action-btn { background: #fff; background-image: none; border: 1px solid #cbd5e1; border-radius: 7px; box-shadow: none; }
+        .stock-filter-btn.active { background: #ecfdf3; border-color: #119744; box-shadow: none; }
+        .blue-search-input { background: #fff; border: 1px solid #cbd5e1; color: #0f172a; border-radius: 7px; }
+        .audit-table thead th { background: #e9edf2; background-image: none; color: #334155; }
+        .total-balance-badge { background: #17283d; border-radius: 7px; }
     </style>
+    <link rel="stylesheet" href="/css/nextstore-erp.css">
 </head>
-<body>
+<body class="ns-erp">
 
     <!-- الهيدر العلوي للنظام -->
     <header class="ns-header">
@@ -774,7 +782,7 @@
             a.click();
         });
 
-        document.getElementById('btnPrintAudit').addEventListener('click', () => window.print());
+        document.getElementById('btnPrintAudit').addEventListener('click', () => NextStorePagePrint.print());
 
         function handleClose() {
             if (window.history.length > 1) window.history.back();
@@ -812,5 +820,8 @@
         applyFiltersAndRender();
     })();
     </script>
+    @include('partials.page-print', ['page' => 'inventory_count'])
+    <script src="/js/nextstore-nav.js"></script>
+    <script src="/js/nextstore-alerts.js"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 @section('title', 'استيراد الأصناف من Excel | NextStore SaaS')
 
 @section('content')
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="/vendor/xlsx/xlsx.full.min.js"></script>
 
 <style>
     .workspace:has(.import-studio-wrap) {

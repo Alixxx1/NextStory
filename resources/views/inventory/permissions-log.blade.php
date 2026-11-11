@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>المخزن | سجل وحركة أذون التوريد والصرف الإدارية - NextStore SaaS</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="/vendor/fonts/fonts.css" rel="stylesheet">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <script src="/vendor/sweetalert2/sweetalert2.all.min.js"></script>
 
     <style>
         :root {
@@ -402,8 +400,9 @@
             .table-workspace { margin: 0; border: none; overflow: visible; }
         }
     </style>
+    <link rel="stylesheet" href="/css/nextstore-erp.css">
 </head>
-<body>
+<body class="ns-erp">
 
     <header class="ns-header">
         <div class="ns-header-right">
@@ -1039,7 +1038,7 @@
             a.click();
         });
 
-        document.getElementById('btnPrintCurrentView').addEventListener('click', () => window.print());
+        document.getElementById('btnPrintCurrentView').addEventListener('click', () => NextStorePagePrint.print());
 
         function handleExit() {
             if (window.history.length > 1) window.history.back();
@@ -1075,5 +1074,8 @@
         init();
     })();
     </script>
+    @include('partials.page-print', ['page' => 'inventory'])
+    <script src="/js/nextstore-nav.js"></script>
+    <script src="/js/nextstore-alerts.js"></script>
 </body>
 </html>

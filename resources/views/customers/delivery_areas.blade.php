@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>مناطق التوصيل وأسعارها | NextStore SaaS</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/vendor/bootstrap/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
     <style>
         :root {
             --primary: #119744;
@@ -318,8 +318,9 @@
             .zones-workspace { min-height: 75vh; }
         }
     </style>
+    <link rel="stylesheet" href="/css/nextstore-erp.css">
 </head>
-<body>
+<body class="ns-erp">
     {{-- 1. الهيدر العلوي وزر الخروج (Esc) --}}
     <header class="page-header">
         <div>
@@ -365,8 +366,9 @@
                 <thead>
                     <tr>
                         <th width="8%">م</th>
-                        <th width="36%">المنطقة</th>
-                        <th width="22%">سعر التوصيل الافتراضي</th>
+                        <th width="28%">المنطقة</th>
+                        <th width="17%">سعر التوصيل الافتراضي</th>
+                        <th width="13%">عمولة الطيار</th>
                         <th width="16%">العملاء المسجلون</th>
                         <th width="18%">إجراءات</th>
                     </tr>
@@ -424,6 +426,15 @@
                     <small class="text-muted fw-bold d-block mt-2">
                         <i class="fas fa-circle-info text-primary me-1"></i> يمكنك كتابة <span class="en-digit">0</span> إذا كان التوصيل مجانياً.
                     </small>
+                </div>
+                {{-- عمولة الطيار الجاهزة للمنطقة --}}
+                <div class="mt-3">
+                    <label class="form-label fw-bold text-dark" for="zone-commission">عمولة الطيار على الطلب</label>
+                    <div class="input-group input-group-lg">
+                        <input type="text" inputmode="decimal" class="form-control numeric-input text-center text-danger" id="zone-commission" placeholder="0" value="0" maxlength="8" autocomplete="off">
+                        <span class="input-group-text fw-bold">ج.م</span>
+                    </div>
+                    <small class="text-muted fw-bold d-block mt-2">بتتحط لوحدها في شاشة تسليم الطلبات للطيار وتقدر تعدلها هناك.</small>
                 </div>
             </div>
             <div class="custom-modal-footer">
@@ -588,7 +599,7 @@
             function renderZones() {
                 const filtered = getFilteredZones();
                 if (!filtered.length) {
-                    zonesBody.innerHTML = '<tr><td colspan="5" class="text-muted py-5">لا توجد مناطق توصيل مطابقة.</td></tr>';
+                    zonesBody.innerHTML = '<tr><td colspan="6" class="text-muted py-5">لا توجد مناطق توصيل مطابقة.</td></tr>';
                 } else {
                     if (!filtered.some(z => String(z.id) === String(selectedZoneId))) {
                         selectedZoneId = filtered[0].id;
@@ -608,6 +619,7 @@
                                         ${feeVal.toFixed(2)} ج.م
                                     </span>
                                 </td>
+                                <td class="en-digit fw-bold text-danger">${Number(zone.rider_commission) ? Number(zone.rider_commission).toFixed(2) + ' ج.م' : '—'}</td>
                                 <td>
                                     <span class="badge ${linkedCount > 0 ? 'bg-primary' : 'bg-secondary'} en-digit">
                                         ${linkedCount} عميل
@@ -654,7 +666,7 @@
             function validateName() {
                 const raw = cleanZoneName(nameInput.value);
                 if (!raw) return setError(nameInput, nameError, 'يرجى إدخال اسم المنطقة (هذا الحقل مطلوب).');
-                if (raw.length < 2) return setError(nameInput, nameError, 'اسم المنطقة يجب أن يتكون من حرفين على الأقل.');
+                if (!raw.length) return setError(nameInput, nameError, 'يرجى إدخال اسم المنطقة.');
                 if (raw.length > 80) return setError(nameInput, nameError, 'اسم المنطقة طويل جداً (الحد الأقصى 80 حرفاً).');
                 if (/^\d+$/.test(raw)) return setError(nameInput, nameError, 'لا يمكن أن يتكون اسم المنطقة من أرقام فقط.');
 
@@ -706,6 +718,7 @@
 
                 nameInput.value = zone ? zone.name : '';
                 feeInput.value = zone ? String(Number(zone.fee)) : '0';
+                document.getElementById('zone-commission').value = zone ? String(Number(zone.rider_commission) || 0) : '0';
 
                 modalBackdrop.classList.add('is-open');
                 setTimeout(() => {
@@ -748,7 +761,8 @@
                     if (editingZone) {
                         const res = await apiRequest(`${API_BASE_URL}/${encodeURIComponent(editingZone.id)}`, 'PUT', {
                             name: cleanName,
-                            fee: feeVal
+                            fee: feeVal,
+                            rider_commission: Number(toEnglishDigits(document.getElementById('zone-commission').value)) || 0
                         });
                         const idx = zones.findIndex(z => String(z.id) === String(editingZone.id));
                         if (idx !== -1 && res.zone) {
@@ -759,7 +773,8 @@
                     } else {
                         const res = await apiRequest(API_BASE_URL, 'POST', {
                             name: cleanName,
-                            fee: feeVal
+                            fee: feeVal,
+                            rider_commission: Number(toEnglishDigits(document.getElementById('zone-commission').value)) || 0
                         });
                         if (res.zone) {
                             zones.push(res.zone);
@@ -974,5 +989,7 @@
             loadZones();
         })();
     </script>
+    <script src="/js/nextstore-nav.js"></script>
+    <script src="/js/nextstore-alerts.js"></script>
 </body>
 </html>

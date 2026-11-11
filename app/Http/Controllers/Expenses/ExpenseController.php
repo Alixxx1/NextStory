@@ -270,6 +270,7 @@ class ExpenseController extends Controller
 
             $expense->update(['is_synced' => false]);
             $expense->delete();
+            \App\Support\SecurityAlert::raise('expense_deleted', 'حذف مصروف', ['البيان' => $expense->getAttribute('note') ?? $expense->getAttribute('description') ?? null], (float) $expense->getAttribute('amount'), (string) $expense->id);
 
             return response()->json([
                 'status' => 'success',

@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>تقارير العمل | ملخص الوردية - NextStore SaaS</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="/vendor/fonts/fonts.css" rel="stylesheet">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
 
     <style>
         :root {
@@ -323,8 +321,9 @@
         }
         .btn-shift-action:hover { background: var(--ns-navy); color: #fff; }
     </style>
+    <link rel="stylesheet" href="/css/nextstore-erp.css">
 </head>
-<body>
+<body class="ns-erp">
 
     <div class="loading-overlay" id="shiftLoadingOverlay">
         <div class="loading-card">
@@ -403,7 +402,7 @@
 
         <footer class="shift-footer">
             <div style="display:flex; gap:10px;">
-                <button type="button" class="btn-shift-action" onclick="window.print()">
+                <button type="button" class="btn-shift-action" onclick="NextStorePagePrint.print()">
                     <i class="fa-solid fa-print" style="color:#0284c7;"></i> طباعة
                 </button>
                 <button type="button" class="btn-shift-action" id="btnExportShiftCsv">
@@ -467,12 +466,14 @@
             try {
                 const iso = toISODate(currentDateObj);
                 const source = document.getElementById('sourceSelect').value;
-                const res = await fetch(`/api/reports/shift-data?date=${encodeURIComponent(iso)}&source=${encodeURIComponent(source)}`, {
+                const shiftId = document.getElementById('shiftSelect').value;
+                const res = await fetch(`/api/reports/shift-data?date=${encodeURIComponent(iso)}&source=${encodeURIComponent(source)}${shiftId !== 'all' ? `&shift_id=${encodeURIComponent(shiftId)}` : ''}`, {
                     headers: { 'Accept': 'application/json' }
                 });
                 bar.style.width = '100%';
                 if (res.ok) {
                     shiftData = await res.json();
+                    renderShiftOptions(shiftId);
                     renderShiftTab();
                 }
             } catch (e) {
@@ -480,6 +481,15 @@
             } finally {
                 setTimeout(() => overlay.classList.remove('active'), 120);
             }
+        }
+
+        // قائمة ورديات اليوم + الوردية المفتوحة (القيمة 'all' = كل ورديات اليوم)
+        function renderShiftOptions(selected) {
+            const sel = document.getElementById('shiftSelect');
+            const dayLabel = document.getElementById('optShiftLabel')?.textContent || 'كل ورديات اليوم';
+            sel.innerHTML = `<option value="all" id="optShiftLabel">${dayLabel}</option>` + (shiftData.shifts || [])
+                .map(s => `<option value="${s.id}">${s.label.replace(/[<>&]/g, '')}</option>`).join('');
+            sel.value = [...sel.options].some(o => o.value === selected) ? selected : 'all';
         }
 
         function renderShiftTab() {
@@ -516,6 +526,15 @@
                             <span class="shift-lbl">إجمالي المبالغ الصادرة:</span>
                             <div class="shift-val-box en-digit" style="color:var(--ns-danger);">${fmtMoney(t.totalOutflow)}</div>
                         </div>
+                        ${t.cancelledTotal ? `<div class="shift-sub-line">
+                            <span></span>
+                            <span class="shift-lbl" style="text-align:center;">منها فواتير ملغاة (${(shiftData.cancelled || []).length})</span>
+                            <div class="shift-val-box en-digit" style="color:var(--ns-danger);">${fmtMoney(t.cancelledTotal)}</div>
+                        </div>` : ''}
+                        ${shiftData.expectedDrawer != null ? `<div class="shift-line">
+                            <span class="shift-lbl">المتوقع في الدرج الآن:</span>
+                            <div class="shift-val-box en-digit" style="font-size:16px;">${fmtMoney(shiftData.expectedDrawer)}</div>
+                        </div>` : ''}
 
                         <div class="shift-line">
                             <span class="shift-lbl">صافي:</span>
@@ -625,6 +644,7 @@
         });
 
         document.getElementById('sourceSelect').addEventListener('change', fetchShiftData);
+        document.getElementById('shiftSelect').addEventListener('change', fetchShiftData);
         document.getElementById('userSelect').addEventListener('change', fetchShiftData);
 
         document.getElementById('btnExportShiftCsv').addEventListener('click', () => {
@@ -665,5 +685,8 @@
         fetchShiftData();
     })();
     </script>
+    @include('partials.page-print', ['page' => 'shift_report'])
+    <script src="/js/nextstore-nav.js"></script>
+    <script src="/js/nextstore-alerts.js"></script>
 </body>
 </html>

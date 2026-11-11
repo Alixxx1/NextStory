@@ -19,6 +19,7 @@ class SalesInvoice extends Model
         'external_sub_total' => 'float',
         'gross_total' => 'float',
         'service_fee' => 'float',
+        'rounding_adjustment' => 'float',
         'invoice_discount' => 'float',
         'item_discount' => 'float',
         'net_value' => 'float',
@@ -54,4 +55,43 @@ class SalesInvoice extends Model
     {
         return $this->belongsTo(Customer::class, 'customer_id')->withTrashed();
     }
+
+    /** صافي السطر بعد نصيبه من خصم الفاتورة والتقريب (للفواتير القديمة يُحسب نصيب الخصم بالنسبة) */
+    public function lineNet(SalesInvoiceItem $line): float
+    {
+        if ($line->net_total !== null) {
+            return (float) $line->net_total;
+        }
+        $storeSub = (float) $this->store_sub_total;
+        $total = (float) $line->total;
+        if ($line->is_external || $storeSub <= 0) {
+            return $total;
+        }
+        return round($total - (float) $this->invoice_discount * $total / $storeSub, 2);
+    }
+
+    /** إيراد وتكلفة أصناف المحل المتبقية بعد المرتجعات */
+    public function remainingStoreRevenueAndCost(): array
+    {
+        $revenue = 0.0;
+        $cost = 0.0;
+        foreach ($this->items as $line) {
+            $qty = (float) $line->qty;
+            if ($line->is_external || $qty <= 0) {
+                continue;
+            }
+            $remain = max(0, $qty - (float) $line->returned_qty);
+            $revenue += $this->lineNet($line) * $remain / $qty;
+            $cost += (float) $line->cost * $remain;
+        }
+        return [round($revenue, 2), round($cost, 2)];
+    }
+
+    /** الربح = إيراد أصناف المحل المتبقية − تكلفتها */
+    public function computeProfit(): float
+    {
+        [$revenue, $cost] = $this->remainingStoreRevenueAndCost();
+        return round($revenue - $cost, 2);
+    }
 }
+

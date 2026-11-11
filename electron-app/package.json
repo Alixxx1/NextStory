@@ -1,0 +1,67 @@
+{
+  "name": "nextstore-desktop",
+  "productName": "NextStore POS",
+  "version": "1.0.0",
+  "description": "NextStore POS - نسخة سطح المكتب",
+  "main": "main.js",
+  "author": "NextStore",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --x64"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.nextstore.pos",
+    "productName": "NextStore POS",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "php-bin",
+        "to": "php-bin"
+      },
+      {
+        "from": "..",
+        "to": "laravel",
+        "filter": [
+          "**/*",
+          "!electron-app/**",
+          "!node_modules/**",
+          "!.git/**",
+          "!tests/**",
+          "!storage/logs/*.log",
+          "!storage/framework/sessions/*",
+          "!storage/framework/views/*.php",
+          "!storage/app/backups/**",
+          "!storage/app/update-work/**",
+          "!database/*.sqlite-*",
+          "!**/*.nsbak",
+          "!public/storage"
+        ]
+      }
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "NextStore POS"
+    }
+  },
+  "allowScripts": {
+    "electron@33.4.11": true
+  }
+}

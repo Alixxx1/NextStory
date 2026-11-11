@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>المخزن | إذن مخزن (أمر توريد / أمر صرف) - NextStore SaaS</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="/vendor/fonts/fonts.css" rel="stylesheet">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <script src="/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+    <script src="/js/nextstore-supplier-add.js"></script>
 
     <style>
         :root {
@@ -611,8 +610,9 @@
             .table-workspace { margin: 0; border: none; overflow: visible; }
         }
     </style>
+    <link rel="stylesheet" href="/css/nextstore-erp.css">
 </head>
-<body>
+<body class="ns-erp">
 
     <header class="ns-header">
         <div class="ns-header-right">
@@ -841,6 +841,7 @@
         let nextOrderNumber = Number(@json($initialNextOrderNumber ?? 1)) || 1;
 
         let orderRows = [];
+        window.nsDirty = () => orderRows.length > 0;
         let selectedRowIndex = -1;
         let currentOrderDate = new Date();
         let currentSupplierName = suppliers.length > 0 ? suppliers[0].name : 'مورد عام';
@@ -1076,19 +1077,29 @@
                 title: 'اختيار المورد / الجهة',
                 html: `
                     <select id="swalSupplierSelect" class="ns-select" style="width:100%; height:40px; margin-bottom:10px;">${opts}</select>
-                    <input type="text" id="swalNewSupplierInput" class="ns-input" placeholder="أو اكتب اسم مورد جديد هنا...">
+                    <small style="color:#64748b">المورد مش موجود؟ اضغط <b>F2</b> لإضافته</small>
                 `,
+                showDenyButton: true,
+                denyButtonText: 'مورد جديد (F2)',
+                denyButtonColor: '#475569',
+                didOpen: () => {
+                    document.getElementById('swalSupplierSelect').focus();
+                    Swal.getPopup().addEventListener('keydown', e => { if (e.key === 'F2') { e.preventDefault(); Swal.clickDeny(); } });
+                },
                 showCancelButton: true,
                 confirmButtonText: 'اختيار',
                 cancelButtonText: 'إلغاء',
                 confirmButtonColor: '#119744'
-            }).then(res => {
-                if (!res.isConfirmed) return;
-                const newSup = document.getElementById('swalNewSupplierInput').value.trim();
-                const chosen = newSup || document.getElementById('swalSupplierSelect').value || 'مورد عام';
-                if (newSup && !suppliers.some(s => s.name === newSup)) {
-                    suppliers.push({ id: 'NEW-' + Date.now(), name: newSup, company: newSup, phone: '' });
-                }
+            }).then(async res => {
+                let chosen;
+                if (res.isDenied) {
+                    const sup = await NextStoreSupplierAdd();
+                    if (!sup) return;
+                    suppliers.push({ id: String(sup.id), name: sup.contact || sup.company, company: sup.company, phone: sup.phone || '' });
+                    chosen = sup.contact || sup.company;
+                } else if (res.isConfirmed) {
+                    chosen = document.getElementById('swalSupplierSelect').value || 'مورد عام';
+                } else return;
                 currentSupplierName = chosen;
                 document.getElementById('selectedSupplierDisplay').textContent = chosen;
             });
@@ -1397,5 +1408,7 @@
         init();
     })();
     </script>
+    <script src="/js/nextstore-nav.js"></script>
+    <script src="/js/nextstore-alerts.js"></script>
 </body>
 </html>

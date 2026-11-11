@@ -7,15 +7,13 @@
     <title>المخزن | أصناف المخزن والتسعير - NextStore SaaS</title>
 
     <!-- خط Cairo المعتمد -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="/vendor/fonts/fonts.css" rel="stylesheet">
 
     <!-- أيقونات FontAwesome 6 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
 
     <!-- مكتبة SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/vendor/sweetalert2/sweetalert2.all.min.js"></script>
 
     <style>
         :root {
@@ -810,8 +808,9 @@
             justify-content: space-between;
         }
     </style>
+    <link rel="stylesheet" href="/css/nextstore-erp.css">
 </head>
-<body>
+<body class="ns-erp">
 
     <!-- ==================== 1. الهيدر العلوي ==================== -->
     <header class="ns-header">
@@ -1510,8 +1509,8 @@
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
         // البيانات الحقيقية المحملة مباشرة من قاعدة البيانات عبر Laravel Controller
-        let categories = @json($initialCategories ?? []);
-        let products = @json($initialProducts ?? []);
+        let categories = {!! json_encode($initialCategories ?? [], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!};
+        let products = {!! json_encode($initialProducts ?? [], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!};
         let filteredProducts = [];
         let activeRowIndex = -1;
         let checkedProductIds = new Set();
@@ -1788,15 +1787,32 @@
                 activeRowIndex = 0;
             }
 
-            tbody.innerHTML = filteredProducts.map((p, idx) => {
+            filteredProducts.forEach(p => {
+                const qty = parseFloat(p.qty) || 0;
+                const buyPrice = parseFloat(p.lastBuyPrice) || 0;
+                const retailPrice = parseFloat(p.retailPrice) || 0;
+                totalLastBuyVal += (qty > 0 ? qty * buyPrice : buyPrice);
+                totalRetailVal += (qty > 0 ? qty * retailPrice : retailPrice);
+            });
+
+            // أول دفعة بس، والباقي يتضاف وانت بتنزل (بدل 2000 صف مرة واحدة)
+            renderedRows = 0;
+            tbody.innerHTML = '';
+            appendItemRows(Math.max(ROW_CHUNK, activeRowIndex + 1));
+            updateFooterTotals(filteredProducts.length, totalLastBuyVal, totalRetailVal);
+            updateBottomButtonsState();
+        }
+
+        const ROW_CHUNK = 120;
+        let renderedRows = 0;
+
+        function itemRowHtml(p, idx) {
                 const qty = parseFloat(p.qty) || 0;
                 const buyPrice = parseFloat(p.lastBuyPrice) || 0;
                 const avgCost = parseFloat(p.avgCost) || 0;
                 const retailPrice = parseFloat(p.retailPrice) || 0;
                 const rowTotalVal = qty > 0 ? (qty * buyPrice) : 0;
 
-                totalLastBuyVal += (qty > 0 ? qty * buyPrice : buyPrice);
-                totalRetailVal += (qty > 0 ? qty * retailPrice : retailPrice);
 
                 const margin = calcProfitMargin(p);
                 const qtyClass = qty > 0 ? 'qty-positive' : (qty < 0 ? 'qty-negative' : 'qty-zero');
@@ -1830,53 +1846,63 @@
                         <td class="price-retail-cell">${formatNum(retailPrice)} ج.م</td>
                     </tr>
                 `;
-            }).join('');
-
-            updateFooterTotals(filteredProducts.length, totalLastBuyVal, totalRetailVal);
-
-            tbody.querySelectorAll('tr[data-index]').forEach(tr => {
-                tr.addEventListener('click', function (e) {
-                    if (e.target.classList.contains('row-check')) return;
-                    activeRowIndex = parseInt(this.getAttribute('data-index'), 10);
-                    if (e.ctrlKey) {
-                        const pid = Number(this.getAttribute('data-id'));
-                        if (checkedProductIds.has(pid)) checkedProductIds.delete(pid);
-                        else checkedProductIds.add(pid);
-                        renderItemsTable();
-                        return;
-                    }
-                    highlightActiveRow();
-                });
-
-                tr.addEventListener('dblclick', function () {
-                    activeRowIndex = parseInt(this.getAttribute('data-index'), 10);
-                    highlightActiveRow();
-                    openItemFormModal(filteredProducts[activeRowIndex]);
-                });
-            });
-
-            tbody.querySelectorAll('.row-check').forEach(chk => {
-                chk.addEventListener('change', function () {
-                    const pid = Number(this.getAttribute('data-id'));
-                    if (this.checked) checkedProductIds.add(pid);
-                    else checkedProductIds.delete(pid);
-                    this.closest('tr').classList.toggle('checked-row', this.checked);
-                    updateBottomButtonsState();
-                });
-            });
-
-            updateBottomButtonsState();
         }
 
-        function highlightActiveRow() {
-            document.querySelectorAll('#itemsTableBody tr[data-index]').forEach((tr, idx) => {
-                if (idx === activeRowIndex) {
-                    tr.classList.add('active-row');
-                    tr.scrollIntoView({ block: 'nearest' });
-                } else {
-                    tr.classList.remove('active-row');
+        function appendItemRows(upTo) {
+            const end = Math.min(filteredProducts.length, upTo);
+            if (end <= renderedRows) return;
+            const html = [];
+            for (let i = renderedRows; i < end; i++) html.push(itemRowHtml(filteredProducts[i], i));
+            document.getElementById('itemsTableBody').insertAdjacentHTML('beforeend', html.join(''));
+            renderedRows = end;
+        }
+
+        // ضغطات الصفوف بمستمع واحد على الجدول كله
+        (() => {
+            const tbody = document.getElementById('itemsTableBody');
+            const rowOf = e => e.target.closest('tr[data-index]');
+            tbody.addEventListener('click', e => {
+                const tr = rowOf(e);
+                if (!tr || e.target.classList.contains('row-check')) return;
+                activeRowIndex = parseInt(tr.getAttribute('data-index'), 10);
+                if (e.ctrlKey) {
+                    const pid = Number(tr.getAttribute('data-id'));
+                    if (checkedProductIds.has(pid)) checkedProductIds.delete(pid);
+                    else checkedProductIds.add(pid);
+                    renderItemsTable();
+                    return;
                 }
+                highlightActiveRow();
             });
+            tbody.addEventListener('dblclick', e => {
+                const tr = rowOf(e);
+                if (!tr) return;
+                activeRowIndex = parseInt(tr.getAttribute('data-index'), 10);
+                highlightActiveRow();
+                openItemFormModal(filteredProducts[activeRowIndex]);
+            });
+            tbody.addEventListener('change', e => {
+                if (!e.target.classList.contains('row-check')) return;
+                const pid = Number(e.target.getAttribute('data-id'));
+                if (e.target.checked) checkedProductIds.add(pid);
+                else checkedProductIds.delete(pid);
+                e.target.closest('tr').classList.toggle('checked-row', e.target.checked);
+                updateBottomButtonsState();
+            });
+            let scroller = tbody.parentElement;
+            while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement;
+            (scroller || window).addEventListener('scroll', () => {
+                const el = scroller || document.documentElement;
+                if (el.scrollTop + el.clientHeight > el.scrollHeight - 600) appendItemRows(renderedRows + ROW_CHUNK);
+            }, { passive: true });
+        })();
+
+        function highlightActiveRow() {
+            appendItemRows(activeRowIndex + 1);
+            const tbody = document.getElementById('itemsTableBody');
+            tbody.querySelectorAll('tr.active-row').forEach(tr => tr.classList.remove('active-row'));
+            const tr = tbody.querySelector(`tr[data-index="${activeRowIndex}"]`);
+            if (tr) { tr.classList.add('active-row'); tr.scrollIntoView({ block: 'nearest' }); }
             updateBottomButtonsState();
         }
 
@@ -2442,10 +2468,11 @@
             });
         });
 
-        document.getElementById('toolShowItemMovement').addEventListener('click', () => {
+        document.getElementById('toolShowItemMovement').addEventListener('click', async () => {
             if (activeRowIndex < 0 || !filteredProducts[activeRowIndex]) return;
             const item = filteredProducts[activeRowIndex];
-            const moves = Array.isArray(item.movements) ? item.movements : [];
+            let moves = [];
+            try { moves = await (await fetch('/inventory/items/' + item.id + '/movements', { headers: { Accept: 'application/json' } })).json(); } catch (e) {}
 
             const renderMovementsRows = (showCost) => {
                 if (moves.length === 0) {
@@ -2752,7 +2779,7 @@
             a.click();
         });
 
-        document.getElementById('btnPrintList').addEventListener('click', () => window.print());
+        document.getElementById('btnPrintList').addEventListener('click', () => NextStorePagePrint.print());
 
         function handleExit() {
             if (window.history.length > 1) window.history.back();
@@ -2814,5 +2841,8 @@
         init();
     })();
     </script>
+    @include('partials.page-print', ['page' => 'inventory'])
+    <script src="/js/nextstore-nav.js"></script>
+    <script src="/js/nextstore-alerts.js"></script>
 </body>
 </html>

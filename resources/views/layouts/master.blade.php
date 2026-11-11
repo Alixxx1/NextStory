@@ -6,12 +6,10 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'برنامج إدارة الطلبات - النافذة الرئيسية | NextStore POS')</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="/vendor/fonts/fonts.css" rel="stylesheet">
+    <link rel="stylesheet" href="/vendor/bootstrap/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <script src="/vendor/sweetalert2/sweetalert2.all.min.js"></script>
 
     <style>
         :root {
@@ -130,6 +128,11 @@
             font-weight: 800;
             cursor: pointer;
         }
+        /* المنيو يفضل جوه الشاشة: ضغط تدريجي بدل ما يخرج بره */
+        .top-menubar { max-width: 100vw; overflow-x: clip; }
+        .nav-item-title { padding: 6px clamp(5px, .7vw, 10px); font-size: clamp(11.5px, .95vw, 13px); }
+        @media (max-width: 1800px) { .web-sync-pill-btn span { display: none; } .web-sync-pill-btn { padding: 6px 10px; } }
+        @media (max-width: 1700px) { .top-menubar { gap: 0; padding-inline: 6px; } .nav-item-title { padding-inline: 5px; gap: 3px; } .nav-item-title::after { display: none; } } @media (max-width: 1700px) { .nav-item-title i:not(.fa-chevron-down) { display: none; } .saas-brand { font-size: 17px; padding-inline: 8px; } }
         .soon-badge {
             background: #f59e0b;
             color: #0f172a;
@@ -396,7 +399,7 @@
         'role'        => 'branch_admin',
         'role_label'  => 'مدير',
         'permissions' => $defaultAllPerms,
-        'shift_no'    => session('pos_shift_number', 136),
+        'shift_no'    => null,
     ]);
 
     // جلب بيانات الوردية المفتوحة حالياً بأمان تام مهما اختلف اسم العمود في الجدول
@@ -409,11 +412,11 @@
     }
 
     $activeShiftNumber = $activeShiftObj
-        ? ($activeShiftObj->shift_number ?? $activeShiftObj->shift_no ?? $activeShiftObj->number ?? $activeShiftObj->id ?? 136)
-        : ($posSessionUser['shift_no'] ?? 136);
+        ? ($activeShiftObj->shift_no ?? $activeShiftObj->id)
+        : ($posSessionUser['shift_no'] ?? '—');
 
     $activeShiftStartedBy = $activeShiftObj
-        ? ($activeShiftObj->started_by ?? $activeShiftObj->opened_by ?? $activeShiftObj->user_name ?? ($posSessionUser['full_name'] ?? 'مدير الفرع'))
+        ? ($activeShiftObj->started_by_name ?? ($posSessionUser['full_name'] ?? 'مدير الفرع'))
         : ($posSessionUser['full_name'] ?? 'مدير الفرع');
 
     $rawStartTime = $activeShiftObj
@@ -427,7 +430,7 @@
 
     <!-- 1. شريط القوائم العلوي -->
     <div class="top-menubar">
-        <a href="/pos/archive" class="saas-brand">Next<span>Store</span></a>
+        <a href="/pos/archive" class="saas-brand">{{ \App\Support\SystemSettings::get('shop_name', 'NextStore') }}</a>
 
         <!-- 1. المبيعات -->
         <div class="nav-item-wrapper">
@@ -606,9 +609,11 @@
             <ul class="custom-dropdown-menu align-left" style="left: 0; right: auto;">
                 <li><a class="custom-dropdown-item fw-bold" href="/admin/users" data-require-manager="1" data-perm-title="إدارة المستخدمين والصلاحيات"><i class="fas fa-user-gear text-primary"></i> المستخدمين</a></li>
                 <li><a class="custom-dropdown-item fw-bold" href="/admin/shifts-log" data-perm="admin.shifts" data-perm-title="سجل الورديات"><i class="fas fa-business-time text-warning"></i> سجل الورديات</a></li>
+                <li><a class="custom-dropdown-item fw-bold" href="/admin/security-alerts"><i class="fas fa-shield-halved text-danger"></i> التنبيهات الأمنية</a></li>
                 <li><a class="custom-dropdown-item fw-bold" href="/admin/login-log" data-perm="admin.login_log" data-perm-title="سجل دخول المستخدمين"><i class="fas fa-clock-rotate-left text-info"></i> سجل دخول المستخدمين</a></li>
                 <div class="custom-dropdown-divider"></div>
                 <li><a class="custom-dropdown-item fw-bold" href="/admin/safes" data-perm="admin.safes" data-perm-title="إدارة الخزائن"><i class="fas fa-vault text-success"></i> إدارة الخزائن</a></li>
+                <li><a class="custom-dropdown-item fw-bold" href="/admin/riders" data-perm="delivery.riders" data-perm-title="الطيارين وتسليمات التوصيل"><i class="fas fa-motorcycle text-success"></i> الطيارين</a></li>
                 <li><a class="custom-dropdown-item" href="/customers/delivery-areas" data-perm="customers.manage" data-perm-title="تحرير مناطق التوصيل"><i class="fas fa-map-location-dot text-info"></i> تحرير مناطق التوصيل</a></li>
                 <div class="custom-dropdown-divider"></div>
 
@@ -680,6 +685,12 @@
                 <span>المصروفات</span>
             </a>
 
+            <!-- تسليم طلبات التوصيل لطيار (طلبات النهارده اللي ما اتسلمتش) -->
+            <button type="button" class="toolbar-icon-box" onclick="NextStoreDispatch.open()" title="تسليم طلبات التوصيل لطيار">
+                <i class="fa-solid fa-motorcycle text-success"></i>
+                <span>تسليم طيار</span>
+            </button>
+
             <!-- 5. الخزنة / إدارة الخزائن -->
             <a href="/admin/safes" class="toolbar-icon-box safes-shortcut" data-perm="admin.safes" data-perm-title="إدارة الخزائن" title="إدارة الخزائن والدرج">
                 <i class="fa-solid fa-vault"></i>
@@ -714,7 +725,7 @@
                 المستخدم الحالي: <strong id="current-user" class="text-primary">{{ $posSessionUser['full_name'] }}</strong>
             </span>
             <span>
-                وردية: <strong class="text-success">#{{ $activeShiftNumber }} ({{ $activeShiftStartedBy }})</strong>
+                الوردية: <strong class="text-success">{{ $activeShiftNumber }} ({{ $activeShiftStartedBy }})</strong>
             </span>
             <span class="text-muted" style="font-size: 11.5px;">
                 (البداية: {{ $activeShiftStartLabel }})
@@ -725,6 +736,7 @@
     <div class="workspace">
         @yield('content')
     </div>
+    @include('partials.dispatch-modal')
 
     <!-- ========================================================================= -->
     <!-- مودال 1: نافذة "فحص صلاحيات المدير" -->
@@ -899,8 +911,8 @@
         </div>
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/vendor/jquery/jquery-3.6.0.min.js"></script>
+    <script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
     <script>
         (() => {
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -1130,6 +1142,10 @@
                         if (!res.ok || !data.ok) {
                             throw new Error(data.message || 'فشل تصفير النظام');
                         }
+                        // مسح النسخ المخزنة في المتصفح (عملاء/فواتير/مرتجعات/درج) حتى لا تظهر الأرصدة القديمة بعد التصفير
+                        const keepKeys = /whatsapp|custom_banner|custom_store_title|inventory_categories|inventory\.units|delivery-zones/;
+                        Object.keys(localStorage).filter(k => /^nex(t)?store/.test(k) && !keepKeys.test(k)).forEach(k => localStorage.removeItem(k));
+                        sessionStorage.clear();
 
                         Swal.fire({
                             icon: 'success',
@@ -1239,6 +1255,8 @@
                     const out = await r.json().catch(() => ({}));
                     if (r.ok) {
                         window.location.href = out.redirect || '/login';
+                    } else {
+                        Swal.fire('تعذر قفل الوردية', out.message || 'حاول مرة أخرى.', 'error');
                     }
                 });
             }
@@ -1329,5 +1347,7 @@
             });
         })();
     </script>
+    <script src="/js/nextstore-nav.js"></script>
+    <script src="/js/nextstore-alerts.js"></script>
 </body>
 </html>

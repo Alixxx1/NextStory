@@ -371,12 +371,13 @@ class ShowController extends Controller
             ->values()
             ->all();
 
-        $custMap = Customer::withTrashed()->get()->keyBy('id');
-
-        $transactions = CustomerTransaction::whereIn('type', ['payment', 'refund', 'settlement'])
+        $txs = CustomerTransaction::whereIn('type', ['payment', 'refund', 'settlement'])
             ->orderByDesc('transaction_date')
             ->orderByDesc('id')
-            ->get()
+            ->get();
+        $custMap = Customer::withTrashed()->whereIn('id', $txs->pluck('customer_id')->unique())->get()->keyBy('id');
+
+        $transactions = $txs
             ->map(function (CustomerTransaction $tx) use ($custMap) {
                 $cust = $custMap->get($tx->customer_id);
                 return $this->formatVoucherTransaction($tx, $cust);
@@ -521,6 +522,7 @@ class ShowController extends Controller
 
             $customerId = $tx->customer_id;
             $tx->update(['is_synced' => false]);
+            \App\Support\SecurityAlert::raise('voucher_deleted', 'حذف سند عميل', ['النوع' => $tx->type, 'رقم السند' => $tx->ref_no], (float) $tx->amount, (string) $tx->ref_no, 'danger');
             $tx->delete();
 
             $this->recalculateAndSyncCustomerBalance($customerId);
@@ -560,7 +562,8 @@ class ShowController extends Controller
         $serviceTotal = (float) $invoices->sum('service_fee');
 
         // المرتجعات التي خُصمت من حساب العميل أو إجمالي المرتجعات
-        $returnsRecords = SalesReturn::where('customer_id', $customer->id)->get();
+        // مرتجعات الفواتير الملغاة لا تدخل الحساب (أثرها اتعكس مع إلغاء الفاتورة)
+        $returnsRecords = SalesReturn::where('customer_id', $customer->id)->whereIn('sales_invoice_id', $invoices->pluck('id'))->get();
         $returnsTotal = (float) $returnsRecords->sum('total');
         $cashRefundedInReturns = (float) $returnsRecords->sum('cash_refund');
 

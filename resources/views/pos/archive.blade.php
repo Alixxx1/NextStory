@@ -1,659 +1,268 @@
 @extends('layouts.master')
-
-@section('title', 'برنامج إدارة الطلبات - النافذة الرئيسية | NextSTORE POS')
-
+@section('title', 'طلبات الوردية | ' . ($systemSettings['shop_name'] ?? 'NextStore'))
 @section('content')
 <style>
-    .workspace:has(.pos-main-hub) {
-        display: flex;
-        min-height: 0;
-        min-width: 0;
-        padding: 8px 12px 10px;
-        overflow: hidden;
-    }
+    .workspace:has(.oa-page) { display: flex; min-height: 0; min-width: 0; padding: 10px 12px; overflow: hidden; }
+    .oa-page { --oa-border: #d5dde6; --oa-muted: #64748b; --oa-text: #0f172a; --oa-green: #119744; --oa-navy: #17283d;
+        width: 100%; height: 100%; display: flex; flex-direction: column; gap: 10px; overflow: hidden; color: var(--oa-text); }
+    .oa-num { font-family: 'Segoe UI', Arial, sans-serif !important; direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; }
 
-    .en-num {
-        font-family: 'Segoe UI', Arial, Helvetica, sans-serif !important;
-        direction: ltr !important;
-        unicode-bidi: isolate;
-        font-weight: 800;
-    }
+    /* الهيدر: اسم المحل + الوردية + زر البيع (صورة الإعدادات اختيارية كخلفية هادئة) */
+    .oa-head { position: relative; flex: none; display: flex; align-items: center; gap: 16px; padding: 14px 18px; border-radius: 10px;
+        border: 1px solid var(--oa-border); background: #fff; overflow: hidden; }
+    .oa-head-bg { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: .16; pointer-events: none; }
+    .oa-head > *:not(.oa-head-bg) { position: relative; }
+    .oa-shop { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .oa-shop h1 { margin: 0; font-size: 20px; font-weight: 800; color: var(--oa-navy); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .oa-shop span { font-size: 13px; font-weight: 600; color: var(--oa-muted); }
+    .oa-shift { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 8px; background: #f0faf4; border: 1px solid #bfe5cd; font-size: 13px; font-weight: 700; color: #0d7a36; }
+    .oa-shift.is-closed { background: #fff7ed; border-color: #fed7aa; color: #9a3412; }
+    .oa-new-sale { margin-right: auto; height: 44px; padding: 0 20px; border: 0; border-radius: 8px; background: var(--oa-green); color: #fff; font-size: 15px; font-weight: 800; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+    .oa-new-sale:hover { background: #0d7a36; color: #fff; }
 
-    .pos-main-hub {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        overflow: hidden;
-    }
+    /* بطاقات الأرقام */
+    .oa-stats { flex: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+    .oa-stat { background: #fff; border: 1px solid var(--oa-border); border-radius: 8px; padding: 8px 12px; }
+    .oa-stat span { display: block; font-size: 12px; font-weight: 700; color: var(--oa-muted); }
+    .oa-stat b { font-size: 20px; font-weight: 800; }
+    .oa-stat.is-main { background: var(--oa-navy); border-color: var(--oa-navy); }
+    .oa-stat.is-main span { color: #cbd5e1; }
+    .oa-stat.is-main b { color: #fff; }
 
-    /* ========================================================================= */
-    /* 1. البانر العلوي للهوية البصرية (شفاف ومريح للعين افتراضياً + يقرأ الصورة من الإعدادات فقط) */
-    /* ========================================================================= */
-    .store-hero-banner {
-        position: relative;
-        height: 142px;
-        flex-shrink: 0;
-        border-radius: 12px;
-        border: 1.5px solid #cbd5e1;
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        /* خلفية افتراضية شفافة ومريحة جداً للعين بدون صورة */
-        background:
-            radial-gradient(circle at 15% 50%, rgba(17, 151, 68, 0.05) 0%, transparent 60%),
-            radial-gradient(circle at 85% 50%, rgba(23, 40, 61, 0.05) 0%, transparent 60%),
-            linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(241, 245, 249, 0.65) 100%);
-        backdrop-filter: blur(6px);
-        box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
-    }
+    /* التبويبات والفلاتر */
+    .oa-bar { flex: none; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: #fff; border: 1px solid var(--oa-border); border-radius: 8px; padding: 8px 10px; }
+    .oa-tabs { display: inline-flex; background: #f1f5f9; border-radius: 8px; padding: 3px; gap: 3px; }
+    .oa-tab { border: 0; background: transparent; border-radius: 6px; padding: 6px 14px; font-size: 13px; font-weight: 700; color: var(--oa-muted); display: inline-flex; align-items: center; gap: 6px; }
+    .oa-tab.active { background: #fff; color: var(--oa-text); box-shadow: 0 1px 2px rgba(15,23,42,.12); }
+    .oa-tab .oa-count { background: #e2e8f0; color: #334155; border-radius: 999px; padding: 0 8px; font-size: 12px; }
+    .oa-tab.active .oa-count { background: var(--oa-green); color: #fff; }
+    .oa-search { position: relative; flex: 1 1 280px; }
+    .oa-search i { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--oa-muted); }
+    .oa-search input { width: 100%; height: 38px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0 36px 0 10px; font-size: 14px; font-weight: 600; background: #f8fafc; outline: none; }
+    .oa-search input:focus, .oa-select:focus { border-color: var(--oa-green); background: #fff; box-shadow: 0 0 0 3px rgba(17,151,68,.12); }
+    .oa-select { height: 38px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0 10px; font-size: 13px; font-weight: 700; color: #334155; background: #fff; outline: none; min-width: 140px; }
 
-    /* الطبقة التي تعرض صورة النشاط إذا تم رفعها من صفحة الإعدادات */
-    .store-custom-bg-layer {
-        position: absolute;
-        inset: 0;
-        background-repeat: repeat-x;
-        background-size: auto 100%;
-        background-position: center center;
-        opacity: 0;
-        transition: opacity 0.25s ease;
-        z-index: 1;
-    }
-
-    .store-hero-banner.has-custom-image .store-custom-bg-layer {
-        opacity: 1;
-    }
-
-    /* الكتلة الوسطى المائلة لهوية KSTORE VER 2027 */
-    .hero-center-brand-plate {
-        position: relative;
-        z-index: 3;
-        height: 100%;
-        min-width: 460px;
-        margin: 0 auto;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(248, 250, 252, 0.94) 100%);
-        border-left: 4px solid #119744;
-        border-right: 4px solid #17283d;
-        transform: skewX(-14deg);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0 36px;
-        box-shadow: 0 0 24px rgba(15, 23, 42, 0.08);
-    }
-
-    .hero-center-brand-content {
-        transform: skewX(14deg);
-        text-align: center;
-    }
-
-    .hero-center-brand-content .subtitle-ar {
-        font-size: 15px;
-        font-weight: 900;
-        color: #17283d;
-        margin-bottom: -2px;
-    }
-
-    .hero-center-brand-content .main-logo-en {
-        font-size: 40px;
-        font-weight: 900;
-        letter-spacing: 2px;
-        line-height: 1.05;
-        color: #17283d;
-        direction: ltr;
-    }
-
-    .hero-center-brand-content .main-logo-en span {
-        color: #119744;
-    }
-
-    .hero-center-brand-content .pos-tagline {
-        font-size: 13.5px;
-        font-weight: 900;
-        color: #475569;
-        letter-spacing: 2.5px;
-    }
-
-    .hero-center-brand-content .ver-row {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        margin-top: 4px;
-        background: linear-gradient(135deg, #17283d 0%, #223d59 100%);
-        color: #ffffff;
-        padding: 2px 16px;
-        border-radius: 99px;
-        font-size: 11.5px;
-        font-weight: 800;
-        border: 1px solid rgba(17, 151, 68, 0.4);
-    }
-
-    .hero-center-brand-content .ver-row .ver-badge-num {
-        color: #4ade80;
-    }
-
-    /* الجانب الأيمن في البانر (التبويبين: الطلبات المعلقة / سجل الطلبات) */
-    .hero-right-dock {
-        position: absolute;
-        right: 14px;
-        bottom: 12px;
-        z-index: 4;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-        align-items: flex-end;
-    }
-
-    .archive-mode-tabs {
-        display: flex;
-        gap: 6px;
-    }
-
-    .mode-tab-btn {
-        height: 36px;
-        padding: 0 14px;
-        border-radius: 8px;
-        border: 1.5px solid #cbd5e1;
-        background: rgba(255, 255, 255, 0.95);
-        color: #1e293b;
-        font-size: 12.5px;
-        font-weight: 900;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-        transition: all 0.15s;
-    }
-
-    .mode-tab-btn:hover {
-        border-color: #94a3b8;
-        background: #ffffff;
-    }
-
-    .mode-tab-btn.active {
-        background: #17283d;
-        color: #ffffff;
-        border-color: #17283d;
-    }
-
-    .mode-tab-btn .count-pill {
-        background: #f59e0b;
-        color: #0f172a;
-        padding: 0 7px;
-        border-radius: 99px;
-        font-size: 11px;
-        font-weight: 900;
-    }
-
-    /* ========================================================================= */
-    /* 2. شريط الفلاتر والبحث السريع (مريح للعين) */
-    /* ========================================================================= */
-    .hub-filters-bar {
-        background: #f8fafc;
-        border: 1.5px solid #cbd5e1;
-        border-radius: 8px;
-        padding: 7px 12px;
-        display: grid;
-        grid-template-columns: 135px 165px 185px 140px 1fr auto;
-        gap: 8px;
-        align-items: center;
-        flex-shrink: 0;
-    }
-
-    .hub-filter-control {
-        height: 35px;
-        border: 1.5px solid #cbd5e1;
-        border-radius: 6px;
-        background: #ffffff;
-        color: #0f172a;
-        font-size: 13px;
-        font-weight: 800;
-        padding: 0 10px;
-        text-align: center;
-        outline: none;
-        width: 100%;
-        transition: border-color 0.15s, box-shadow 0.15s;
-    }
-
-    .hub-filter-control:focus {
-        border-color: #119744;
-        box-shadow: 0 0 0 3px rgba(17, 151, 68, 0.12);
-    }
-
-    /* ========================================================================= */
-    /* 3. جدول سجل الطلبات للوردية الحالية (ألوان مريحة للعين) */
-    /* ========================================================================= */
-    .hub-table-container {
-        flex: 1;
-        background: #ffffff;
-        border: 1.5px solid #cbd5e1;
-        border-radius: 8px;
-        overflow: auto;
-    }
-
-    .hub-orders-table {
-        width: 100%;
-        border-collapse: collapse;
-        text-align: center;
-    }
-
-    .hub-orders-table thead th {
-        background: linear-gradient(180deg, #17283d 0%, #223d59 100%);
-        color: #ffffff;
-        font-size: 12.5px;
-        font-weight: 800;
-        padding: 9px 6px;
-        border-bottom: 2px solid #119744;
-        border-left: 1px solid #334e68;
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        white-space: nowrap;
-    }
-
-    .hub-orders-table tbody tr {
-        border-bottom: 1px solid #e2e8f0;
-        cursor: pointer;
-        transition: background 0.1s;
-    }
-
-    /* درجات ألوان باستيل هادئة ومريحة للعين لتمييز أنواع الطلبات */
-    .hub-orders-table tbody tr.row-delivery { background-color: #fdf2f2; }
-    .hub-orders-table tbody tr.row-pickup   { background-color: #ffffff; }
-    .hub-orders-table tbody tr.row-website  { background-color: #f0f9ff; }
-    .hub-orders-table tbody tr.row-pending  { background-color: #fffbeb; }
-
-    .hub-orders-table tbody tr:hover {
-        background-color: #dcfce7 !important;
-    }
-
-    .hub-orders-table tbody td {
-        padding: 7px 7px;
-        font-size: 12.5px;
-        font-weight: 800;
-        color: #1e293b;
-        border-left: 1px solid #e2e8f0;
-        vertical-align: middle;
-        white-space: nowrap;
-    }
-
-    .col-order-no {
-        background: rgba(245, 158, 11, 0.12);
-        font-size: 14px !important;
-        font-weight: 900 !important;
-        color: #0f172a !important;
-    }
-
-    /* شريط الفوتر السفلي */
-    .hub-bottom-bar {
-        background: #f8fafc;
-        border: 1px solid #cbd5e1;
-        border-radius: 8px;
-        padding: 5px 14px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        font-size: 12px;
-        font-weight: 800;
-        color: #334155;
-        flex-shrink: 0;
-    }
+    /* الجدول */
+    .oa-table-wrap { flex: 1; min-height: 0; overflow: auto; background: #fff; border: 1px solid var(--oa-border); border-radius: 8px; }
+    .oa-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 1150px; }
+    .oa-table th, .oa-table td { border-inline-start: 1px solid #edf1f5; }
+    .oa-table th:first-child, .oa-table td:first-child { border-inline-start: 0; }
+    .oa-table tbody tr:nth-child(even) td { background: #fafbfc; }
+    .oa-table th { position: sticky; top: 0; z-index: 1; background: #f1f5f9; color: #475569; font-size: 12.5px; font-weight: 700; padding: 10px 8px; text-align: right; border-bottom: 1px solid #cbd5e1; white-space: nowrap; }
+    .oa-table td { padding: 9px 8px; font-size: 13.5px; font-weight: 600; border-bottom: 1px solid #edf1f5; vertical-align: middle; }
+    .oa-table tbody tr { cursor: pointer; }
+    .oa-table tbody tr:hover td { background: #f6faf7; }
+    .oa-table tbody tr.row-selected td { background: #e3f5ea; }
+    .oa-sub { display: block; font-size: 12px; font-weight: 600; color: var(--oa-muted); }
+    .oa-type { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .oa-type.t-delivery { background: #fff7ed; color: #9a3412; }
+    .oa-type.t-pickup { background: #eef2ff; color: #3730a3; }
+    .oa-type.t-online { background: #f5f3ff; color: #6d28d9; }
+    .oa-money { font-weight: 800; white-space: nowrap; }
+    .oa-ellipsis { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .oa-empty { padding: 60px 20px; text-align: center; color: var(--oa-muted); }
+    .oa-empty i { font-size: 36px; color: #cbd5e1; display: block; margin-bottom: 10px; }
+    .oa-empty b { display: block; font-size: 16px; color: #334155; margin-bottom: 4px; }
+    .oa-foot { flex: none; display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 700; color: var(--oa-muted); padding: 0 4px; }
+    @media (max-width: 1000px) { .oa-stats { grid-template-columns: repeat(2, 1fr); } .oa-head { flex-wrap: wrap; } }
 </style>
 
-<div class="pos-main-hub">
-    <!-- 1. البانر العلوي للهوية البصرية (شفاف افتراضياً بدون أزرار رفع، ويقرأ الصورة تلقائياً إذا وُضعت من الإعدادات) -->
-    <div class="store-hero-banner" id="storeHeroBanner">
-        <div class="store-custom-bg-layer" id="storeCustomBgLayer"></div>
-
-        <!-- اللوحة الوسطى (KSTORE VER 2027) -->
-        <div class="hero-center-brand-plate">
-            <div class="hero-center-brand-content">
-                <div class="subtitle-ar" id="bannerStoreSubtitle">برنامج إدارة الطلبات ونقاط البيع</div>
-                <div class="main-logo-en"><span>N</span>extStore</div>
-                <div class="pos-tagline">POINT OF SALE</div>
-                <div class="ver-row">
-                    <span class="en-num ver-badge-num">VER 2027</span>
-                    <span>إصدار محدث</span>
-                </div>
-            </div>
+<div class="oa-page">
+    <header class="oa-head">
+        <div class="oa-head-bg" id="oaHeadBg"></div>
+        <div class="oa-shop">
+            <h1>{{ $systemSettings['shop_name'] ?? 'المحل' }}</h1>
+            <span>طلبات وفواتير الوردية الحالية</span>
         </div>
+        @if ($openShift)
+            <div class="oa-shift"><i class="fas fa-clock"></i> الوردية {{ $openShift->shift_no }} · {{ $openShift->started_by_name }} · من <span class="oa-num">{{ \Carbon\Carbon::parse($openShift->started_at)->format('h:i A') }}</span></div>
+        @else
+            <div class="oa-shift is-closed"><i class="fas fa-lock"></i> لا توجد وردية مفتوحة</div>
+        @endif
+        <a href="/pos/sales" class="oa-new-sale"><i class="fas fa-plus"></i> بيع جديد (F2)</a>
+    </header>
 
-        <!-- اليمين: تبويبا (الطلبات المعلقة | سجل الطلبات) فقط بدون أي اسم شركة خارجية -->
-        <div class="hero-right-dock">
-            <div class="archive-mode-tabs">
-                <button type="button" class="mode-tab-btn" id="tabBtnPendingOrders" data-tab="pending">
-                    <i class="fa-solid fa-bell-concierge text-warning"></i>
-                    <span>الطلبات المعلقة</span>
-                    <span class="count-pill en-num" id="badgePendingCount">0</span>
-                </button>
-                <button type="button" class="mode-tab-btn active" id="tabBtnCompletedOrders" data-tab="completed">
-                    <i class="fa-solid fa-table-list text-info"></i>
-                    <span>سجل الطلبات</span>
-                    <span class="count-pill en-num" id="badgeCompletedCount">0</span>
-                </button>
-            </div>
+    <section class="oa-stats">
+        <div class="oa-stat is-main"><span>صافي المبيعات</span><b class="oa-num" id="stTotal">0</b></div>
+        <div class="oa-stat"><span>عدد الطلبات</span><b class="oa-num" id="stCount">0</b></div>
+        <div class="oa-stat"><span>توصيل</span><b class="oa-num" id="stDelivery">0</b></div>
+        <div class="oa-stat"><span>استلام من المحل</span><b class="oa-num" id="stPickup">0</b></div>
+        <div class="oa-stat"><span>فواتير معلقة</span><b class="oa-num" id="stSuspended">0</b></div>
+    </section>
+
+    <section class="oa-bar">
+        <div class="oa-tabs" role="tablist">
+            <button type="button" class="oa-tab active" data-tab="orders"><i class="fas fa-receipt"></i> الطلبات <span class="oa-count oa-num" id="tabOrdersCount">0</span></button>
+            <button type="button" class="oa-tab" data-tab="suspended"><i class="fas fa-pause"></i> المعلقة <span class="oa-count oa-num" id="tabSuspendedCount">0</span></button>
         </div>
-    </div>
-
-    <!-- 2. شريط الفلاتر (رقم الطلب | نوع الطلب + الموقع الإلكتروني | المناديب | كود العميل | بحث بالعميل) -->
-    <div class="hub-filters-bar">
-        <input type="text" id="filterOrderNo" class="hub-filter-control en-num" placeholder="رقم الطلب">
-
-        <select id="filterOrderType" class="hub-filter-control">
-            <option value="all">كل أنواع الطلبات</option>
-            <option value="delivery">توصيل (دليفري)</option>
-            <option value="pickup">استلام من الفرع</option>
-            <option value="website">طلبات الموقع الإلكتروني 🌐</option>
+        <div class="oa-search">
+            <i class="fas fa-magnifying-glass"></i>
+            <input type="search" id="oaSearch" placeholder="ابحث برقم الطلب، اسم العميل، التليفون، العنوان أو الكود" autocomplete="off">
+        </div>
+        <select class="oa-select" id="oaType" aria-label="نوع الطلب">
+            <option value="all">كل الأنواع</option>
+            <option value="delivery">توصيل</option>
+            <option value="pickup">استلام</option>
+            <option value="online">أونلاين</option>
         </select>
-
-        <select id="filterDriverSelect" class="hub-filter-control">
-            <option value="all">كل مندوبي التوصيل</option>
+        <select class="oa-select" id="oaCourier" aria-label="المندوب"><option value="all">كل المناديب</option></select>
+        <select class="oa-select" id="oaScope" aria-label="النطاق">
+            <option value="current_shift" selected>الوردية الحالية</option>
+            <option value="today">طلبات اليوم</option>
+            <option value="all">كل الأرشيف</option>
         </select>
+    </section>
 
-        <input type="text" id="filterCustomerCode" class="hub-filter-control en-num" placeholder="كود العميل (C-001)">
-
-        <input type="text" id="filterCustomerSearch" class="hub-filter-control" placeholder="بحث باسم العميل أو رقم التليفون أو العنوان...">
-
-        <div class="d-flex align-items-center gap-2">
-            <select id="filterShiftScope" class="hub-filter-control" style="width: 155px; background:#ecfdf5; border-color:#119744; color:#065f46;">
-                <option value="current_shift" selected>الوردية الحالية فقط</option>
-                <option value="today">كل طلبات اليوم</option>
-                <option value="all">كل الأرشيف</option>
-            </select>
-        </div>
-    </div>
-
-    <!-- 3. جدول الطلبات -->
-    <div class="hub-table-container">
-        <table class="hub-orders-table">
-            <thead>
-                <tr>
-                    <th style="width: 38px;">#</th>
-                    <th style="width: 82px;">رقم الطلب</th>
-                    <th style="width: 85px;">نوع الطلب</th>
-                    <th style="width: 105px;">توقيت الإنشاء</th>
-                    <th style="width: 90px;">أنشئ بواسطة</th>
-                    <th style="width: 105px;">توقيت الإغلاق</th>
-                    <th style="width: 145px;">العميل (الاسم / الكود / الهاتف)</th>
-                    <th style="width: 170px;">عنوان العميل</th>
-                    <th style="width: 100px;">مندوب التوصيل</th>
-                    <th style="width: 85px;">وقت الخروج</th>
-                    <th style="width: 140px;">لمحة (الأصناف)</th>
-                    <th style="width: 65px;">عدد الأصناف</th>
-                    <th style="width: 75px;">الكمية</th>
-                    <th style="width: 95px;">قيمة الفاتورة</th>
-                    <th style="width: 65px;">الحالة</th>
-                </tr>
-            </thead>
-            <tbody id="hubOrdersTableBody">
-                <tr>
-                    <td colspan="15" class="py-5 text-muted fw-bold">جاري تحميل طلبات الوردية الحالية...</td>
-                </tr>
-            </tbody>
+    <div class="oa-table-wrap">
+        <table class="oa-table">
+            <thead id="oaHead"></thead>
+            <tbody id="oaBody"><tr><td class="oa-empty" colspan="9">جاري التحميل...</td></tr></tbody>
         </table>
     </div>
 
-    <!-- 4. الفوتر السفلي -->
-    <div class="hub-bottom-bar">
-        <div>
-            <span>إجمالي عدد الطلبات المعروضة: <strong class="en-num text-dark" id="footerOrdersCount">0</strong></span>
-            <span class="mx-3">|</span>
-            <span>إجمالي قيمة مبيعات الوردية المعروضة: <strong class="en-num text-success" id="footerOrdersTotalSum">0.00 ج.م</strong></span>
-        </div>
-        <div class="en-num text-secondary">
-            NextStore POINT OF SALE — VER 2027
-        </div>
+    <div class="oa-foot">
+        <span id="oaFootLeft"></span>
+        <span>دبل كليك أو Enter على الطلب لعرضه · F2 بيع جديد</span>
     </div>
 </div>
 
 <script>
 (() => {
     'use strict';
-    let allOrders = [];
-    let currentTabMode = 'completed'; // 'completed' (سجل الطلبات) | 'pending' (الطلبات المعلقة)
+    const settings = @json($systemSettings);
+    const $ = id => document.getElementById(id);
+    const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const money = v => { const n = Number(v) || 0; return Number.isInteger(n) ? String(n) : n.toFixed(2); };
+    const norm = v => String(v ?? '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[ً-ٟـ]/g, '')
+        .replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').toLowerCase().trim();
+    const net = o => (Number(o.grossTotal) || 0) + (Number(o.service) || 0) - (Number(o.invoiceDiscount) || 0) + (Number(o.rounding) || 0);
+    const typeKey = o => { const t = String(o.orderType || ''); return t.includes('توصيل') ? 'delivery' : (t.includes('أونلاين') || t.includes('موقع') ? 'online' : 'pickup'); };
+    const typeLabel = { delivery: 'توصيل', pickup: 'استلام', online: 'أونلاين' };
 
-    function toEnglishDigits(str) {
-        return String(str ?? '')
-            .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
-            .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+    let orders = [];
+    let suspended = [];
+    let tab = 'orders';
+
+    if (settings.banner_image) {
+        const bg = $('oaHeadBg');
+        bg.style.backgroundImage = `url("${settings.banner_image}")`;
+        if (settings.banner_mode !== 'cover') { bg.style.backgroundSize = 'auto 100%'; bg.style.backgroundRepeat = 'repeat-x'; }
     }
 
-    function normalizeArabic(str) {
-        return toEnglishDigits(str)
-            .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
-            .replace(/[أإآ]/g, 'ا')
-            .replace(/ة/g, 'ه')
-            .replace(/ى/g, 'ي')
-            .toLowerCase()
-            .trim();
-    }
-
-    // =========================================================================
-    // 1. قراءة صورة الهوية البصرية من إعدادات النظام فقط (أو إبقاء الوضع الشفاف الافتراضي)
-    // =========================================================================
-    const heroBanner = document.getElementById('storeHeroBanner');
-    const customBgLayer = document.getElementById('storeCustomBgLayer');
-
-    function applySavedBannerSettings() {
-        const savedImg = localStorage.getItem('nextstore_custom_banner_image');
-        const savedRepeat = localStorage.getItem('nextstore_custom_banner_repeat') || 'repeat-x';
-        const savedStoreTitle = localStorage.getItem('nextstore_custom_store_title');
-
-        if (savedStoreTitle) {
-            document.getElementById('bannerStoreSubtitle').textContent = savedStoreTitle;
-        }
-
-        if (savedImg) {
-            customBgLayer.style.backgroundImage = `url("${savedImg}")`;
-            customBgLayer.style.backgroundRepeat = savedRepeat;
-            customBgLayer.style.backgroundSize = savedRepeat === 'cover' ? 'cover' : 'auto 100%';
-            heroBanner.classList.add('has-custom-image');
-        } else {
-            customBgLayer.style.backgroundImage = 'none';
-            heroBanner.classList.remove('has-custom-image');
-        }
-    }
-
-    // الاستماع لأي تغيير يتم حفظه من صفحة الإعدادات لتحديث البانر تلقائياً
-    window.addEventListener('storage', function(e) {
-        if (
-            e.key === 'nextstore_custom_banner_image' ||
-            e.key === 'nextstore_custom_banner_repeat' ||
-            e.key === 'nextstore_custom_store_title'
-        ) {
-            applySavedBannerSettings();
-        }
-    });
-
-    // =========================================================================
-    // 2. جلب طلبات الوردية الحالية من قاعدة البيانات
-    // =========================================================================
-    async function loadShiftOrders() {
-        const shiftScope = document.getElementById('filterShiftScope').value;
+    async function load() {
         try {
-            const res = await fetch(`/api/orders/archive?shift_scope=${encodeURIComponent(shiftScope)}`, {
-                headers: { 'Accept': 'application/json' }
-            });
-            if (!res.ok) throw new Error('Failed');
-            const data = await res.json();
-            allOrders = Array.isArray(data.orders) ? data.orders.filter(o => !o.isDeleted) : [];
-            populateDriversDropdown(data.drivers || []);
-            applyFiltersAndRender();
+            const [o, s] = await Promise.all([
+                fetch(`/api/orders/archive?shift_scope=${encodeURIComponent($('oaScope').value)}`, { headers: { Accept: 'application/json' } }).then(r => r.json()),
+                fetch('/api/pos/suspended', { headers: { Accept: 'application/json' } }).then(r => r.json())
+            ]);
+            orders = (o.orders || []).filter(x => !x.deleted);
+            suspended = s.invoices || [];
+            const couriers = [...new Set(orders.map(x => x.courier).filter(Boolean))];
+            const cur = $('oaCourier').value;
+            $('oaCourier').innerHTML = '<option value="all">كل المناديب</option>' + couriers.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+            $('oaCourier').value = couriers.includes(cur) ? cur : 'all';
         } catch (e) {
-            document.getElementById('hubOrdersTableBody').innerHTML = `
-                <tr><td colspan="15" class="py-5 text-muted fw-bold">لا توجد طلبات مسجلة في هذه الوردية حتى الآن — اضغط (F2) لبدء البيع</td></tr>
-            `;
+            orders = [];
         }
+        render();
     }
 
-    function populateDriversDropdown(driversFromApi) {
-        const sel = document.getElementById('filterDriverSelect');
-        const currentVal = sel.value;
-        const driverNames = new Set(driversFromApi);
-
-        allOrders.forEach(o => {
-            if (o.driverName && o.driverName !== '-' && o.driverName !== 'بدون مندوب') {
-                driverNames.add(o.driverName);
-            }
-        });
-
-        sel.innerHTML = `<option value="all">كل مندوبي التوصيل</option>` +
-            Array.from(driverNames).map(d => `<option value="${d}">${d}</option>`).join('');
-
-        if (Array.from(driverNames).includes(currentVal)) {
-            sel.value = currentVal;
-        }
+    function render() {
+        const delivery = orders.filter(o => typeKey(o) === 'delivery').length;
+        $('stTotal').textContent = money(orders.reduce((s, o) => s + net(o) - (Number(o.returnsValue) || 0), 0));
+        $('stCount').textContent = orders.length;
+        $('stDelivery').textContent = delivery;
+        $('stPickup').textContent = orders.length - delivery;
+        $('stSuspended').textContent = suspended.length;
+        $('tabOrdersCount').textContent = orders.length;
+        $('tabSuspendedCount').textContent = suspended.length;
+        tab === 'orders' ? renderOrders() : renderSuspended();
     }
 
-    function detectOrderTypeKey(order) {
-        const raw = String(order.orderType || order.type || '').toLowerCase();
-        if (raw.includes('توصيل') || raw === 'delivery') return 'delivery';
-        if (raw.includes('موقع') || raw.includes('أونلاين') || raw === 'website' || raw === 'online') return 'website';
-        return 'pickup';
+    function emptyRow(title, text, cols) {
+        $('oaBody').innerHTML = `<tr><td class="oa-empty" colspan="${cols}"><i class="fas fa-inbox"></i><b>${title}</b>${text}</td></tr>`;
     }
 
-    function detectIsPending(order) {
-        const st = String(order.status || '').toLowerCase();
-        return st.includes('معلق') || st.includes('تجهيز') || st === 'pending' || st === 'hold';
-    }
-
-    function applyFiltersAndRender() {
-        const pendingList = allOrders.filter(o => detectIsPending(o));
-        const completedList = allOrders.filter(o => !detectIsPending(o));
-
-        document.getElementById('badgePendingCount').textContent = pendingList.length;
-        document.getElementById('badgeCompletedCount').textContent = completedList.length;
-
-        const basePool = currentTabMode === 'pending' ? pendingList : completedList;
-
-        const qOrderNo = toEnglishDigits(document.getElementById('filterOrderNo').value).trim().toLowerCase();
-        const qType = document.getElementById('filterOrderType').value;
-        const qDriver = document.getElementById('filterDriverSelect').value;
-        const qCustCode = normalizeArabic(document.getElementById('filterCustomerCode').value);
-        const qCustSearch = normalizeArabic(document.getElementById('filterCustomerSearch').value);
-
-        const filtered = basePool.filter(o => {
-            if (qOrderNo && !String(o.orderNo || o.id).toLowerCase().includes(qOrderNo)) return false;
-
-            const typeKey = detectOrderTypeKey(o);
-            if (qType !== 'all' && typeKey !== qType) return false;
-
-            if (qDriver !== 'all' && String(o.driverName || '') !== qDriver) return false;
-
-            if (qCustCode) {
-                const codeHay = normalizeArabic(o.customerCode || `C-${o.customerId || ''}`);
-                if (!codeHay.includes(qCustCode)) return false;
-            }
-
-            if (qCustSearch) {
-                const custHay = normalizeArabic(`${o.customerName} ${o.customerPhone} ${o.customerAddress} ${o.customerCode}`);
-                if (!custHay.includes(qCustSearch)) return false;
-            }
-
-            return true;
-        });
-
-        renderTableRows(filtered);
-    }
-
-    function renderTableRows(rows) {
-        const tbody = document.getElementById('hubOrdersTableBody');
-        let totalSum = 0;
-
+    function renderOrders() {
+        $('oaHead').innerHTML = '<tr><th>رقم الطلب</th><th>النوع</th><th>الوقت</th><th>كود العميل</th><th>اسم العميل</th><th>التليفون</th><th>العنوان</th><th>المندوب</th><th>الأصناف</th><th>عدد</th><th>القيمة</th><th>المرتجع</th><th>بواسطة</th></tr>';
+        const q = norm($('oaSearch').value), type = $('oaType').value, courier = $('oaCourier').value;
+        const rows = orders.filter(o => (type === 'all' || typeKey(o) === type)
+            && (courier === 'all' || o.courier === courier)
+            && (!q || norm([o.orderNo, o.customerName, o.customerPhone, o.customerAddress, o.customerCode].join(' ')).includes(q)));
+        $('oaFootLeft').innerHTML = `<span class="oa-num">${rows.length}</span> طلب · الإجمالي <b class="oa-num">${money(rows.reduce((s, o) => s + net(o), 0))}</b> ج.م`;
         if (!rows.length) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="15" class="py-5 text-muted fw-bold">
-                        لا توجد طلبات مطابقة في ${currentTabMode === 'pending' ? 'الطلبات المعلقة' : 'سجل طلبات الوردية الحالية'}
-                    </td>
-                </tr>
-            `;
-            document.getElementById('footerOrdersCount').textContent = '0';
-            document.getElementById('footerOrdersTotalSum').textContent = '0.00 ج.م';
-            return;
+            const scopeText = $('oaScope').value === 'current_shift' ? 'لسه مفيش طلبات في الوردية الحالية.' : 'مفيش طلبات مطابقة.';
+            return emptyRow(orders.length ? 'لا توجد نتائج' : 'لا توجد طلبات', scopeText, 13);
         }
-
-        tbody.innerHTML = rows.map((o, idx) => {
-            const typeKey = detectOrderTypeKey(o);
-            const isPend = detectIsPending(o);
-            const netVal = parseFloat(o.netValue ?? o.total ?? 0) || 0;
-            totalSum += netVal;
-
-            const rowClass = isPend
-                ? 'row-pending'
-                : (typeKey === 'delivery' ? 'row-delivery' : (typeKey === 'website' ? 'row-website' : 'row-pickup'));
-
-            const typeLabel = typeKey === 'delivery'
-                ? 'توصيل'
-                : (typeKey === 'website' ? 'موقع إلكتروني 🌐' : 'استلام');
-
-            const itemsList = Array.isArray(o.items) ? o.items : [];
-            const firstItemPreview = o.firstItemName || (itemsList[0] ? itemsList[0].name : 'أصناف متنوعة...');
-            const itemsCount = o.itemsCount ?? (itemsList.length || 1);
-            const totalQty = o.totalQty ?? (itemsList.reduce((acc, it) => acc + (parseFloat(it.qty) || 0), 0) || 1);
-            const custCode = o.customerCode || (o.customerId ? `C-${String(o.customerId).padStart(3, '0')}` : '');
-
-            return `
-                <tr class="${rowClass}" data-order-id="${o.id}">
-                    <td class="en-num">${idx + 1}</td>
-                    <td class="col-order-no en-num">${o.orderNo || o.id}</td>
-                    <td>${typeLabel}</td>
-                    <td class="en-num">${o.createdAt || o.orderDate || '-'}</td>
-                    <td>${o.cashierName || o.createdBy || 'كاشير1'}</td>
-                    <td class="en-num">${isPend ? '-' : (o.closedAt || o.createdAt || '-')}</td>
-                    <td>
-                        <div class="fw-bold">${o.customerName || 'عميل نقدي'}</div>
-                        <small class="en-num text-muted">
-                            ${custCode ? `[${custCode}] ` : ''}${o.customerPhone || ''}
-                        </small>
-                    </td>
-                    <td style="max-width:170px; overflow:hidden; text-overflow:ellipsis;">${o.customerAddress || '-'}</td>
-                    <td>${o.driverName && o.driverName !== 'بدون مندوب' ? o.driverName : '-'}</td>
-                    <td class="en-num">${o.dispatchTime || '-'}</td>
-                    <td style="max-width:140px; overflow:hidden; text-overflow:ellipsis;">${firstItemPreview}</td>
-                    <td class="en-num">${itemsCount}</td>
-                    <td class="en-num">${Number(Number(totalQty).toFixed(3))}</td>
-                    <td class="en-num fw-bold">${Number(netVal.toFixed(2))} ج.م</td>
-                    <td>${isPend ? '<span class="badge bg-warning text-dark">معلق</span>' : 'تم'}</td>
-                </tr>
-            `;
+        $('oaBody').innerHTML = rows.map(o => {
+            const k = typeKey(o);
+            return `<tr data-id="${esc(o.id)}">
+                <td class="oa-num fw-bold">#${esc(o.orderNo)}</td>
+                <td><span class="oa-type t-${k}">${typeLabel[k]}</span></td>
+                <td class="oa-num">${esc(String(o.createdAt || '').slice(11) || o.createdAt)}</td>
+                <td class="oa-num">${esc(o.customerCode || '—')}</td>
+                <td>${esc(o.customerName)}</td>
+                <td class="oa-num">${esc(o.customerPhone || '—')}</td>
+                <td><div class="oa-ellipsis" title="${esc(o.customerAddress)}">${esc(o.customerAddress || '—')}</div></td>
+                <td>${esc(o.courier || '—')}</td>
+                <td><div class="oa-ellipsis" title="${esc(o.snippet)}">${esc(o.snippet)}</div></td>
+                <td class="oa-num">${(o.items || []).length}</td>
+                <td class="oa-money oa-num">${money(net(o))}</td>
+                <td class="oa-num" style="color:#dc2626">${Number(o.returnsValue) > 0 ? money(o.returnsValue) : '—'}</td>
+                <td>${esc(o.createdBy || '—')}</td>
+            </tr>`;
         }).join('');
-
-        document.getElementById('footerOrdersCount').textContent = rows.length;
-        document.getElementById('footerOrdersTotalSum').textContent = `${totalSum.toFixed(2)} ج.م`;
     }
 
-    // التبديل بين تبويبي (الطلبات المعلقة | سجل الطلبات)
-    document.querySelectorAll('.mode-tab-btn').forEach(btn => {
-        btn.addEventListener('click', function () {
-            currentTabMode = this.getAttribute('data-tab');
-            document.querySelectorAll('.mode-tab-btn').forEach(b => b.classList.toggle('active', b === this));
-            applyFiltersAndRender();
-        });
+    function renderSuspended() {
+        $('oaHead').innerHTML = '<tr><th>رقم الطلب</th><th>العميل</th><th>الأصناف</th><th>القيمة</th><th>معلقة منذ (دقيقة)</th></tr>';
+        const q = norm($('oaSearch').value);
+        const rows = suspended.filter(s => !q || norm([s.invoiceNumber, s.customerName].join(' ')).includes(q));
+        $('oaFootLeft').innerHTML = `<span class="oa-num">${rows.length}</span> فاتورة معلقة`;
+        if (!rows.length) return emptyRow('لا توجد فواتير معلقة', 'الفواتير المعلقة (F9) من شاشة البيع بتظهر هنا.', 5);
+        $('oaBody').innerHTML = rows.map(s => {
+            const mins = Math.max(0, Math.round((Date.now() - new Date(s.suspendedAt).getTime()) / 60000));
+            return `<tr data-suspended="1">
+                <td class="oa-num fw-bold">#${esc(s.invoiceNumber)}</td>
+                <td>${esc(s.customerName || 'عميل نقدي')}</td>
+                <td><div class="oa-ellipsis">${esc((s.itemsSummary || []).map(i => i.name).join(' + '))}</div></td>
+                <td class="oa-money oa-num">${money(s.total)}</td>
+                <td class="oa-num">${mins}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    document.querySelectorAll('.oa-tab').forEach(btn => btn.addEventListener('click', () => {
+        tab = btn.dataset.tab;
+        document.querySelectorAll('.oa-tab').forEach(b => b.classList.toggle('active', b === btn));
+        render();
+    }));
+    $('oaSearch').addEventListener('input', render);
+    ['oaType', 'oaCourier'].forEach(id => $(id).addEventListener('change', render));
+    $('oaScope').addEventListener('change', load);
+
+    const findOrder = tr => tr && orders.find(o => String(o.id) === String(tr.dataset.id));
+    $('oaBody').addEventListener('click', e => {
+        const tr = e.target.closest('tr[data-id], tr[data-suspended]');
+        if (!tr) return;
+        $('oaBody').querySelectorAll('.row-selected').forEach(r => r.classList.remove('row-selected'));
+        tr.classList.add('row-selected');
+    });
+    $('oaBody').addEventListener('dblclick', e => {
+        const tr = e.target.closest('tr');
+        if (tr && tr.dataset.suspended) { window.location.href = '/pos/sales'; return; }
+        window.NextStoreInvoiceViewer.open(findOrder(tr));
+    });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'F2') { e.preventDefault(); window.location.href = '/pos/sales'; return; }
+        if (e.key !== 'Enter' || document.querySelector('.modal.show') || e.target.matches('input, select, textarea, button')) return;
+        const order = findOrder($('oaBody').querySelector('tr.row-selected[data-id]'));
+        if (order) { e.preventDefault(); window.NextStoreInvoiceViewer.open(order); }
     });
 
-    // أحداث البحث الفوري
-    ['filterOrderNo', 'filterCustomerCode', 'filterCustomerSearch'].forEach(id => {
-        document.getElementById(id).addEventListener('input', applyFiltersAndRender);
-    });
-    ['filterOrderType', 'filterDriverSelect'].forEach(id => {
-        document.getElementById(id).addEventListener('change', applyFiltersAndRender);
-    });
-    document.getElementById('filterShiftScope').addEventListener('change', loadShiftOrders);
-
-    // اختصار F2 لفتح شاشة البيع مباشرة
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'F2') {
-            e.preventDefault();
-            window.location.href = '/pos/sales';
-        }
-    });
-
-    applySavedBannerSettings();
-    loadShiftOrders();
+    load();
+    setInterval(() => { if (!document.querySelector('.modal.show')) load(); }, 30000);
 })();
 </script>
+@include('partials.invoice-viewer')
 @endsection

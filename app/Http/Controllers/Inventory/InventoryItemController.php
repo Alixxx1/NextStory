@@ -33,9 +33,10 @@ class InventoryItemController extends Controller
             ];
         });
 
-        $items = Item::withTrashed()->with(['category', 'movements'])->orderBy('id', 'desc')->get()->map(function ($item) {
-            return $this->formatItemForFrontend($item);
-        });
+        // قراءة مباشرة بدون بناء موديل لكل صنف (أسرع ~5 مرات مع آلاف الأصناف)
+        $catNames = DB::table('categories')->pluck('name', 'id');
+        $items = DB::table('items')->orderByDesc('id')->get()
+            ->map(fn ($r) => $this->formatItemRow($r, $catNames[$r->category_id] ?? null, []));
 
         return view('inventory.items', [
             'initialCategories' => $categories,
@@ -43,57 +44,80 @@ class InventoryItemController extends Controller
         ]);
     }
 
+    /** حركة صنف واحد تتحمل عند الطلب بدل ما تتحط في الصفحة لكل الأصناف */
+    public function movements(int $id)
+    {
+        return response()->json(DB::table('item_movements')->where('item_id', $id)->orderByDesc('id')->limit(500)->get()->map(fn ($m) => [
+            'date' => $m->move_date, 'type' => $m->type, 'refNo' => $m->ref_no, 'party' => $m->party, 'user' => $m->user_name,
+            'before' => (float) $m->before_qty, 'inQty' => (float) $m->in_qty, 'outQty' => (float) $m->out_qty, 'after' => (float) $m->after_qty, 'price' => (float) $m->price,
+        ]));
+    }
+
     public function formatItemForFrontend(Item $item): array
     {
+        // الصف من قاعدة البيانات نفسها (الموديل الجديد ما فيهوش القيم الافتراضية للأعمدة)
+        $row = DB::table('items')->where('id', $item->id)->first();
+        return $this->formatItemRow($row, DB::table('categories')->where('id', $row->category_id)->value('name'),
+            DB::table('item_movements')->where('item_id', $item->id)->orderByDesc('id')->get());
+    }
+
+    /** صف الصنف من قاعدة البيانات (قيم خام) ← شكل الواجهة */
+    private function formatItemRow(object $r, ?string $categoryName, iterable $moves): array
+    {
+        $num = fn ($v) => (float) $v;
+        $opt = fn ($v) => $v !== null ? (float) $v : null;
+        $day = fn ($v, $fmt) => $v ? substr((string) $v, 0, 10) : now()->format($fmt);
+        $subUnits = is_string($r->sub_units ?? null) ? json_decode($r->sub_units, true) : ($r->sub_units ?? null);
+
         return [
-            'id' => $item->id,
-            'uuid' => $item->uuid,
-            'itemType' => $item->item_type,
-            'categoryId' => $item->category_id,
-            'categoryName' => $item->category ? $item->category->name : 'عام',
-            'name' => $item->name,
-            'description' => $item->description ?? '',
-            'unit' => $item->unit,
-            'defaultPurchaseUnit' => $item->default_purchase_unit ?? 'main',
-            'barcode' => $item->barcode ?? '',
-            'qty' => (float) $item->qty,
-            'supplier' => $item->supplier_name ?? '',
-            'lastBuyPrice' => (float) $item->last_buy_price,
-            'lastBuyDate' => $item->last_buy_date ?? now()->format('Y/m/d'),
-            'avgCost' => (float) $item->avg_cost,
-            'retailPrice' => (float) $item->retail_price,
-            'semiWholesalePrice' => $item->semi_wholesale_price !== null ? (float) $item->semi_wholesale_price : null,
-            'wholesalePrice' => $item->wholesale_price !== null ? (float) $item->wholesale_price : null,
-            'isPublishedOnline' => (bool) $item->is_published_online,
-            'onlinePrice' => $item->online_price !== null ? (float) $item->online_price : null,
-            'onlineCompareAtPrice' => $item->online_compare_at_price !== null ? (float) $item->online_compare_at_price : null,
-            'minStock' => (float) $item->min_stock,
-            'maxStock' => (float) $item->max_stock,
-            'isPinned' => (bool) $item->is_pinned,
-            'isDisabled' => (bool) $item->is_disabled,
-            'isDeleted' => $item->trashed(),
-            'allowPriceEdit' => (bool) $item->allow_price_edit,
-            'hasCommission' => (bool) $item->has_commission,
-            'commissionVal' => (float) $item->commission_val,
-            'taxIncluded' => (bool) $item->tax_included,
-            'taxMode' => $item->tax_mode ?? 'default',
-            'taxRate' => (float) $item->tax_rate,
-            'image' => $item->image ?? '',
-            'hasPurchaseInvoice' => (bool) $item->has_purchase_invoice,
-            'createdAt' => $item->created_at ? $item->created_at->format('Y-m-d') : now()->format('Y-m-d'),
-            'lastMoveDate' => $item->last_move_date ?? ($item->created_at ? $item->created_at->format('Y-m-d') : now()->format('Y-m-d')),
-            'subUnits' => $item->sub_units ?? [],
-            'movements' => $item->movements->map(fn ($m) => [
+            'id' => (int) $r->id,
+            'uuid' => $r->uuid,
+            'itemType' => $r->item_type,
+            'categoryId' => $r->category_id,
+            'categoryName' => $categoryName ?? 'عام',
+            'name' => $r->name,
+            'description' => $r->description ?? '',
+            'unit' => $r->unit,
+            'defaultPurchaseUnit' => $r->default_purchase_unit ?? 'main',
+            'barcode' => $r->barcode ?? '',
+            'qty' => $num($r->qty),
+            'supplier' => $r->supplier_name ?? '',
+            'lastBuyPrice' => $num($r->last_buy_price),
+            'lastBuyDate' => $r->last_buy_date ?? now()->format('Y/m/d'),
+            'avgCost' => $num($r->avg_cost),
+            'retailPrice' => $num($r->retail_price),
+            'semiWholesalePrice' => $opt($r->semi_wholesale_price),
+            'wholesalePrice' => $opt($r->wholesale_price),
+            'isPublishedOnline' => (bool) $r->is_published_online,
+            'onlinePrice' => $opt($r->online_price),
+            'onlineCompareAtPrice' => $opt($r->online_compare_at_price),
+            'minStock' => $num($r->min_stock),
+            'maxStock' => $num($r->max_stock),
+            'isPinned' => (bool) $r->is_pinned,
+            'isDisabled' => (bool) $r->is_disabled,
+            'isDeleted' => !empty($r->deleted_at),
+            'allowPriceEdit' => (bool) $r->allow_price_edit,
+            'hasCommission' => (bool) $r->has_commission,
+            'commissionVal' => $num($r->commission_val),
+            'taxIncluded' => (bool) $r->tax_included,
+            'taxMode' => $r->tax_mode ?? 'default',
+            'taxRate' => $num($r->tax_rate),
+            'image' => $r->image ?? '',
+            'hasPurchaseInvoice' => (bool) $r->has_purchase_invoice,
+            'createdAt' => $day($r->created_at, 'Y-m-d'),
+            'lastMoveDate' => $r->last_move_date ?? $day($r->created_at, 'Y-m-d'),
+            'subUnits' => $subUnits ?? [],
+            'movements' => collect($moves)->map(fn ($m) => [
                 'date' => $m->move_date,
                 'type' => $m->type,
                 'refNo' => $m->ref_no,
                 'party' => $m->party,
                 'user' => $m->user_name,
-                'before' => (float) $m->before_qty,
-                'inQty' => (float) $m->in_qty,
-                'outQty' => (float) $m->out_qty,
-                'after' => (float) $m->after_qty,
-                'price' => (float) $m->price,
+                'before' => $num($m->before_qty),
+                'inQty' => $num($m->in_qty),
+                'outQty' => $num($m->out_qty),
+                'after' => $num($m->after_qty),
+                'price' => $num($m->price),
             ])->values()->all(),
         ];
     }

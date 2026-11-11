@@ -6,12 +6,10 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>قائمة العملاء | NextStore SaaS</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link href="/vendor/fonts/fonts.css" rel="stylesheet">
+    <link rel="stylesheet" href="/vendor/bootstrap/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="/vendor/sweetalert2/sweetalert2.min.css">
 
     <style>
         :root {
@@ -398,8 +396,9 @@
             display: inline-block;
         }
     </style>
+    <link rel="stylesheet" href="/css/nextstore-erp.css">
 </head>
-<body>
+<body class="ns-erp">
 
     <div class="customers-header">
         <h3 class="customers-title">
@@ -650,9 +649,9 @@
         </div>
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/vendor/jquery/jquery-3.6.0.min.js"></script>
+    <script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+    <script src="/vendor/sweetalert2/sweetalert2.all.min.js"></script>
     <script>
         $(document).ready(function() {
             'use strict';
@@ -870,39 +869,11 @@
                 }
             });
 
-            function renderCustomersTable() {
-                const q = normalize($('#customer-search').val());
-                const accFilter = $('#filter-account-type').val();
-                const areaFilter = $('#filter-area').val();
-                const showDeleted = $('#toggle-deleted').is(':checked');
+            // الرسم على دفعات: أول 120 عميل والباقي وانت بتنزل (بدل 1400 صف مرة واحدة)
+            const CUST_CHUNK = 120;
+            let lastFiltered = [], renderedCustomers = 0;
 
-                $('#lbl-delete-btn').text(showDeleted ? 'استرجاع (Del)' : 'حذف (Del)');
-
-                const filtered = customers.filter(c => {
-                    if (Boolean(c.deleted) !== showDeleted) return false;
-                    if (areaFilter !== 'all') {
-                        const hasZone = (c.addresses || []).some(a => a.zoneName === areaFilter);
-                        if (!hasZone && c.area !== areaFilter) return false;
-                    }
-                    const bal = Number(c.balance) || 0;
-                    if (accFilter === 'debit' && !(bal > 0 && c.balanceType === 'debit')) return false;
-                    if (accFilter === 'credit' && !(bal > 0 && c.balanceType === 'credit')) return false;
-                    if (accFilter === 'zero' && bal !== 0) return false;
-
-                    if (!q) return true;
-                    const addrBlob = (c.addresses || []).map(a => `${a.fullAddress} ${a.zoneName} ${a.deliveryNote}`).join(' ');
-                    return normalize(`${c.code} ${c.name} ${c.phone1} ${c.phone2} ${addrBlob} ${c.contactNote} ${c.invoiceNote}`).includes(q);
-                });
-
-                const $tbody = $('#customers-tbody');
-                if (!filtered.length) {
-                    $tbody.html(`<tr><td colspan="${posCustomerSelectionMode ? 7 : 9}" class="py-5 text-muted">لا يوجد عملاء مطابقون.</td></tr>`);
-                } else {
-                    if (!selectedCustomerId || !filtered.some(c => String(c.id) === String(selectedCustomerId))) {
-                        selectedCustomerId = String(filtered[0].id);
-                    }
-
-                    $tbody.html(filtered.map((c, idx) => {
+            function customerRowHtml(c, idx) {
                         const phones = [c.phone1, c.phone2].filter(Boolean).join(' - ') || 'بدون هاتف';
                         const a0 = (c.addresses && c.addresses[0]) || {};
                         const extraAddresses = (c.addresses || [])
@@ -943,7 +914,76 @@
                             </tr>
                             ${extraAddresses.length ? `<tr class="customer-address-details-row d-none" data-id="${escapeHtml(c.id)}"><td colspan="${posCustomerSelectionMode ? 7 : 9}">${addressDetailsHtml}</td></tr>` : ''}
                         `;
-                    }).join(''));
+            }
+
+            function appendCustomerRows(upTo) {
+                const end = Math.min(lastFiltered.length, upTo);
+                if (end <= renderedCustomers) return;
+                const html = [];
+                for (let i = renderedCustomers; i < end; i++) html.push(customerRowHtml(lastFiltered[i], i));
+                document.getElementById('customers-tbody').insertAdjacentHTML('beforeend', html.join(''));
+                renderedCustomers = end;
+            }
+
+            (() => {
+                let el = document.getElementById('customers-tbody').parentElement;
+                while (el && !/(auto|scroll)/.test(getComputedStyle(el).overflowY)) el = el.parentElement;
+                (el || window).addEventListener('scroll', () => {
+                    const box = el || document.documentElement;
+                    if (box.scrollTop + box.clientHeight > box.scrollHeight - 600) appendCustomerRows(renderedCustomers + CUST_CHUNK);
+                }, { passive: true });
+            })();
+
+            // الأسهم بتحرك التحديد بس من غير ما ترسم الجدول من الأول
+            function moveCustomerSelection(delta) {
+                if (!lastFiltered.length) return;
+                const i = lastFiltered.findIndex(c => String(c.id) === String(selectedCustomerId));
+                const next = i < 0 ? 0 : Math.max(0, Math.min(lastFiltered.length - 1, i + delta));
+                selectedCustomerId = String(lastFiltered[next].id);
+                appendCustomerRows(next + 1);
+                $('#customers-tbody .customer-row.active-row').removeClass('active-row');
+                const row = document.querySelector(`#customers-tbody .customer-row[data-id="${CSS.escape(selectedCustomerId)}"]`);
+                if (row) { row.classList.add('active-row'); row.scrollIntoView({ block: 'nearest' }); }
+                $('#btn-edit-customer, #btn-delete-customer').prop('disabled', false);
+            }
+
+            function renderCustomersTable() {
+                const q = normalize($('#customer-search').val());
+                const accFilter = $('#filter-account-type').val();
+                const areaFilter = $('#filter-area').val();
+                const showDeleted = $('#toggle-deleted').is(':checked');
+
+                $('#lbl-delete-btn').text(showDeleted ? 'استرجاع (Del)' : 'حذف (Del)');
+
+                const filtered = customers.filter(c => {
+                    if (Boolean(c.deleted) !== showDeleted) return false;
+                    if (areaFilter !== 'all') {
+                        const hasZone = (c.addresses || []).some(a => a.zoneName === areaFilter);
+                        if (!hasZone && c.area !== areaFilter) return false;
+                    }
+                    const bal = Number(c.balance) || 0;
+                    if (accFilter === 'debit' && !(bal > 0 && c.balanceType === 'debit')) return false;
+                    if (accFilter === 'credit' && !(bal > 0 && c.balanceType === 'credit')) return false;
+                    if (accFilter === 'zero' && bal !== 0) return false;
+
+                    if (!q) return true;
+                    const addrBlob = (c.addresses || []).map(a => `${a.fullAddress} ${a.zoneName} ${a.deliveryNote}`).join(' ');
+                    return normalize(`${c.code} ${c.name} ${c.phone1} ${c.phone2} ${addrBlob} ${c.contactNote} ${c.invoiceNote}`).includes(q);
+                });
+
+                const $tbody = $('#customers-tbody');
+                lastFiltered = [];
+                if (!filtered.length) {
+                    $tbody.html(`<tr><td colspan="${posCustomerSelectionMode ? 7 : 9}" class="py-5 text-muted">لا يوجد عملاء مطابقون.</td></tr>`);
+                } else {
+                    if (!selectedCustomerId || !filtered.some(c => String(c.id) === String(selectedCustomerId))) {
+                        selectedCustomerId = String(filtered[0].id);
+                    }
+
+                    lastFiltered = filtered;
+                    renderedCustomers = 0;
+                    $tbody.empty();
+                    appendCustomerRows(Math.max(CUST_CHUNK, filtered.findIndex(c => String(c.id) === String(selectedCustomerId)) + 1));
                 }
 
                 const activeList = customers.filter(c => !c.deleted);
@@ -1199,18 +1239,10 @@
 
                 if (e.key === 'ArrowDown') {
                     e.preventDefault();
-                    const next = idx < 0 ? 0 : Math.min(idx + 1, $rows.length - 1);
-                    selectedCustomerId = $rows.eq(next).attr('data-id');
-                    renderCustomersTable();
-                    const activeEl = $('#customers-tbody .customer-row.active-row')[0];
-                    if (activeEl) activeEl.scrollIntoView({ block: 'nearest' });
+                    moveCustomerSelection(1);
                 } else if (e.key === 'ArrowUp') {
                     e.preventDefault();
-                    const prev = Math.max(0, idx - 1);
-                    selectedCustomerId = $rows.eq(prev).attr('data-id');
-                    renderCustomersTable();
-                    const activeEl = $('#customers-tbody .customer-row.active-row')[0];
-                    if (activeEl) activeEl.scrollIntoView({ block: 'nearest' });
+                    moveCustomerSelection(-1);
                 } else                 if (e.key === 'Enter' && idx >= 0 && (!$(e.target).is('input') || posCustomerSelectionMode)) {
                     e.preventDefault();
                     const c = customers.find(item => String(item.id) === String(selectedCustomerId));
@@ -1229,5 +1261,7 @@
             fetchInitDataFromDB();
         });
     </script>
+    <script src="/js/nextstore-nav.js"></script>
+    <script src="/js/nextstore-alerts.js"></script>
 </body>
 </html>

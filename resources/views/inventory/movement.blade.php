@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>المخزن | حركة الأصناف - NextStore SaaS</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="/vendor/fonts/fonts.css" rel="stylesheet">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <script src="/vendor/sweetalert2/sweetalert2.all.min.js"></script>
 
     <style>
         :root {
@@ -472,8 +470,9 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="/css/nextstore-erp.css">
 </head>
-<body>
+<body class="ns-erp">
 
     <header class="ns-header">
         <div class="ns-header-right">
@@ -916,12 +915,13 @@
             document.getElementById('btnShowDetailedMovement').disabled = !hasSelection;
         }
 
-        function openDetailedItemMovementModal() {
+        async function openDetailedItemMovementModal() {
             if (selectedRowIndex < 0 || !filteredMovements[selectedRowIndex]) return;
             const item = filteredMovements[selectedRowIndex];
             const closing = calcClosingBalance(item);
 
-            let ledgerRows = Array.isArray(item.ledger) ? item.ledger : [];
+            let ledgerRows = [];
+            try { ledgerRows = await (await fetch('/api/inventory/movements/ledger/' + item.id, { headers: { Accept: 'application/json' } })).json(); } catch (e) {}
 
             const rowsHtml = ledgerRows.length === 0
                 ? `<tr><td colspan="9" style="padding:22px; text-align:center;">لا توجد حركات مسجلة لهذا الصنف بعد</td></tr>`
@@ -1029,7 +1029,7 @@
         });
 
         document.getElementById('btnShowDetailedMovement').addEventListener('click', openDetailedItemMovementModal);
-        document.getElementById('btnPrintMovements').addEventListener('click', () => window.print());
+        document.getElementById('btnPrintMovements').addEventListener('click', () => NextStorePagePrint.print());
         document.getElementById('btnExportExcel').addEventListener('click', exportMovementsToExcel);
 
         function handleExit() {
@@ -1078,5 +1078,8 @@
         init();
     })();
     </script>
+    @include('partials.page-print', ['page' => 'inventory'])
+    <script src="/js/nextstore-nav.js"></script>
+    <script src="/js/nextstore-alerts.js"></script>
 </body>
 </html>

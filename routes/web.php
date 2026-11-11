@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 
 // استدعاء الكنترولرات الفعلية
 use App\Http\Controllers\POS\PosSalesController;
+use App\Http\Controllers\POS\DeliveryRunController;
 use App\Http\Controllers\Inventory\InventoryItemController;
 use App\Http\Controllers\Inventory\InventorySubController;
 use App\Http\Controllers\Customers\CustomerController;
@@ -17,6 +18,10 @@ use App\Http\Controllers\Expenses\ExpenseController;
 use App\Http\Controllers\Reports\WorkReportController;
 use App\Http\Controllers\Employees\EmployeeController;
 use App\Http\Controllers\Admin\AdminAuthController;
+use App\Http\Controllers\Admin\SecurityAlertController;
+use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\SystemUpdateController;
+use App\Support\SystemSettings;
 
 /*
 |--------------------------------------------------------------------------
@@ -32,20 +37,25 @@ Route::get('/logout', [AdminAuthController::class, 'logout'])->name('logout');
 Route::post('/api/auth/authorize-manager', [AdminAuthController::class, 'authorizeManagerAction'])->middleware('throttle:10,1');
 Route::post('/api/auth/close-shift', [AdminAuthController::class, 'closeShiftAndSwitch']);
 
+// النسخ الاحتياطي والتصفير: تتحقق بنفسها من صلاحية المدير وترجع 401/403
+Route::get('/admin/backup/download', [AdminAuthController::class, 'downloadEncryptedBackup'])->name('admin.backup.download');
+Route::post('/admin/backup/restore', [AdminAuthController::class, 'restoreEncryptedBackup'])->middleware('throttle:3,1')->name('admin.backup.restore');
+Route::post('/admin/system/factory-reset', [AdminAuthController::class, 'factoryZeroReset'])->middleware('throttle:3,1')->name('admin.system.reset');
+
+// كل الصفحات والـ APIs التالية تتطلب تسجيل الدخول
+Route::middleware('pos.auth')->group(function () {
+
 // الصفحة الرئيسية: إذا لم يسجل دخول يفتح نافذة تسجيل الدخول، وإذا سجل دخول يفتح شاشة المبيعات فوراً!
 Route::get('/', function () {
     if (!session()->has('pos_user')) {
         return redirect('/login');
     }
-    return redirect('/pos/sales');
+    return redirect('/pos/archive');
 })->name('home');
 
 // ================= 1. قسم الكاشير والمبيعات (POS) =================
 Route::prefix('pos')->group(function () {
-    Route::get('/archive', function () {
-        if (!session()->has('pos_user')) return redirect('/login');
-        return view('pos.archive');
-    })->name('pos.archive');
+    Route::get('/archive', [PosSalesController::class, 'archive'])->name('pos.archive');
 
     Route::get('/sales', [PosSalesController::class, 'index'])->name('pos.sales');
     Route::get('/returns/partial', [SalesReturnController::class, 'partialView'])->name('pos.returns.partial');
@@ -55,13 +65,23 @@ Route::prefix('api/pos')->group(function () {
     Route::get('/bootstrap', [PosSalesController::class, 'bootstrapData']);
     Route::post('/zones/save', [PosSalesController::class, 'saveZone']);
     Route::post('/customers/save', [PosSalesController::class, 'saveCustomer']);
-    Route::post('/invoices/store', [PosSalesController::class, 'storeInvoice']);
+    Route::get('/suspended', [\App\Http\Controllers\POS\SuspendedInvoiceController::class, 'index']);
+    Route::post('/suspended', [\App\Http\Controllers\POS\SuspendedInvoiceController::class, 'store']);
+    Route::delete('/suspended/{clientId}', [\App\Http\Controllers\POS\SuspendedInvoiceController::class, 'destroy']);
+    Route::post('/invoices/store', [PosSalesController::class, 'storeInvoice'])->middleware('pos.auth:pos.sales');
+    Route::get('/riders', [DeliveryRunController::class, 'riders']);
+    Route::post('/riders/save', [DeliveryRunController::class, 'saveRider'])->middleware('pos.auth:delivery.riders');
+    Route::get('/dispatch/order', [DeliveryRunController::class, 'order'])->middleware('pos.auth:pos.sales');
+    Route::get('/dispatch/pending', [DeliveryRunController::class, 'pending'])->middleware('pos.auth:pos.sales');
+    Route::get('/dispatch/runs', [DeliveryRunController::class, 'runs'])->middleware('pos.auth:delivery.riders');
+    Route::post('/dispatch', [DeliveryRunController::class, 'store'])->middleware(['pos.auth:pos.sales', 'throttle:20,1']);
 });
 
 // ================= 2. قسم المخازن والتصنيع والجرد (Inventory) =================
 Route::prefix('inventory')->group(function () {
     Route::get('/items', [InventoryItemController::class, 'index'])->name('inventory.items');
     Route::get('/api/pos-items', [InventoryItemController::class, 'posItemsApi']);
+    Route::get('/items/{id}/movements', [InventoryItemController::class, 'movements']);
 
     Route::get('/categories', [InventorySubController::class, 'categoriesView'])->name('inventory.categories');
     Route::get('/units', [InventorySubController::class, 'unitsView'])->name('inventory.units');
@@ -104,6 +124,7 @@ Route::prefix('api/inventory')->group(function () {
     Route::post('/units/reset-defaults', [InventorySubController::class, 'resetDefaultUnits']);
 
     Route::get('/movements/report', [InventorySubController::class, 'movementsReportApi']);
+    Route::get('/movements/ledger/{id}', [InventorySubController::class, 'movementLedgerApi']);
 
     Route::get('/manufacturing/bootstrap', [InventorySubController::class, 'manufacturingBootstrapApi']);
     Route::post('/manufacturing/save', [InventorySubController::class, 'saveManufacturingBatch']);
@@ -113,7 +134,7 @@ Route::prefix('api/inventory')->group(function () {
     Route::get('/adjustments/bootstrap', [InventorySubController::class, 'adjustmentsBootstrapApi']);
     Route::post('/adjustments/save', [InventorySubController::class, 'saveAdjustment']);
     Route::post('/adjustments/{id}/toggle-delete', [InventorySubController::class, 'toggleDeleteAdjustment']);
-    Route::post('/adjustments/zero-all-stock', [InventorySubController::class, 'zeroAllStock']);
+    Route::post('/adjustments/zero-all-stock', [InventorySubController::class, 'zeroAllStock'])->middleware('pos.auth:inventory.adjustments');
 
     Route::get('/orders/bootstrap', [InventorySubController::class, 'ordersBootstrapApi']);
     Route::post('/orders/save', [InventorySubController::class, 'saveWarehouseOrder']);
@@ -149,8 +170,8 @@ Route::prefix('api/customers')->name('api.customers.')->group(function () {
     Route::post('/zones/quick', [IndexController::class, 'quickCreateZone']);
 
     Route::get('/payments/bootstrap', [ShowController::class, 'paymentsBootstrap']);
-    Route::post('/payments/save', [ShowController::class, 'savePaymentVoucher']);
-    Route::delete('/payments/{id}', [ShowController::class, 'deletePaymentVoucher']);
+    Route::post('/payments/save', [ShowController::class, 'savePaymentVoucher'])->middleware('pos.auth:customers.manage');
+    Route::delete('/payments/{id}', [ShowController::class, 'deletePaymentVoucher'])->middleware('pos.auth:customers.manage');
 
     Route::get('/search-list', [ShowController::class, 'getCustomersList']);
     Route::get('/{id}/account-details', [ShowController::class, 'getAccountDetails']);
@@ -166,9 +187,10 @@ Route::prefix('orders')->group(function () {
 
 Route::prefix('api/orders')->name('api.orders.')->group(function () {
     Route::get('/archive', [OrderArchiveController::class, 'getOrders'])->name('index');
-    Route::patch('/{id}/cost', [OrderArchiveController::class, 'updateCost'])->name('update_cost');
-    Route::delete('/{id}', [OrderArchiveController::class, 'destroy'])->name('destroy');
-    Route::post('/{id}/restore', [OrderArchiveController::class, 'restore'])->name('restore');
+    Route::get('/last', [OrderArchiveController::class, 'last'])->name('last');
+    Route::patch('/{id}/cost', [OrderArchiveController::class, 'updateCost'])->middleware('pos.auth:orders.delete')->name('update_cost');
+    Route::delete('/{id}', [OrderArchiveController::class, 'destroy'])->middleware('pos.auth:orders.delete')->name('destroy');
+    Route::post('/{id}/restore', [OrderArchiveController::class, 'restore'])->middleware('pos.auth:orders.delete')->name('restore');
 });
 
 // ================= 5. قسم المرتجعات (Returns) =================
@@ -180,9 +202,9 @@ Route::prefix('returns')->group(function () {
 
 Route::prefix('api/returns')->name('api.returns.')->group(function () {
     Route::get('/log', [SalesReturnController::class, 'getReturnsLog'])->name('log');
-    Route::delete('/{returnId}', [SalesReturnController::class, 'deleteReturn'])->name('delete');
+    Route::delete('/{returnId}', [SalesReturnController::class, 'deleteReturn'])->middleware('pos.auth:pos.returns')->name('delete');
     Route::get('/invoice-details', [SalesReturnController::class, 'getInvoiceForReturn'])->name('invoice_details');
-    Route::post('/partial/save', [SalesReturnController::class, 'savePartialReturn'])->name('partial_save');
+    Route::post('/partial/save', [SalesReturnController::class, 'savePartialReturn'])->middleware('pos.auth:pos.returns')->name('partial_save');
 });
 
 // ================= 6. قسم المشتريات (Purchases) =================
@@ -195,8 +217,8 @@ Route::prefix('purchases')->name('purchases.')->group(function () {
 Route::prefix('api/purchases')->name('api.purchases.')->group(function () {
     Route::get('/bootstrap', [PurchaseController::class, 'bootstrapData'])->name('bootstrap');
     Route::get('/log', [PurchaseController::class, 'getInvoicesLog'])->name('log');
-    Route::post('/save', [PurchaseController::class, 'saveInvoice'])->name('save');
-    Route::delete('/{id}', [PurchaseController::class, 'deleteInvoice'])->name('delete');
+    Route::post('/save', [PurchaseController::class, 'saveInvoice'])->middleware('pos.auth:purchases.manage')->name('save');
+    Route::delete('/{id}', [PurchaseController::class, 'deleteInvoice'])->middleware('pos.auth:purchases.manage')->name('delete');
 
     Route::get('/returns/bootstrap', [PurchaseController::class, 'supplierReturnBootstrapApi'])->name('returns.bootstrap');
     Route::get('/returns/log', [PurchaseController::class, 'getSupplierReturnsLogApi'])->name('returns.log');
@@ -236,7 +258,13 @@ Route::prefix('api/expenses')->name('api.expenses.')->group(function () {
 });
 
 // ================= 9. الإعدادات (Settings) =================
-Route::get('/settings', fn() => view('settings.index'))->name('settings.index');
+Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+Route::post('/api/settings/save', [SettingsController::class, 'save'])->middleware('throttle:30,1')->name('api.settings.save');
+Route::post('/api/settings/reset-image', [SettingsController::class, 'resetImage'])->middleware('throttle:20,1')->name('api.settings.reset-image');
+Route::get('/api/settings/printers', [SettingsController::class, 'printers'])->middleware('throttle:60,1')->name('api.settings.printers');
+Route::get('/api/system/update/info', [SystemUpdateController::class, 'info'])->middleware('pos.auth:settings.manage')->name('api.system.update.info');
+Route::post('/api/system/update/upload', [SystemUpdateController::class, 'upload'])->middleware(['pos.auth:settings.manage', 'throttle:5,1'])->name('api.system.update.upload');
+Route::post('/api/system/update/online', [SystemUpdateController::class, 'online'])->middleware(['pos.auth:settings.manage', 'throttle:5,1'])->name('api.system.update.online');
 
 // ================= 10. قسم تقارير العمل وتقارير الموقع (Work Reports) =================
 Route::prefix('reports')->name('reports.')->group(function () {
@@ -281,18 +309,26 @@ Route::get('/import-suppliers', [InventorySubController::class, 'importSuppliers
 });
 
 Route::prefix('admin')->name('admin.')->group(function () {
+    Route::get('/security-alerts', [SecurityAlertController::class, 'page'])->name('security_alerts');
     Route::get('/users', [AdminAuthController::class, 'usersView'])->name('users');
     Route::get('/shifts-log', [AdminAuthController::class, 'shiftsLogView'])->name('shifts_log');
     Route::get('/login-log', [AdminAuthController::class, 'loginLogView'])->name('login_log');
     Route::get('/permissions', [AdminAuthController::class, 'usersView'])->name('permissions');
     Route::get('/safes', [AdminAuthController::class, 'safesView'])->name('safes');
 
-    Route::get('/delivery-reps', fn () => view('admin.delivery_reps'))->name('delivery_reps');
+    Route::get('/riders', [DeliveryRunController::class, 'ridersPage'])->middleware('pos.auth:delivery.riders')->name('riders');
     Route::get('/prep-printers', fn () => view('admin.prep_printers'))->name('prep_printers');
     Route::get('/manager-tools', fn () => view('admin.manager_tools'))->name('manager_tools');
 });
 
 // مسارات الـ API الخاصة بقسم الإدارة (المستخدمين، الورديات، سجل الدخول، الخزائن)
+Route::prefix('api/security')->group(function () {
+    Route::post('/event', [SecurityAlertController::class, 'event'])->middleware('throttle:120,1');
+    Route::get('/pending', [SecurityAlertController::class, 'pending']);
+    Route::post('/ack', [SecurityAlertController::class, 'ack']);
+    Route::get('/list', [SecurityAlertController::class, 'list']);
+});
+
 Route::prefix('api/admin')->group(function () {
     Route::get('/users/bootstrap', [AdminAuthController::class, 'usersBootstrapApi']);
     Route::post('/users/save', [AdminAuthController::class, 'saveUserApi']);
@@ -317,6 +353,6 @@ Route::prefix('api/tools')->group(function () {
 
 
 
-Route::get('/admin/backup/download', [AdminAuthController::class, 'downloadEncryptedBackup'])->name('admin.backup.download');
-Route::post('/admin/backup/restore', [AdminAuthController::class, 'restoreEncryptedBackup'])->middleware('throttle:3,1')->name('admin.backup.restore');
-Route::post('/admin/system/factory-reset', [AdminAuthController::class, 'factoryZeroReset'])->middleware('throttle:3,1')->name('admin.system.reset');
+
+
+}); // نهاية مجموعة pos.auth

@@ -9,6 +9,11 @@ use App\Models\ItemMovement;
 use App\Models\SalesInvoice;
 use App\Models\SalesInvoiceItem;
 use App\Models\SalesReturn;
+use App\Support\Balance;
+use App\Support\Money;
+use App\Support\PosAuth;
+use App\Support\Sequence;
+use App\Support\Stock;
 use App\Models\SalesReturnItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -81,9 +86,8 @@ class SalesReturnController extends Controller
     public function deleteReturn(Request $request, $returnId)
     {
         return DB::transaction(function () use ($returnId) {
-            $salesReturn = SalesReturn::with(['items', 'invoice.items'])
+            $salesReturn = SalesReturn::withTrashed()->with(['items', 'invoice.items'])
                 ->where('return_number', $returnId)
-                ->orWhere('id', $returnId)
                 ->lockForUpdate()
                 ->firstOrFail();
 
@@ -101,6 +105,7 @@ class SalesReturnController extends Controller
             // حذف المرتجع SoftDelete ليبقى ضمن خيار "المحذوفات"
             $salesReturn->update(['is_synced' => false]);
             $salesReturn->delete();
+            \App\Support\SecurityAlert::raise('sales_return_deleted', "حذف مرتجع مبيعات #{$salesReturn->return_number}", ['الفاتورة الأصلية' => $invoice->order_no ?? null], (float) ($salesReturn->getAttribute('total') ?? 0), (string) $salesReturn->return_number, 'danger');
 
             // إعادة حساب إجماليات المرتجعات على الفاتورة الأصلية بعد الحذف
             if ($invoice) {
@@ -173,6 +178,13 @@ class SalesReturnController extends Controller
             'customerId' => $invoice->customer_id,
             'customerName' => $invoice->customer_name ?: 'عميل نقدي',
             'customerPhone' => $invoice->customer_phone ?? '',
+            'customerAddress' => $invoice->customer_address ?? '',
+            'cashier' => $invoice->created_by ?? '',
+            'createdTime' => $invoice->created_time_label ?? '',
+            'subTotal' => (float) $invoice->gross_total,
+            'discount' => (float) $invoice->invoice_discount,
+            'deliveryFee' => (float) $invoice->service_fee,
+            'rounding' => (float) $invoice->rounding_adjustment,
             'total' => (float) $invoice->net_value,
             'paidAmount' => (float) $invoice->paid_amount,
             'dueAmount' => (float) $invoice->due_amount,
@@ -187,6 +199,7 @@ class SalesReturnController extends Controller
                 'quantity' => (float) $item->qty,
                 'returnedQty' => (float) $item->returned_qty,
                 'price' => (float) $item->price,
+                'netPrice' => (float) $item->qty > 0 ? round($invoice->lineNet($item) / (float) $item->qty, 4) : (float) $item->price,
                 'total' => (float) $item->total,
                 'isExternal' => (bool) $item->is_external,
             ])->values()->all(),
@@ -211,9 +224,12 @@ class SalesReturnController extends Controller
         return DB::transaction(function () use ($data) {
             $invoice = SalesInvoice::with(['items', 'returnTransactions.items'])
                 ->where('order_no', $data['invoiceNumber'])
-                ->orWhere('id', $data['invoiceNumber'])
                 ->lockForUpdate()
                 ->firstOrFail();
+            $shift = PosAuth::openShift();
+            if (!$shift) {
+                return response()->json(['message' => 'لا توجد وردية مفتوحة لهذه الجلسة. سجّل الدخول مرة أخرى.'], 409);
+            }
 
             $requestedReturnId = $data['returnId'] ?? 'new';
             $editingReturn = null;
@@ -251,7 +267,8 @@ class SalesReturnController extends Controller
             }
 
             $preparedReturnItems = [];
-            $returnTotalValue = 0;
+            $returnTotalP = 0;
+            $returnCostP = 0;
             $productsSummaryParts = [];
 
             foreach ($data['items'] as $reqItem) {
@@ -265,7 +282,7 @@ class SalesReturnController extends Controller
 
                 $prevReturned = (float) ($alreadyReturnedByInvoiceItem[$invItemId] ?? 0);
                 $maxAvailable = max(0, (float) $invItem->qty - $prevReturned);
-                $qtyToReturn = (float) $reqItem['quantity'];
+                $qtyToReturn = round((float) $reqItem['quantity'], 3);
 
                 if ($qtyToReturn > ($maxAvailable + 0.0001)) {
                     return response()->json([
@@ -273,37 +290,46 @@ class SalesReturnController extends Controller
                     ], 422);
                 }
 
-                $lineTotal = round($qtyToReturn * (float) $invItem->price, 2);
-                $returnTotalValue += $lineTotal;
+                // سعر الوحدة المرتجع = صافي السطر بعد خصم الفاتورة والتقريب ÷ الكمية (وليس سعر القائمة)
+                $unitNet = (float) $invItem->qty > 0 ? $invoice->lineNet($invItem) / (float) $invItem->qty : (float) $invItem->price;
+                $lineP = Money::line($qtyToReturn, $unitNet);
+                $returnTotalP += $lineP;
+                if (!$invItem->is_external) {
+                    $returnCostP += Money::line($qtyToReturn, (float) $invItem->cost);
+                }
                 $productsSummaryParts[] = trim($invItem->name . ' ' . ($invItem->barcode ?? ''));
 
                 $preparedReturnItems[] = [
                     'invItem' => $invItem,
                     'quantity' => $qtyToReturn,
-                    'price' => (float) $invItem->price,
-                    'total' => $lineTotal,
+                    'price' => round($unitNet, 2),
+                    'total' => Money::egp($lineP),
                 ];
             }
+            $returnTotalValue = Money::egp($returnTotalP);
 
-            $accountCredit = 0;
-            $cashRefund = $returnTotalValue;
-
-            if ($invoice->customer_id && (float) $invoice->due_amount > 0) {
-                $accountCredit = min($returnTotalValue, (float) $invoice->due_amount);
-                $cashRefund = max(0, round($returnTotalValue - $accountCredit, 2));
-            }
+            // الجزء الآجل المتبقي على هذه الفاتورة يُخصم من حساب العميل أولاً، والباقي يُرد نقداً
+            $creditUsedByOthers = $otherActiveReturns->sum('account_credit');
+            $outstandingDue = $invoice->customer_id ? max(0, Money::p($invoice->due_amount) - Money::p($creditUsedByOthers)) : 0;
+            $accountCreditP = min($returnTotalP, $outstandingDue);
+            $accountCredit = Money::egp($accountCreditP);
+            $cashRefund = Money::egp($returnTotalP - $accountCreditP);
 
             $returnNumber = $editingReturn
                 ? $editingReturn->return_number
-                : 'RET-' . $invoice->order_no . '-' . ((SalesReturn::withTrashed()->max('id') ?? 0) + 1);
+                : 'RET-' . $invoice->order_no . '-' . Sequence::next('sales_return');
 
             if ($editingReturn) {
                 $editingReturn->update([
                     'item_count' => count($preparedReturnItems),
                     'products_summary' => implode('، ', $productsSummaryParts),
                     'total' => $returnTotalValue,
+                    'cost_total' => Money::egp($returnCostP),
                     'cash_refund' => $cashRefund,
                     'account_credit' => $accountCredit,
+                    'shift_id' => $shift->id,
+                    'user_id' => PosAuth::id(),
+                    'user_name' => PosAuth::name(),
                     'notes' => $data['notes'] ?? ($editingReturn->notes ?: 'تعديل مرتجع جزئي'),
                     'is_synced' => false,
                 ]);
@@ -321,11 +347,14 @@ class SalesReturnController extends Controller
                     'item_count' => count($preparedReturnItems),
                     'products_summary' => implode('، ', $productsSummaryParts),
                     'total' => $returnTotalValue,
+                    'cost_total' => Money::egp($returnCostP),
                     'cash_refund' => $cashRefund,
                     'account_credit' => $accountCredit,
                     'return_type' => 'partial',
                     'shift' => now()->hour < 16 ? 'morning' : 'evening',
-                    'user_name' => 'مدير الفرع',
+                    'shift_id' => $shift->id,
+                    'user_id' => PosAuth::id(),
+                    'user_name' => PosAuth::name(),
                     'notes' => $data['notes'] ?? 'مرتجع جزئي',
                     'is_synced' => false,
                 ]);
@@ -348,49 +377,11 @@ class SalesReturnController extends Controller
                 ]);
 
                 if (!$invItem->is_external) {
-                    $itemModel = $invItem->item_id ? Item::find($invItem->item_id) : null;
-                    if (!$itemModel && !empty($invItem->barcode)) {
-                        $itemModel = Item::where('barcode', $invItem->barcode)->first();
-                    }
-
-                    if ($itemModel) {
-                        $beforeQty = (float) $itemModel->qty;
-                        $afterQty = $beforeQty + $qty;
-                        $itemModel->update([
-                            'qty' => $afterQty,
-                            'last_move_date' => now()->format('Y-m-d'),
-                            'is_synced' => false,
-                        ]);
-
-                        ItemMovement::create([
-                            'item_id' => $itemModel->id,
-                            'move_date' => now()->format('Y/m/d h:i A'),
-                            'type' => 'مرتجع مبيعات',
-                            'ref_no' => $salesReturn->return_number,
-                            'party' => $invoice->customer_name ?: 'عميل نقدي',
-                            'user_name' => 'مدير الفرع',
-                            'before_qty' => $beforeQty,
-                            'in_qty' => $qty,
-                            'out_qty' => 0,
-                            'after_qty' => $afterQty,
-                            'price' => $entry['price'],
-                        ]);
-                    }
+                    Stock::move(Stock::find($invItem->item_id, $invItem->barcode), $qty, 'مرتجع مبيعات', $salesReturn->return_number, $invoice->customer_name ?: 'عميل نقدي', $entry['price']);
                 }
             }
 
-            if ($invoice->customer_id && $accountCredit > 0) {
-                $customer = Customer::find($invoice->customer_id);
-                if ($customer) {
-                    $signedBal = ($customer->balance_type === 'credit' ? -1 : 1) * (float) $customer->balance;
-                    $newSigned = $signedBal - $accountCredit;
-                    $customer->update([
-                        'balance' => abs($newSigned),
-                        'balance_type' => $newSigned < 0 ? 'credit' : 'debit',
-                        'is_synced' => false,
-                    ]);
-                }
-            }
+            Balance::customer($invoice->customer_id, -$accountCredit);
 
             $this->recalculateInvoiceReturnsState($invoice, $salesReturn);
 
@@ -411,48 +402,9 @@ class SalesReturnController extends Controller
             if ($invItem && $invItem->is_external) {
                 continue;
             }
-
-            $itemModel = $rItem->item_id ? Item::find($rItem->item_id) : null;
-            if (!$itemModel && !empty($rItem->barcode)) {
-                $itemModel = Item::where('barcode', $rItem->barcode)->first();
-            }
-
-            if ($itemModel) {
-                $beforeQty = (float) $itemModel->qty;
-                $afterQty = $beforeQty - (float) $rItem->quantity;
-                $itemModel->update([
-                    'qty' => $afterQty,
-                    'is_synced' => false,
-                ]);
-
-                ItemMovement::create([
-                    'item_id' => $itemModel->id,
-                    'move_date' => now()->format('Y/m/d h:i A'),
-                    'type' => 'حذف/تعديل مرتجع مبيعات',
-                    'ref_no' => $returnRecord->return_number,
-                    'party' => $invoice->customer_name ?: 'عميل نقدي',
-                    'user_name' => 'مدير الفرع',
-                    'before_qty' => $beforeQty,
-                    'in_qty' => 0,
-                    'out_qty' => (float) $rItem->quantity,
-                    'after_qty' => $afterQty,
-                    'price' => (float) $rItem->price,
-                ]);
-            }
+            Stock::move(Stock::find($rItem->item_id, $rItem->barcode), -(float) $rItem->quantity, 'حذف/تعديل مرتجع مبيعات', $returnRecord->return_number, $invoice->customer_name ?: 'عميل نقدي', (float) $rItem->price);
         }
-
-        if ($invoice->customer_id && (float) $returnRecord->account_credit > 0) {
-            $customer = Customer::find($invoice->customer_id);
-            if ($customer) {
-                $signedBal = ($customer->balance_type === 'credit' ? -1 : 1) * (float) $customer->balance;
-                $newSigned = $signedBal + (float) $returnRecord->account_credit;
-                $customer->update([
-                    'balance' => abs($newSigned),
-                    'balance_type' => $newSigned < 0 ? 'credit' : 'debit',
-                    'is_synced' => false,
-                ]);
-            }
-        }
+        Balance::customer($invoice->customer_id, (float) $returnRecord->account_credit);
     }
 
     private function recalculateInvoiceReturnsState(SalesInvoice $invoice, ?SalesReturn $latestReturn = null): void
@@ -488,7 +440,8 @@ class SalesReturnController extends Controller
         }
 
         $returnStatus = !$anyReturned ? null : ($allReturned ? 'full' : 'partial');
-        $profitTotal = ((float) $invoice->store_net_total - $totalReturnsValue) - (float) $invoice->cost_total;
+        $invoice->load('items');
+        $profitTotal = $invoice->computeProfit();
 
         $invoice->update([
             'returns_value' => $totalReturnsValue,

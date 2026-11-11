@@ -6,9 +6,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>تقرير دفعات الموردين | NextStore SaaS</title>
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="/vendor/bootstrap/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="/vendor/sweetalert2/sweetalert2.min.css">
 
     <style>
         :root {
@@ -216,8 +216,9 @@
         .modal-header-pay { background: linear-gradient(135deg, #0d6efd, #0a58ca); color: #fff; }
         .modal-header-col { background: linear-gradient(135deg, #198754, #0d7a35); color: #fff; }
     </style>
+    <link rel="stylesheet" href="/css/nextstore-erp.css">
 </head>
-<body>
+<body class="ns-erp">
 <div class="page-shell">
 
     {{-- 1. الشريط العلوي --}}
@@ -397,7 +398,7 @@
                 <button type="button" class="btn btn-outline-success bg-white btn-archive-op" id="btn-export-excel">
                     <i class="fas fa-file-excel text-success"></i> تصدير Excel
                 </button>
-                <button type="button" class="btn btn-outline-dark bg-white btn-archive-op" id="btn-print" onclick="window.print()">
+                <button type="button" class="btn btn-outline-dark bg-white btn-archive-op" id="btn-print" onclick="NextStorePagePrint.print()">
                     <i class="fas fa-print text-info"></i> طباعة
                 </button>
                 <button type="button" class="btn btn-outline-dark bg-white btn-archive-op" id="btn-close">
@@ -498,9 +499,9 @@
     </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="/vendor/jquery/jquery-3.6.0.min.js"></script>
+<script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+<script src="/vendor/sweetalert2/sweetalert2.all.min.js"></script>
 <script>
 $(function () {
     'use strict';
@@ -1011,5 +1012,8 @@ $(function () {
     fetchPaymentsReportFromDB();
 });
 </script>
+    @include('partials.page-print', ['page' => 'suppliers'])
+    <script src="/js/nextstore-nav.js"></script>
+    <script src="/js/nextstore-alerts.js"></script>
 </body>
 </html>

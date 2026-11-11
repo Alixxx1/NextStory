@@ -16,6 +16,7 @@ class ItemMovement extends Model
         'after_qty' => 'float',
         'price' => 'float',
         'is_synced' => 'boolean',
+        'moved_at' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -23,6 +24,9 @@ class ItemMovement extends Model
         static::creating(function ($model) {
             if (empty($model->uuid)) {
                 $model->uuid = (string) Str::uuid();
+            }
+            if (empty($model->moved_at)) {
+                $model->moved_at = now();
             }
         });
     }

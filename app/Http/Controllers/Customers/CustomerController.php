@@ -43,6 +43,7 @@ class CustomerController extends Controller
                 'uuid'            => $zone->uuid,
                 'name'            => $zone->name,
                 'fee'             => (float) $zone->fee,
+                'rider_commission' => (float) $zone->rider_commission,
                 'customers_count' => $linkedCount,
                 'is_synced'       => (bool) $zone->is_synced,
             ];
@@ -74,12 +75,13 @@ class CustomerController extends Controller
             'name' => [
                 'required',
                 'string',
-                'min:2',
+                'min:1',
                 'max:80',
                 'not_regex:/^\d+$/',
                 Rule::unique('delivery_zones', 'name'),
             ],
             'fee' => ['required', 'numeric', 'min:0', 'max:5000'],
+            'rider_commission' => ['nullable', 'numeric', 'min:0', 'max:5000'],
         ], [
             'name.required'  => 'يرجى إدخال اسم المنطقة (هذا الحقل مطلوب).',
             'name.min'       => 'اسم المنطقة يجب أن يتكون من حرفين على الأقل.',
@@ -96,6 +98,7 @@ class CustomerController extends Controller
             'uuid'      => (string) Str::uuid(),
             'name'      => $validated['name'],
             'fee'       => round((float) $validated['fee'], 2),
+            'rider_commission' => round((float) ($validated['rider_commission'] ?? 0), 2),
             'is_synced' => false,
         ]);
 
@@ -107,6 +110,7 @@ class CustomerController extends Controller
                 'uuid'            => $zone->uuid,
                 'name'            => $zone->name,
                 'fee'             => (float) $zone->fee,
+                'rider_commission' => (float) $zone->rider_commission,
                 'customers_count' => 0,
                 'is_synced'       => false,
             ],
@@ -129,12 +133,13 @@ class CustomerController extends Controller
             'name' => [
                 'required',
                 'string',
-                'min:2',
+                'min:1',
                 'max:80',
                 'not_regex:/^\d+$/',
                 Rule::unique('delivery_zones', 'name')->ignore($zone->id),
             ],
             'fee' => ['required', 'numeric', 'min:0', 'max:5000'],
+            'rider_commission' => ['nullable', 'numeric', 'min:0', 'max:5000'],
         ], [
             'name.required'  => 'يرجى إدخال اسم المنطقة (هذا الحقل مطلوب).',
             'name.min'       => 'اسم المنطقة يجب أن يتكون من حرفين على الأقل.',
@@ -153,6 +158,7 @@ class CustomerController extends Controller
             $zone->update([
                 'name'      => $validated['name'],
                 'fee'       => $newFee,
+                'rider_commission' => round((float) ($validated['rider_commission'] ?? 0), 2),
                 'is_synced' => false,
             ]);
 
@@ -208,6 +214,7 @@ class CustomerController extends Controller
                 'uuid'            => $zone->uuid,
                 'name'            => $zone->name,
                 'fee'             => (float) $zone->fee,
+                'rider_commission' => (float) $zone->rider_commission,
                 'customers_count' => $this->countLinkedCustomersForZone($zone, $activeCustomers),
                 'is_synced'       => false,
             ],

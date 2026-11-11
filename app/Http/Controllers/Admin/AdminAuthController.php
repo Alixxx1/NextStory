@@ -23,6 +23,8 @@ class AdminAuthController extends Controller
         return [
             'pos.sales'               => 'فتح شاشة البيع وإضافة فواتير المبيعات (POS)',
             'pos.discount'            => 'منح خصم على الفاتورة في الكاشير',
+            'pos.edit_price'          => 'تعديل سعر بيع صنف داخل الفاتورة',
+            'pos.delete_item'         => 'حذف صنف من الفاتورة أو حذف فاتورة معلقة',
             'pos.returns'             => 'عمل مرتجع مبيعات (كلي أو جزئي)',
             'orders.archive'          => 'الدخول إلى أرشيف الطلبات ومراجعة الفواتير',
             'orders.delete'           => 'حذف أو تعديل تكلفة فاتورة في الأرشيف',
@@ -45,6 +47,7 @@ class AdminAuthController extends Controller
             'admin.shifts'            => 'مراجعة سجل الورديات وتغيير/إغلاق الوردية',
             'admin.login_log'         => 'مراجعة سجل دخول المستخدمين والعمليات',
             'admin.safes'             => 'إدارة الخزائن (الدرج / الخزنة / البنك) والإيداع والسحب',
+            'delivery.riders'         => 'إدارة الطيارين وسجل تسليم طلبات التوصيل وعمولاتهم',
             'settings.manage'         => 'الدخول إلى الإعدادات العامة للنظام وربط الواتساب',
         ];
     }
@@ -384,7 +387,7 @@ class AdminAuthController extends Controller
 
             return response()->json([
                 'ok'      => false,
-                'message' => 'كلمة المرور غير صحيحة! (كلمة المرور الافتراضية: 123)',
+                'message' => 'كلمة المرور غير صحيحة!',
             ], 422);
         }
 
@@ -395,7 +398,7 @@ class AdminAuthController extends Controller
 
         $openShift = DB::table('pos_shifts')->where('status', 'open')->orderBy('id', 'desc')->first();
         if (!$openShift) {
-            $lastShiftNo = DB::table('pos_shifts')->max('shift_no') ?? 135;
+            $lastShiftNo = (int) DB::table('pos_shifts')->max('shift_no');
             $now = Carbon::now('Africa/Cairo');
             $shiftId = DB::table('pos_shifts')->insertGetId([
                 'uuid'               => (string) Str::uuid(),
@@ -421,17 +424,18 @@ class AdminAuthController extends Controller
             'role_label'  => $user->role_label,
             'permissions' => $permissions,
             'shift_id'    => $openShift ? $openShift->id : 1,
-            'shift_no'    => $openShift ? $openShift->shift_no : 136,
+            'shift_no'    => $openShift ? $openShift->shift_no : null,
         ];
 
-        $request->session()->forget('pos_temp_authorized_permissions');
+        $request->session()->forget(['pos_temp_authorized_permissions', 'pos_temp_authorized_by']);
+        $request->session()->regenerate();
         $request->session()->put('pos_user', $sessionData);
 
         self::logActivity($user->full_name, 'تسجيل دخول', 'نجحت', 'تسجيل دخول للبرنامج وفتح شاشة المبيعات', '', $user->id);
 
         return response()->json([
             'ok'       => true,
-            'redirect' => '/pos/sales',
+            'redirect' => '/pos/archive',
             'user'     => $sessionData,
         ]);
     }
@@ -492,8 +496,11 @@ class AdminAuthController extends Controller
             if (!is_array($grantedPermissions)) {
                 $grantedPermissions = [];
             }
-            $grantedPermissions[$permission] = now()->addMinutes(5)->timestamp;
+            $grantedPermissions[$permission] = now()->addMinutes(15)->timestamp;
             $request->session()->put('pos_temp_authorized_permissions', $grantedPermissions);
+            $grantedBy = (array) $request->session()->get('pos_temp_authorized_by', []);
+            $grantedBy[$permission] = $authorizedManager->full_name;
+            $request->session()->put('pos_temp_authorized_by', $grantedBy);
         }
 
         self::logActivity($currentUser['full_name'], 'تصريح عملية', 'نجحت', $actionName, "تم التصريح بواسطة: {$authorizedManager->full_name}", $currentUser['id']);
@@ -513,7 +520,7 @@ class AdminAuthController extends Controller
             return response()->json(['ok' => false, 'message' => 'يجب تسجيل الدخول قبل إغلاق الوردية'], 401);
         }
 
-        $password    = trim((string) $request->input('password'));
+        $password    = trim((string) $request->input('manager_password', $request->input('password')));
         $drawerCash  = (float) $request->input('drawer_cash', 0);
         $notes       = trim((string) $request->input('notes', ''));
 
@@ -545,7 +552,7 @@ class AdminAuthController extends Controller
             $mins  = $diffMinutes % 60;
             $durationLabel = ($hours > 0 ? "{$hours} ساعة و " : '') . "{$mins} دقيقة";
 
-            $expectedDrawer = $this->calculateRealDrawerBalance();
+            $expectedDrawer = \App\Support\Drawer::expected($openShift);
 
             DB::table('pos_shifts')->where('id', $openShift->id)->update([
                 'status'               => 'closed',
@@ -900,7 +907,7 @@ class AdminAuthController extends Controller
             : 0;
 
         $purchasesCash = Schema::hasTable('purchase_invoices')
-            ? (float) DB::table('purchase_invoices')->whereNull('deleted_at')->sum('paid_amount')
+            ? (float) DB::table('purchase_invoices')->whereNull('deleted_at')->sum('paid')
             : 0;
 
         $expensesCash = Schema::hasTable('expenses')
@@ -1061,6 +1068,23 @@ class AdminAuthController extends Controller
         }
 
         try {
+            $encryptedContent = $this->buildEncryptedBackup();
+            $fileName = 'NextStore_Backup_' . now()->format('Y_m_d_His') . '.nsbak';
+
+            return response($encryptedContent, 200, [
+                'Content-Type'        => 'application/octet-stream',
+                'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+                'Cache-Control'       => 'no-store, no-cache',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Database backup creation failed.', ['exception' => $e]);
+            return response()->json(['ok' => false, 'message' => 'تعذر إنشاء النسخة الاحتياطية. راجع سجل النظام.'], 500);
+        }
+    }
+
+    /** محتوى نسخة .nsbak مشفرة لقاعدة البيانات الحالية (يُستخدم للتحميل وقبل التحديث). */
+    public function buildEncryptedBackup(): string
+    {
             $driver = DB::connection()->getDriverName();
             $payload = [
                 'system'     => 'NextStore_POS_Protected_Backup',
@@ -1072,7 +1096,7 @@ class AdminAuthController extends Controller
             if ($driver === 'sqlite') {
                 $dbPath = $this->sqliteDatabasePath();
                 if (!is_file($dbPath)) {
-                    return response()->json(['ok' => false, 'message' => 'ملف قاعدة البيانات غير موجود.'], 404);
+                    throw new \RuntimeException('SQLite database file not found.');
                 }
 
                 $pdo = DB::connection()->getPdo();
@@ -1101,26 +1125,14 @@ class AdminAuthController extends Controller
                 }
                 $payload['tables_data'] = $tablesData;
             } else {
-                return response()->json(['ok' => false, 'message' => 'نوع قاعدة البيانات غير مدعوم للنسخ الاحتياطي.'], 422);
+                throw new \RuntimeException('Unsupported database driver for backup.');
             }
 
-            $jsonString = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
-            $compressed = gzencode($jsonString, 9);
+            $compressed = gzencode(json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR), 9);
             if ($compressed === false) {
                 throw new \RuntimeException('Unable to compress the database backup.');
             }
-            $encryptedContent = \Illuminate\Support\Facades\Crypt::encryptString(base64_encode($compressed));
-            $fileName = 'NextStore_Backup_' . now()->format('Y_m_d_His') . '.nsbak';
-
-            return response($encryptedContent, 200, [
-                'Content-Type'        => 'application/octet-stream',
-                'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-                'Cache-Control'       => 'no-store, no-cache',
-            ]);
-        } catch (\Throwable $e) {
-            Log::error('Database backup creation failed.', ['exception' => $e]);
-            return response()->json(['ok' => false, 'message' => 'تعذر إنشاء النسخة الاحتياطية. راجع سجل النظام.'], 500);
-        }
+            return \Illuminate\Support\Facades\Crypt::encryptString(base64_encode($compressed));
     }
 
     // =========================================================================
@@ -1392,6 +1404,8 @@ class AdminAuthController extends Controller
 
             $newShiftId = DB::transaction(function () use ($posUser, $now) {
                 $transactionalTables = [
+                    'delivery_run_items',
+                    'delivery_runs',
                     'orders',
                     'order_items',
                     'pos_orders',
@@ -1425,8 +1439,13 @@ class AdminAuthController extends Controller
                     'employee_settlements',
                     'safe_transactions',
                     'pos_safe_transactions',
+                    'suspended_invoices',
                     'pos_shifts',
                 ];
+                // ترقيم الفواتير والمرتجعات يبدأ من 1 (نحتفظ بحماية الساعة clock_last_seen)
+                if (Schema::hasTable('sequences')) {
+                    DB::table('sequences')->where('key', '!=', 'clock_last_seen')->delete();
+                }
 
                 foreach ($transactionalTables as $table) {
                     if (Schema::hasTable($table)) {
@@ -1436,8 +1455,13 @@ class AdminAuthController extends Controller
 
                 if (Schema::hasTable('items')) {
                     $itemUpdate = ['qty' => 0];
-                    if (Schema::hasColumn('items', 'last_move_date')) {
-                        $itemUpdate['last_move_date'] = null;
+                    foreach (['last_move_date', 'last_buy_date'] as $col) {
+                        if (Schema::hasColumn('items', $col)) {
+                            $itemUpdate[$col] = null;
+                        }
+                    }
+                    if (Schema::hasColumn('items', 'has_purchase_invoice')) {
+                        $itemUpdate['has_purchase_invoice'] = false;
                     }
                     if (Schema::hasColumn('items', 'is_synced')) {
                         $itemUpdate['is_synced'] = false;
@@ -1452,6 +1476,9 @@ class AdminAuthController extends Controller
                             $custUpdate[$col] = 0;
                         }
                     }
+                    if (Schema::hasColumn('customers', 'balance_type')) {
+                        $custUpdate['balance_type'] = 'debit';
+                    }
                     if (!empty($custUpdate)) {
                         DB::table('customers')->update($custUpdate);
                     }
@@ -1463,6 +1490,9 @@ class AdminAuthController extends Controller
                         if (Schema::hasColumn('suppliers', $col)) {
                             $suppUpdate[$col] = 0;
                         }
+                    }
+                    if (Schema::hasColumn('suppliers', 'balance_type')) {
+                        $suppUpdate['balance_type'] = 'credit';
                     }
                     if (!empty($suppUpdate)) {
                         DB::table('suppliers')->update($suppUpdate);
@@ -1547,3 +1577,5 @@ class AdminAuthController extends Controller
 
 
 }
+
+

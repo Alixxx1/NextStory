@@ -1,0 +1,149 @@
+/* NextStore - هوية موحدة لصفحات العملاء والموردين والمخزن (Clean Flat ERP)
+   بيتحمل بعد ستايل الصفحة ويوحد: الهيدر، الأزرار، الفلاتر، الجداول، شريط الإجماليات */
+body.ns-erp {
+    --erp-bg: #eef2f5; --erp-card: #fff; --erp-border: #d5dde6; --erp-line: #e2e8f0;
+    --erp-navy: #17283d; --erp-green: #119744; --erp-green-d: #0d7a36; --erp-green-soft: #ecfdf3;
+    --erp-text: #0f172a; --erp-muted: #64748b; --erp-red: #dc2626;
+    background: var(--erp-bg) !important; color: var(--erp-text); font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+}
+
+/* ===== الهيدر: كارت أبيض هادي بعنوان كحلي ===== */
+body.ns-erp .customers-header, body.ns-erp .suppliers-header, body.ns-erp .ns-header {
+    background: var(--erp-card) !important; color: var(--erp-navy) !important; border: 1px solid var(--erp-border) !important;
+    border-radius: 10px !important; box-shadow: none !important; padding: 10px 16px !important; margin: 10px 12px 8px !important;
+    min-height: 58px; display: flex; align-items: center; gap: 14px;
+}
+body.ns-erp .customers-title, body.ns-erp .suppliers-title, body.ns-erp .ns-header h1, body.ns-erp .ns-header h2 {
+    font-size: 19px !important; font-weight: 800 !important; color: var(--erp-navy) !important; margin: 0 !important; display: flex; align-items: center; gap: 10px;
+}
+body.ns-erp .customers-title i, body.ns-erp .suppliers-title i { color: var(--erp-green) !important; }
+body.ns-erp .ns-header * { color: inherit; }
+body.ns-erp .ns-logo-icon { background: var(--erp-green-soft) !important; color: var(--erp-green) !important; border: 1px solid #bfe5cd; }
+body.ns-erp .ns-logo-icon i { color: var(--erp-green) !important; }
+body.ns-erp .module-pill { background: var(--erp-green-soft) !important; color: var(--erp-green-d) !important; border: 1px solid #bfe5cd !important; }
+body.ns-erp .ns-header-shortcuts { color: var(--erp-muted) !important; background: #f8fafc !important; border: 1px solid var(--erp-line) !important; }
+body.ns-erp .ns-header-shortcuts span { color: var(--erp-muted) !important; }
+body.ns-erp .ns-header .kbd, body.ns-erp .search-shortcut {
+    background: #fff !important; color: #334155 !important; border: 1px solid #cbd5e1 !important; box-shadow: none !important; font-family: Arial, sans-serif;
+}
+
+/* ===== الأزرار: أخضر للأساسي، أبيض بحدود للباقي، والحذف أحمر هادي ===== */
+body.ns-erp .exit-btn, body.ns-erp .btn-exit, body.ns-erp .btn-top-link,
+body.ns-erp .btn-bottom-action, body.ns-erp .btn-action-top, body.ns-erp .ns-action-btn {
+    height: 38px !important; padding: 0 14px !important; border-radius: 7px !important; font-size: 13.5px !important; font-weight: 800 !important;
+    display: inline-flex !important; align-items: center; justify-content: center; gap: 7px; box-shadow: none !important;
+    background: #fff !important; color: #1e293b !important; border: 1px solid #cbd5e1 !important; opacity: 1 !important;
+}
+body.ns-erp .exit-btn i, body.ns-erp .btn-exit i, body.ns-erp .btn-bottom-action i, body.ns-erp .btn-action-top i, body.ns-erp .ns-action-btn i { color: var(--erp-muted) !important; }
+body.ns-erp .exit-btn, body.ns-erp .btn-exit { margin-inline-start: auto; }
+body.ns-erp .exit-btn:hover, body.ns-erp .btn-exit:hover { color: var(--erp-red) !important; border-color: #fecaca !important; background: #fef2f2 !important; }
+body.ns-erp .btn-bottom-action:hover:not(:disabled), body.ns-erp .btn-action-top:hover:not(:disabled), body.ns-erp .ns-action-btn:hover:not(:disabled), body.ns-erp .btn-top-link:hover {
+    background: #f8fafc !important; border-color: #94a3b8 !important;
+}
+body.ns-erp .btn-success.btn-bottom-action, body.ns-erp .btn-success.btn-action-top, body.ns-erp .ns-action-btn.primary-green {
+    background: var(--erp-green) !important; border-color: var(--erp-green) !important; color: #fff !important;
+}
+body.ns-erp .btn-success.btn-bottom-action i, body.ns-erp .btn-success.btn-action-top i, body.ns-erp .ns-action-btn.primary-green i { color: #fff !important; }
+body.ns-erp .btn-success.btn-bottom-action:hover:not(:disabled), body.ns-erp .btn-success.btn-action-top:hover:not(:disabled), body.ns-erp .ns-action-btn.primary-green:hover { background: var(--erp-green-d) !important; }
+/* أزرار الدفع/التحصيل في الموردين: مش أخضر صريح عشان ما تتلخبطش مع "جديد" */
+body.ns-erp #btn-pay-supplier, body.ns-erp #btn-collect-supplier { background: #fff !important; border-color: #cbd5e1 !important; color: #1e293b !important; }
+body.ns-erp #btn-pay-supplier i { color: var(--erp-red) !important; }
+body.ns-erp #btn-collect-supplier i { color: var(--erp-green) !important; }
+body.ns-erp .btn-danger.btn-bottom-action, body.ns-erp .btn-danger.btn-action-top, body.ns-erp .ns-action-btn.danger-btn { color: var(--erp-red) !important; border-color: #fecaca !important; }
+body.ns-erp .btn-danger.btn-bottom-action i, body.ns-erp .btn-danger.btn-action-top i, body.ns-erp .ns-action-btn.danger-btn i { color: var(--erp-red) !important; }
+body.ns-erp .btn-bottom-action:disabled, body.ns-erp .btn-action-top:disabled, body.ns-erp .ns-action-btn:disabled { opacity: .45 !important; }
+body.ns-erp .btn-excel i { color: #15803d !important; }
+
+/* ===== الفلاتر والبحث ===== */
+body.ns-erp .top-filters-bar, body.ns-erp .top-actions-bar, body.ns-erp .top-filters-panel {
+    background: var(--erp-card) !important; border: 1px solid var(--erp-border) !important; border-radius: 10px !important; box-shadow: none !important;
+    padding: 8px 12px !important; gap: 8px !important;
+}
+body.ns-erp .top-filters-panel { margin: 0 12px 8px !important; display: grid !important; grid-template-columns: 1fr 1.6fr; column-gap: 14px !important; row-gap: 6px !important; }
+body.ns-erp .top-filters-panel .filter-row { margin: 0 !important; padding: 0 !important; border: 0 !important; min-width: 0; }
+body.ns-erp .search-group { background: #fff !important; border: 1px solid #cbd5e1 !important; border-radius: 7px !important; height: 38px; box-shadow: none !important; }
+body.ns-erp .search-group:focus-within { border-color: var(--erp-green) !important; box-shadow: 0 0 0 3px rgba(17, 151, 68, .12) !important; }
+body.ns-erp .filter-select, body.ns-erp .ns-control {
+    height: 38px !important; border: 1px solid #cbd5e1 !important; border-radius: 7px !important; font-weight: 700 !important; font-size: 13.5px !important; box-shadow: none !important; background-color: #fff !important;
+}
+body.ns-erp .filter-select:focus, body.ns-erp .ns-control:focus { border-color: var(--erp-green) !important; box-shadow: 0 0 0 3px rgba(17, 151, 68, .12) !important; outline: none; }
+body.ns-erp .search-center-input { background: #fff !important; }
+body.ns-erp .btn-filter-menu { height: 34px !important; border-radius: 7px !important; background: #fff !important; border: 1px solid #cbd5e1 !important; color: #334155 !important; box-shadow: none !important; font-weight: 800 !important; }
+body.ns-erp .btn-refresh { background: #fff !important; color: var(--erp-green) !important; border: 1px solid #cbd5e1 !important; box-shadow: none !important; width: 38px; height: 38px; border-radius: 7px !important; }
+
+/* ===== الجداول: هيدر رمادي هادي، صفوف مضغوطة، تحديد أخضر خفيف ===== */
+body.ns-erp .table-container, body.ns-erp .main-table-wrapper {
+    background: var(--erp-card) !important; border: 1px solid var(--erp-border) !important; border-radius: 10px !important; box-shadow: none !important;
+}
+body.ns-erp .customers-table thead th, body.ns-erp .suppliers-table thead th, body.ns-erp .ns-items-table thead th {
+    background: #e9edf2 !important; color: #334155 !important; font-size: 13px !important; font-weight: 800 !important;
+    border: 0 !important; border-bottom: 1px solid #cbd5e1 !important; padding: 9px 10px !important; white-space: nowrap; position: sticky; top: 0; z-index: 2;
+}
+body.ns-erp .customers-table tbody td, body.ns-erp .suppliers-table tbody td, body.ns-erp .ns-items-table tbody td {
+    padding: 7px 10px !important; font-size: 13.5px !important; border-color: var(--erp-line) !important; border-width: 0 0 1px !important; vertical-align: middle; background: #fff;
+}
+body.ns-erp .customers-table tbody tr:nth-child(even) > td, body.ns-erp .suppliers-table tbody tr:nth-child(even) > td, body.ns-erp .ns-items-table tbody tr:nth-child(even) > td { background: #fafbfc !important; }
+body.ns-erp .customers-table tbody tr:hover > td, body.ns-erp .suppliers-table tbody tr:hover > td, body.ns-erp .ns-items-table tbody tr:hover > td { background: #f0faf4 !important; }
+body.ns-erp .customers-table tbody tr.active-row > td, body.ns-erp .suppliers-table tbody tr.active-row > td, body.ns-erp .ns-items-table tbody tr.active-row > td,
+body.ns-erp .suppliers-table tbody tr.selected > td, body.ns-erp .suppliers-table tbody tr.table-active > td {
+    background: #dcfce7 !important; color: var(--erp-text) !important; box-shadow: inset 0 1px 0 #86d6a5, inset 0 -1px 0 #86d6a5 !important;
+}
+body.ns-erp .customers-table tbody tr.active-row > td:first-child, body.ns-erp .ns-items-table tbody tr.active-row > td:first-child { box-shadow: inset -3px 0 0 var(--erp-green), inset 0 1px 0 #86d6a5, inset 0 -1px 0 #86d6a5 !important; }
+body.ns-erp .area-badge { background: #f1f5f9 !important; color: #334155 !important; border: 1px solid var(--erp-line) !important; font-weight: 700; }
+
+/* ===== شريط الإجماليات تحت ===== */
+body.ns-erp .bottom-master-bar, body.ns-erp .bottom-summary-bar, body.ns-erp .bottom-dock {
+    background: var(--erp-card) !important; border: 1px solid var(--erp-border) !important; border-radius: 10px !important; box-shadow: none !important;
+}
+body.ns-erp .summary-pill .pill-val, body.ns-erp .summary-value, body.ns-erp .stat-value-box {
+    background: #fff !important; color: var(--erp-text) !important; border: 1px solid #cbd5e1 !important; border-radius: 7px !important; box-shadow: none !important;
+    font-family: Arial, sans-serif !important; font-weight: 800 !important;
+}
+body.ns-erp #stat-total-customers, body.ns-erp #total-suppliers-count, body.ns-erp #statItemsCount { background: var(--erp-navy) !important; color: #fff !important; border-color: var(--erp-navy) !important; }
+body.ns-erp .pill-val.val-debit, body.ns-erp .summary-value.text-danger { color: var(--erp-red) !important; }
+body.ns-erp .pill-val.val-credit, body.ns-erp .summary-value.text-success { color: var(--erp-green-d) !important; }
+body.ns-erp .text-debt { color: var(--erp-red) !important; }
+body.ns-erp .text-credit { color: var(--erp-green-d) !important; }
+
+/* الأرقام إنجليزي واضحة */
+body.ns-erp .en-digit { font-family: Arial, 'Segoe UI', sans-serif !important; }
+body.ns-erp .text-debt, body.ns-erp .text-credit { white-space: nowrap; font-weight: 800; }
+
+/* ===== هوية عامة لباقي الصفحات (نفس الشكل بدون تغيير التخطيط) ===== */
+body.ns-erp .page-header, body.ns-erp .top-bar, body.ns-erp .date-control-bar, body.ns-erp .top-basics-bar, body.ns-erp .top-report-bar,
+body.ns-erp .account-header, body.ns-erp .top-search-header, body.ns-erp .win-header, body.ns-erp .ns-panel-header, body.ns-erp .panel-header {
+    background: var(--erp-card) !important; background-image: none !important; color: var(--erp-navy) !important;
+    border: 1px solid var(--erp-border) !important; border-radius: 10px !important; box-shadow: none !important;
+}
+body.ns-erp .page-header *, body.ns-erp .top-bar *, body.ns-erp .date-control-bar *, body.ns-erp .win-header *, body.ns-erp .account-header * { text-shadow: none !important; }
+body.ns-erp .page-header h1, body.ns-erp .page-header h2, body.ns-erp .page-header h3, body.ns-erp .page-title, body.ns-erp .archive-title, body.ns-erp .account-title,
+body.ns-erp .returns-heading, body.ns-erp .ns-header-title { color: var(--erp-navy) !important; font-weight: 800 !important; }
+body.ns-erp .page-header .text-warning, body.ns-erp .top-bar .text-warning, body.ns-erp .date-control-bar .text-warning { color: var(--erp-green) !important; }
+
+/* نوافذ منبثقة: هيدر كحلي مسطح موحد */
+body.ns-erp .modal-header.bg-dark, body.ns-erp .modal-header.bg-primary, body.ns-erp .modal-header.bg-success, body.ns-erp .modal-header.bg-info,
+body.ns-erp .modal-header.bg-warning, body.ns-erp .modal-header.bg-danger, body.ns-erp .ns-modal-header, body.ns-erp .custom-modal-header {
+    background: var(--erp-navy) !important; background-image: none !important; color: #fff !important; border: 0 !important;
+}
+body.ns-erp .modal-content { border: 1px solid var(--erp-border) !important; border-radius: 10px !important; box-shadow: 0 6px 24px rgba(15, 23, 42, .18) !important; }
+
+/* أزرار بوتستراب: الأساسي أخضر، الباقي أبيض بحدود */
+body.ns-erp .btn { box-shadow: none !important; border-radius: 7px; font-weight: 700; }
+body.ns-erp .btn-primary, body.ns-erp .btn-success { background: var(--erp-green) !important; border-color: var(--erp-green) !important; color: #fff !important; background-image: none !important; }
+body.ns-erp .btn-primary:hover, body.ns-erp .btn-success:hover { background: var(--erp-green-d) !important; border-color: var(--erp-green-d) !important; }
+body.ns-erp .btn-warning, body.ns-erp .btn-info, body.ns-erp .btn-secondary, body.ns-erp .btn-light { background: #fff !important; border: 1px solid #cbd5e1 !important; color: #1e293b !important; background-image: none !important; }
+body.ns-erp .btn-warning:hover, body.ns-erp .btn-info:hover, body.ns-erp .btn-secondary:hover, body.ns-erp .btn-light:hover { background: #f8fafc !important; border-color: #94a3b8 !important; }
+body.ns-erp .btn-dark { background: var(--erp-navy) !important; border-color: var(--erp-navy) !important; color: #fff !important; }
+body.ns-erp .btn-danger { background: #fff !important; border: 1px solid #fecaca !important; color: var(--erp-red) !important; }
+body.ns-erp .btn-danger:hover { background: #fef2f2 !important; }
+
+/* كروت وجداول وحقول */
+body.ns-erp .card, body.ns-erp .panel, body.ns-erp .ns-panel { border: 1px solid var(--erp-border) !important; border-radius: 10px !important; box-shadow: none !important; }
+body.ns-erp .shadow, body.ns-erp .shadow-sm, body.ns-erp .shadow-lg { box-shadow: none !important; }
+body.ns-erp table thead th { background: #e9edf2 !important; background-image: none !important; color: #334155 !important; border-bottom: 1px solid #cbd5e1 !important; font-weight: 800; }
+body.ns-erp .form-control, body.ns-erp .form-select { border: 1px solid #cbd5e1; border-radius: 7px; box-shadow: none; }
+body.ns-erp .form-control:focus, body.ns-erp .form-select:focus { border-color: var(--erp-green); box-shadow: 0 0 0 3px rgba(17, 151, 68, .12); }
+body.ns-erp kbd { background: #fff; color: #334155; border: 1px solid #cbd5e1; box-shadow: none; font-family: Arial, sans-serif; }
+body.ns-erp .btn-exit-screen, body.ns-erp .btn-log.btn-danger, body.ns-erp [class*="btn-exit"] { background: #fff !important; background-image: none !important; color: var(--erp-red) !important; border: 1px solid #fecaca !important; box-shadow: none !important; }
+body.ns-erp .date-control-bar h5, body.ns-erp .date-control-bar h5 i, body.ns-erp .page-header h5 i { color: var(--erp-navy) !important; }
+body.ns-erp .date-control-bar h5 i, body.ns-erp .page-header h5 i { color: var(--erp-green) !important; }

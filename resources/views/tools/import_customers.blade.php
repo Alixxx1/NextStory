@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>استيراد بيانات العملاء | NextStore</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="/vendor/fonts/fonts.css" rel="stylesheet">
+    <link rel="stylesheet" href="/vendor/bootstrap/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <script src="/vendor/xlsx/xlsx.full.min.js"></script>
+    <script src="/vendor/sweetalert2/sweetalert2.all.min.js"></script>
     <style>
         body { background: #f8fafc; font-family: 'Cairo', sans-serif; height: 100vh; margin: 0; display: flex; flex-direction: column; overflow: hidden; user-select: none; }
         .top-bar { background: linear-gradient(135deg, #17283d 0%, #223d59 100%); color: #fff; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #119744; }
@@ -32,8 +32,9 @@
         .btn-custom:hover:not(:disabled) { background: #0d7a36; }
         .en-num { font-family: Arial, sans-serif; direction: ltr; display: inline-block; font-weight: 800; }
     </style>
+    <link rel="stylesheet" href="/css/nextstore-erp.css">
 </head>
-<body>
+<body class="ns-erp">
 
 <div class="top-bar">
     <div class="fw-bold fs-6"><i class="fas fa-users text-warning me-2"></i> استيراد شيت العملاء الذكي (Excel / CSV)</div>
@@ -291,5 +292,7 @@
     });
 })();
 </script>
+    <script src="/js/nextstore-nav.js"></script>
+    <script src="/js/nextstore-alerts.js"></script>
 </body>
 </html>

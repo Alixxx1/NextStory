@@ -59,13 +59,13 @@ class SupplierController extends Controller
             ->get()
             ->keyBy('supplier_id');
 
-        return Supplier::orderBy('id')
+        return DB::table('suppliers')->whereNull('deleted_at')->orderBy('id')
             ->get()
-            ->map(function (Supplier $s) use ($statsBySupplier) {
+            ->map(function ($s) use ($statsBySupplier) {
                 $stat = $statsBySupplier->get($s->id);
                 $firstDate = $stat && $stat->first_date
                     ? str_replace('-', '/', substr((string) $stat->first_date, 0, 10))
-                    : ($s->created_at ? $s->created_at->format('Y/m/d') : '');
+                    : ($s->created_at ? str_replace('-', '/', substr((string) $s->created_at, 0, 10)) : '');
                 $lastDate = $stat && $stat->last_date
                     ? str_replace('-', '/', substr((string) $stat->last_date, 0, 10))
                     : '';

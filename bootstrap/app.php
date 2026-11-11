@@ -15,6 +15,11 @@ $app = new Illuminate\Foundation\Application(
     $_ENV['APP_BASE_PATH'] ?? dirname(__DIR__)
 );
 
+// نسخة سطح المكتب (Electron) تحفظ storage في مجلد بيانات المستخدم الدائم
+if ($storagePath = getenv('NEXTSTORE_STORAGE_PATH')) {
+    $app->useStoragePath($storagePath);
+}
+
 /*
 |--------------------------------------------------------------------------
 | Bind Important Interfaces

@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>مرتجع مبيعات جزئي | NextStore SaaS</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="/vendor/bootstrap/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="/vendor/sweetalert2/sweetalert2.min.css">
 
     <style>
         :root { --primary: #119744; --dark: #2c3e50; --bg-color: #f4f6f9; }
@@ -71,8 +71,9 @@
 
         .btn-action { width: 100%; font-weight: bold; font-size: 16px; padding: 12px; border-radius: 6px; margin-bottom: 10px;}
     </style>
+    <link rel="stylesheet" href="/css/nextstore-erp.css">
 </head>
-<body>
+<body class="ns-erp">
 
     <div class="page-header">
         <div>
@@ -145,7 +146,7 @@
 
             <div class="mt-auto">
                 <button class="btn btn-success btn-action shadow-sm" id="btn-save-return">
-                    <i class="fas fa-check-circle me-1"></i> تنفيذ المرتجع وطباعة
+                    <i class="fas fa-check-circle me-1"></i> تنفيذ المرتجع
                 </button>
                 <button class="btn btn-secondary btn-action" id="btn-print-updated">
                     <i class="fas fa-print me-1"></i> طباعة الفاتورة المحدثة
@@ -174,9 +175,9 @@
         </div>
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/vendor/jquery/jquery-3.6.0.min.js"></script>
+    <script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+    <script src="/vendor/sweetalert2/sweetalert2.all.min.js"></script>
 
     <script>
     $(document).ready(function() {
@@ -253,7 +254,7 @@
             invoice.items.forEach((item, index) => {
                 const itemId = String(item.id || `item-${index + 1}`);
                 const quantity = Number(item.quantity) || 0;
-                const price = Number(item.price) || 0;
+                const price = Number(item.netPrice ?? item.price) || 0;
                 const returnedBeforeEdit = otherTransactions.reduce((sum, t) => sum + itemQuantity(t.items, itemId), 0);
                 const currentReturnQuantity = editingTransaction ? itemQuantity(editingTransaction.items, itemId) : 0;
                 const returnedQuantity = returnedBeforeEdit + currentReturnQuantity;
@@ -287,7 +288,7 @@
                 const itemId = String(item.id);
                 const originalItem = invoice.items.find((invItem, idx) => String(invItem.id || `item-${idx + 1}`) === itemId);
                 if (originalItem && Number(item.quantity) > 0) {
-                    addReturnedItemRow(itemId, originalItem.name, Number(originalItem.price), Number(item.quantity));
+                    addReturnedItemRow(itemId, originalItem.name, Number(originalItem.netPrice ?? originalItem.price), Number(item.quantity));
                 }
             });
 
@@ -427,42 +428,17 @@
 
             try {
                 $('#btn-save-return').prop('disabled', true);
-                const res = await fetch('/api/returns/partial/save', {
+                const out = await nsFetchWithApproval('/api/returns/partial/save', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
-                    },
                     body: JSON.stringify({
                         invoiceNumber: invoice.number,
                         returnId: editingTransaction ? editingTransaction.id : 'new',
                         items: returnedRows
                     })
-                });
-
-                const out = await res.json().catch(() => ({}));
-                if (!res.ok) {
-                    throw new Error(out.message || 'تعذر حفظ المرتجع في قاعدة البيانات.');
-                }
+                }, `مرتجع على الفاتورة #${invoice.number}`);
 
                 invoice = out.invoice;
-
-                const printConfirm = await Swal.fire({
-                    icon: 'success',
-                    title: editingTransaction ? 'تم تحديث بيانات المرتجع بنجاح' : `تم تسجيل المرتجع (${out.returnId}) وإعادة الكميات للمخزن`,
-                    text: 'هل تريد طباعة إشعار المرتجع الآن؟',
-                    showCancelButton: true,
-                    confirmButtonColor: '#119744',
-                    confirmButtonText: 'نعم، طباعة',
-                    cancelButtonText: 'العودة للسجل'
-                });
-
-                if (printConfirm.isConfirmed) {
-                    window.print();
-                }
-
-                returnToPreviousPage();
+                await afterReturnSaved(out.returnId, Boolean(editingTransaction));
             } catch (error) {
                 console.error('تعذر حفظ المرتجع الجزئي:', error);
                 Swal.fire({ icon: 'error', title: 'خطأ في الحفظ', text: error.message, confirmButtonColor: '#dc3545' });
@@ -471,7 +447,92 @@
             }
         });
 
-        $('#btn-print-updated').on('click', () => window.print());
+        // أسئلة ما بعد الحفظ: حفظ فقط أو طباعة ← إيصال المرتجع؟ ← الفاتورة المحدثة؟ ← الرجوع لمكانك
+        const ask = (title, text, yes, no, icon = 'question') => Swal.fire({
+            icon, title, text, showCancelButton: true, reverseButtons: true, focusConfirm: true,
+            confirmButtonText: yes, cancelButtonText: no, confirmButtonColor: '#119744', cancelButtonColor: '#64748b'
+        }).then(r => r.isConfirmed);
+
+        async function afterReturnSaved(returnId, wasEdit) {
+            const wantsPrint = await ask(
+                wasEdit ? 'تم تعديل المرتجع' : `تم تسجيل المرتجع ${returnId}`,
+                'رجعت الكميات للمخزن. تحب تطبع ولا تكتفي بالحفظ؟',
+                '<i class="fas fa-print ms-1"></i> طباعة', 'حفظ فقط', 'success'
+            );
+            if (wantsPrint) {
+                if (await ask('إيصال المرتجع', 'طباعة إيصال بالأصناف اللي رجعت بس؟', 'طباعة الإيصال', 'لا')) {
+                    printReceipt(() => printReturnReceipt(returnId));
+                }
+                if (await ask('الفاتورة بعد المرتجع', 'طباعة الفاتورة محدثة بعد خصم المرتجع؟', 'طباعة الفاتورة', 'لا')) {
+                    printReceipt(printUpdatedInvoice);
+                }
+            }
+            leaveOrStay();
+        }
+
+        // الطباعة في الخلفية: الشاشة ما تستناش الطابعة
+        const printReceipt = fn => Promise.resolve().then(fn).catch(error =>
+            Swal.fire({ icon: 'error', title: 'تعذرت الطباعة', text: error.message || 'تحقق من إعدادات الطابعة.', confirmButtonColor: '#dc3545' }));
+
+        function baseReceiptData() {
+            return {
+                date: [invoice.createdAt, invoice.createdTime && invoice.createdTime.slice(11)].filter(Boolean).join(' '),
+                cashier: invoice.cashier,
+                customerName: invoice.customerId ? invoice.customerName : '',
+                customerPhone: invoice.customerPhone, customerAddress: invoice.customerAddress,
+                customerBalanceBefore: null, customerBalanceAfter: null
+            };
+        }
+        const unitOf = qty => Number.isInteger(Number(qty)) ? 'قطعة' : 'كيلو';
+        function nowLabel() {
+            const d = new Date(), p = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours() % 12 || 12)}:${p(d.getMinutes())}${d.getHours() < 12 ? 'AM' : 'PM'}`;
+        }
+
+        function printReturnReceipt(returnId) {
+            const trx = (invoice.returnTransactions || []).find(r => String(r.id) === String(returnId)) || { items: [], total: 0 };
+            const extraRows = [];
+            if (Number(trx.cashRefund) > 0) extraRows.push(['مردود نقداً', `${Number(trx.cashRefund).toFixed(2)} ج.م`]);
+            if (Number(trx.accountCredit) > 0) extraRows.push(['خصم من حساب العميل', `${Number(trx.accountCredit).toFixed(2)} ج.م`]);
+            return NextStoreReceipt.printSales({
+                ...baseReceiptData(),
+                number: returnId,
+                date: nowLabel(),
+                items: trx.items.map(it => ({ name: it.name, unit: unitOf(it.quantity), price: it.price, quantity: it.quantity, total: it.total })),
+                subtotal: trx.total, total: trx.total, totalLabel: 'إجمالي المرتجع',
+                paid: null, due: 0, extraRows
+            }, { titleText: 'إيصال مرتجع', headerText: `عن فاتورة رقم ${invoice.number}`, showBarcode: true });
+        }
+
+        function printUpdatedInvoice() {
+            const items = invoice.items.map(it => {
+                const qty = Number((Number(it.quantity) - Number(it.returnedQty || 0)).toFixed(3));
+                return { name: it.name, unit: unitOf(qty), price: it.price, quantity: qty, total: qty * Number(it.price) };
+            }).filter(it => it.quantity > 0);
+            const returned = Number(invoice.returnedTotal) || 0;
+            const total = Math.max(0, (Number(invoice.total) || 0) - returned);
+            return NextStoreReceipt.printSales({
+                ...baseReceiptData(),
+                number: invoice.number,
+                items,
+                subtotal: items.reduce((s, it) => s + it.total, 0),
+                discount: invoice.discount, deliveryFee: invoice.deliveryFee,
+                total, totalLabel: 'الإجمالي بعد المرتجع',
+                paid: invoice.paidAmount, due: invoice.dueAmount,
+                extraRows: returned ? [['قيمة الفاتورة الأصلية', `${Number(invoice.total).toFixed(2)} ج.م`], ['إجمالي المرتجعات', `${returned.toFixed(2)} ج.م`]] : []
+            }, { titleText: 'فاتورة محدثة بعد المرتجع' });
+        }
+
+        // لو الشاشة اتفتحت من صفحة تانية نرجع لها، ولو اتفتحت مباشرة نفضل فيها بالفاتورة المحدثة
+        function leaveOrStay() {
+            if (document.referrer && new URL(document.referrer).origin === location.origin && !document.referrer.includes('/returns/partial')) {
+                returnToPreviousPage();
+            } else {
+                initializeReturnScreen();
+            }
+        }
+
+        $('#btn-print-updated').on('click', () => invoice && printReceipt(printUpdatedInvoice));
 
         function returnToPreviousPage() {
             if (window.history.length > 1 && document.referrer) {
@@ -492,5 +553,9 @@
         loadInvoiceFromDatabase();
     });
     </script>
+    <script src="/js/nextstore-approval.js"></script>
+    @include('partials.receipt-kit')
+    <script src="/js/nextstore-nav.js"></script>
+    <script src="/js/nextstore-alerts.js"></script>
 </body>
 </html>

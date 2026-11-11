@@ -22,48 +22,86 @@ class PosInvoiceIdempotencyTest extends TestCase
         ]);
         DB::purge('sqlite');
         Artisan::call('migrate:fresh', ['--force' => true]);
+        app(\App\Http\Controllers\Admin\AdminAuthController::class)->ensureSeeded();
+    }
+
+    /** جلسة كاشير على وردية مفتوحة (تُنشأ لو مش موجودة) */
+    private function cashier(array $permissions = ['pos.sales', 'orders.archive'], ?int $shiftId = null): self
+    {
+        $shiftId ??= DB::table('pos_shifts')->where('status', 'open')->value('id') ?? DB::table('pos_shifts')->insertGetId([
+            'uuid' => (string) Str::uuid(), 'shift_no' => 1, 'status' => 'open', 'shift_date' => now()->toDateString(),
+            'started_at' => now()->subHour(), 'started_time_label' => '-', 'started_by_name' => 'كاشير', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        return $this->withSession(['pos_user' => ['id' => 5, 'full_name' => 'كاشير الاختبار', 'role' => 'user', 'permissions' => $permissions, 'shift_id' => $shiftId]]);
     }
 
     public function test_retrying_invoice_save_with_the_same_request_id_does_not_duplicate_it(): void
     {
         $payload = $this->validInvoicePayload();
 
-        $firstResponse = $this->postJson('/api/pos/invoices/store', $payload)->assertOk();
-        $retryResponse = $this->postJson('/api/pos/invoices/store', $payload)->assertOk();
+        $firstResponse = $this->cashier()->postJson('/api/pos/invoices/store', $payload)->assertOk();
+        $retryResponse = $this->cashier()->postJson('/api/pos/invoices/store', $payload)->assertOk();
 
         $retryResponse->assertJsonPath('invoiceNumber', $firstResponse->json('invoiceNumber'));
         $this->assertDatabaseCount('sales_invoices', 1);
         $this->assertDatabaseCount('sales_invoice_items', 1);
     }
 
+    public function test_invoice_rounding_adjustment_is_saved_and_returned_in_the_archive(): void
+    {
+        $payload = array_merge($this->validInvoicePayload(), ['externalSubTotal' => 10.75, 'roundingAdjustment' => 0.25, 'total' => 11, 'paidAmount' => 11]);
+        $payload['items'][0] = array_merge($payload['items'][0], ['price' => 10.75, 'total' => 10.75]);
+
+        $this->cashier()->postJson('/api/pos/invoices/store', $payload)->assertOk();
+
+        $this->assertDatabaseHas('sales_invoices', ['rounding_adjustment' => 0.25, 'net_value' => 11]);
+        $this->cashier()->getJson('/api/orders/archive')->assertOk()->assertJsonPath('orders.0.rounding', 0.25);
+
+        $this->cashier()->postJson('/api/pos/invoices/store', array_merge($payload, ['requestId' => (string) \Illuminate\Support\Str::uuid(), 'roundingAdjustment' => 5]))
+            ->assertUnprocessable();
+    }
+
+    public function test_pos_customer_save_updates_an_existing_customer_without_changing_code_or_balance(): void
+    {
+        $created = $this->cashier()->postJson('/api/pos/customers/save', ['name' => 'عميل', 'phone1' => '01000000001', 'code' => '1555'])->assertOk();
+        $id = (int) $created->json('customer.id');
+        DB::table('customers')->where('id', $id)->update(['balance' => 50]);
+
+        $this->cashier()->postJson('/api/pos/customers/save', [
+            'id' => $id, 'code' => '9999', 'name' => 'عميل معدل', 'phone1' => '01000000002',
+            'addresses' => [['label' => 'العنوان الرئيسي', 'fullAddress' => '328 ن ش 13']],
+        ])->assertOk()->assertJsonPath('customer.code', '1555')->assertJsonPath('customer.name', 'عميل معدل');
+
+        $this->assertDatabaseHas('customers', ['id' => $id, 'code' => '1555', 'phone1' => '01000000002', 'addr1' => '328 ن ش 13', 'balance' => 50]);
+        $this->assertDatabaseCount('customers', 1);
+    }
+
     public function test_archive_saves_and_filters_orders_by_day_and_shift(): void
     {
-        foreach ([11, 12, null] as $shiftId) {
-            $payload = $this->validInvoicePayload();
-            $payload['requestId'] = (string) Str::uuid();
-            $session = $shiftId
-                ? ['pos_user' => ['id' => 1, 'name' => 'كاشير', 'shift_id' => $shiftId]]
-                : ['pos_user' => ['id' => 1, 'name' => 'كاشير']];
+        $this->cashier()->postJson('/api/pos/invoices/store', $this->validInvoicePayload())->assertOk();
+        $firstShift = DB::table('pos_shifts')->where('status', 'open')->value('id');
+        DB::table('pos_shifts')->where('id', $firstShift)->update(['status' => 'closed', 'ended_at' => now()]);
+        $secondShift = DB::table('pos_shifts')->insertGetId([
+            'uuid' => (string) Str::uuid(), 'shift_no' => 2, 'status' => 'open', 'shift_date' => now()->toDateString(),
+            'started_at' => now(), 'started_time_label' => '-', 'started_by_name' => 'كاشير', 'created_at' => now(), 'updated_at' => now(),
+        ]);
 
-            $this->withSession($session)->postJson('/api/pos/invoices/store', $payload)->assertOk();
+        // جلسة على وردية مقفولة لا تستطيع البيع
+        $this->cashier(['pos.sales'], $firstShift)->postJson('/api/pos/invoices/store', array_merge($this->validInvoicePayload(), ['requestId' => (string) Str::uuid()]))
+            ->assertStatus(409);
+
+        foreach ([1, 2] as $_) {
+            $this->cashier(['pos.sales'], $secondShift)->postJson('/api/pos/invoices/store', array_merge($this->validInvoicePayload(), ['requestId' => (string) Str::uuid()]))->assertOk();
         }
 
         $day = now()->toDateString();
         $this->assertDatabaseCount('sales_invoices', 3);
-        $this->assertDatabaseHas('sales_invoices', ['shift_id' => 11]);
-        $this->assertDatabaseHas('sales_invoices', ['shift_id' => 12]);
+        $this->assertDatabaseHas('sales_invoices', ['shift_id' => $secondShift, 'created_by' => 'كاشير الاختبار']);
 
-        $latestShiftOrders = $this->getJson("/api/orders/archive?period_mode=day&day_date={$day}&shift_scope=latest")
-            ->assertOk()
-            ->assertJsonCount(2, 'orders')
-            ->json('orders');
-        $latestShiftIds = array_column($latestShiftOrders, 'shiftId');
-        $this->assertContains(12, $latestShiftIds);
-        $this->assertContains(null, $latestShiftIds, true);
-
-        $this->getJson("/api/orders/archive?period_mode=range&from_date={$day}&to_date={$day}&shift_scope=all")
-            ->assertOk()
-            ->assertJsonCount(3, 'orders');
+        $this->cashier()->getJson("/api/orders/archive?period_mode=day&day_date={$day}&shift_scope=latest")
+            ->assertOk()->assertJsonCount(2, 'orders');
+        $this->cashier()->getJson("/api/orders/archive?period_mode=range&from_date={$day}&to_date={$day}&shift_scope=all")
+            ->assertOk()->assertJsonCount(3, 'orders');
     }
 
     public function test_zero_reset_clears_transactions_and_balances_but_preserves_master_data(): void
@@ -87,7 +125,7 @@ class PosInvoiceIdempotencyTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $this->postJson('/api/pos/invoices/store', $this->validInvoicePayload())->assertOk();
+        $this->cashier()->postJson('/api/pos/invoices/store', $this->validInvoicePayload())->assertOk();
         DB::table('safes')->update(['opening_balance' => 50, 'balance' => 75]);
 
         $this->withSession([
@@ -190,7 +228,7 @@ class PosInvoiceIdempotencyTest extends TestCase
         $payload = $this->validInvoicePayload();
         $payload['items'][0]['quantity'] = 0;
 
-        $this->postJson('/api/pos/invoices/store', $payload)->assertUnprocessable();
+        $this->cashier()->postJson('/api/pos/invoices/store', $payload)->assertUnprocessable();
 
         $this->assertDatabaseCount('sales_invoices', 0);
     }

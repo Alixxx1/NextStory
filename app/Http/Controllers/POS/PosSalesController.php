@@ -10,10 +10,17 @@ use App\Models\Item;
 use App\Models\ItemMovement;
 use App\Models\SalesInvoice;
 use App\Models\SalesInvoiceItem;
+use App\Support\SystemSettings;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\QueryException;
 use Illuminate\Validation\Rule;
+use App\Support\Balance;
+use App\Support\Clock;
+use App\Support\Money;
+use App\Support\PosAuth;
+use App\Support\Sequence;
+use App\Support\Stock;
 
 
 class PosSalesController extends Controller
@@ -38,7 +45,7 @@ class PosSalesController extends Controller
 
         return [
             'id'          => $posUser['id'] ?? null,
-            'name'        => $posUser['name'] ?? 'كاشير',
+            'name'        => \App\Support\PosAuth::name(),
             'role'        => $role,
             'shift_name'  => $posUser['shift_name'] ?? ($posUser['name'] ?? 'الوردية الحالية'),
             'shift_id'    => $posUser['shift_id'] ?? null,
@@ -98,13 +105,23 @@ class PosSalesController extends Controller
             Category::create(['code' => '001', 'name' => 'عام']);
         }
 
-        $nextInvoiceNo = (SalesInvoice::withTrashed()->max('id') ?? 0) + 1;
+        $nextInvoiceNo = \App\Support\Sequence::peek('sales_invoice');
         $posUser = $this->getCurrentPosUser();
 
         return view('pos.sales', [
             'initialNextInvoiceNumber' => $nextInvoiceNo,
             'initialCategories'        => Category::orderBy('id')->get(['id', 'name']),
             'posUser'                  => $posUser,
+            'systemSettings'           => SystemSettings::all(),
+        ]);
+    }
+
+    // الأرشيف الخارجي: طلبات الوردية المفتوحة (أول شاشة بعد تسجيل الدخول)
+    public function archive()
+    {
+        return view('pos.archive', [
+            'systemSettings' => SystemSettings::all(),
+            'openShift' => DB::table('pos_shifts')->where('status', 'open')->orderByDesc('id')->first(),
         ]);
     }
 
@@ -117,8 +134,8 @@ class PosSalesController extends Controller
             'fee'  => (float) $z->fee,
         ]);
 
-        $customers = Customer::orderBy('id')->get()->map(fn ($c) => $this->formatCustomer($c));
-        $nextInvoiceNo = (SalesInvoice::withTrashed()->max('id') ?? 0) + 1;
+        $customers = DB::table('customers')->whereNull('deleted_at')->orderBy('id')->get()->map(fn ($c) => $this->formatCustomer($c));
+        $nextInvoiceNo = \App\Support\Sequence::peek('sales_invoice');
 
         return response()->json([
             'zones'             => $zones,
@@ -128,7 +145,7 @@ class PosSalesController extends Controller
         ]);
     }
 
-    private function formatCustomer(Customer $c): array
+    private function formatCustomer($c): array
     {
         return [
             'id'          => (string) $c->id,
@@ -138,7 +155,7 @@ class PosSalesController extends Controller
             'phone2'      => $c->phone2 ?? '',
             'contactNote' => $c->contact_note ?? '',
             'invoiceNote' => $c->invoice_note ?? '',
-            'addresses'   => $c->addresses ?? [],
+            'addresses'   => is_string($c->addresses) ? (json_decode($c->addresses, true) ?: []) : ($c->addresses ?? []),
             'balance'     => (float) $c->balance,
             'balanceType' => $c->balance_type ?? 'debit',
             'deleted'     => false,
@@ -175,6 +192,7 @@ class PosSalesController extends Controller
     public function saveCustomer(Request $request)
     {
         $data = $request->validate([
+            'id'          => ['nullable', 'integer', Rule::exists('customers', 'id')->whereNull('deleted_at')],
             'code'        => 'nullable|string|max:50',
             'name'        => 'required|string|max:150',
             'phone1'      => 'required|string|max:30',
@@ -183,6 +201,10 @@ class PosSalesController extends Controller
             'invoiceNote' => 'nullable|string',
             'addresses'   => 'nullable|array',
         ]);
+
+        if (!empty($data['id'])) {
+            return $this->updateCustomerFromPos(Customer::findOrFail($data['id']), $data);
+        }
 
         $nextCode = $data['code'] ?: str_pad((string) ((Customer::withTrashed()->max('id') ?? 0) + 1), 3, '0', STR_PAD_LEFT);
         $addresses = $data['addresses'] ?? [];
@@ -215,6 +237,30 @@ class PosSalesController extends Controller
         ]);
     }
 
+    // تعديل بيانات عميل موجود من شاشة البيع (لا يغيّر الكود أو الرصيد)
+    private function updateCustomerFromPos(Customer $customer, array $data)
+    {
+        $addresses = $data['addresses'] ?? [];
+        $primaryAddr = $addresses[0] ?? [];
+        $customer->update([
+            'name'              => trim($data['name']),
+            'phone1'            => trim($data['phone1']),
+            'phone2'            => trim($data['phone2'] ?? ''),
+            'contact_note'      => $data['contactNote'] ?? '',
+            'invoice_note'      => $data['invoiceNote'] ?? '',
+            'primary_zone_id'   => !empty($primaryAddr['zoneId']) && is_numeric($primaryAddr['zoneId']) ? (int) $primaryAddr['zoneId'] : null,
+            'primary_zone_name' => $primaryAddr['zoneName'] ?? null,
+            'addr1'             => $primaryAddr['fullAddress'] ?? null,
+            'addr2'             => $addresses[1]['fullAddress'] ?? null,
+            'addr3'             => $addresses[2]['fullAddress'] ?? null,
+            'addresses'         => $addresses,
+        ]);
+
+        $this->recordActivity('pos.customer.update', "تعديل بيانات العميل ({$customer->name} - {$customer->code}) من شاشة البيع", 'نجحت');
+
+        return response()->json(['status' => 'success', 'customer' => $this->formatCustomer($customer->fresh())]);
+    }
+
     // 4. حفظ فاتورة المبيعات (F12) وخصم المخزون وتسميعها في أرشيف الطلبات وحساب العميل
     public function storeInvoice(Request $request)
     {
@@ -234,6 +280,7 @@ class PosSalesController extends Controller
             'externalSubTotal'   => 'required|numeric|min:0',
             'discount'           => 'required|numeric|min:0',
             'deliveryFee'        => 'required|numeric|min:0',
+            'roundingAdjustment' => 'nullable|numeric|between:-1,1',
             'total'              => 'required|numeric|min:0',
             'paidAmount'         => 'required|numeric|min:0',
             'dueAmount'           => 'required|numeric|min:0',
@@ -256,183 +303,178 @@ class PosSalesController extends Controller
 
         try {
             return DB::transaction(function () use ($data, $posUser) {
-            $existingInvoice = SalesInvoice::withTrashed()
-                ->where('request_id', $data['requestId'])
-                ->first();
-
-            if ($existingInvoice) {
-                return $this->invoiceStoreResponse($existingInvoice);
-            }
-
-            $isCashCustomer = empty($data['customerId']) || $data['customerId'] === 'cash-customer';
-
-            if ($isCashCustomer && ($data['paymentType'] === 'credit' || $data['dueAmount'] > 0.01)) {
-                return response()->json([
-                    'status'  => 'error',
-                    'message' => 'لا يمكن حفظ فاتورة آجل لعميل نقدي! اختر عميلاً مسجلاً أولاً (F2).',
-                ], 422);
-            }
-
-            $customer = !$isCashCustomer && is_numeric($data['customerId']) ? Customer::find($data['customerId']) : null;
-            $orderNo = (string) ((SalesInvoice::withTrashed()->max('id') ?? 0) + 1);
-
-            $totalQty = 0;
-            $totalCost = 0;
-            $snippetNames = [];
-            $mainCategoryName = 'عام';
-
-            foreach ($data['items'] as $idx => $r) {
-                $q = (float) ($r['quantity'] ?? 1);
-                $totalQty += $q;
-                if (count($snippetNames) < 4) {
-                    $snippetNames[] = $r['name'];
-                }
-                if (empty($r['isExternal'])) {
-                    $totalCost += $q * (float) ($r['buyPrice'] ?? 0);
-                }
-            }
-
-            $grossTotal = (float) $data['storeSubTotal'] + (float) $data['externalSubTotal'];
-            $netValue = (float) $data['total'];
-            $profitTotal = (float) $data['storeNetTotal'] - $totalCost;
-            $timeLabel = now()->format('Y-m-d h:iA');
-
-            $activeUserName = $posUser['name'] ?: 'مدير الفرع';
-            $confirmedByName = !empty($data['authorizedByManager']) ? $data['authorizedByManager'] : $activeUserName;
-
-            $invoice = SalesInvoice::create([
-                'request_id'         => $data['requestId'],
-                'order_no'           => $orderNo,
-                'order_type'         => $data['fulfillment'],
-                'price_tier'         => $data['priceTier'],
-                'status'             => 'closed',
-                'invoice_date'       => now()->toDateString(),
-                'created_time_label' => $timeLabel,
-                'closed_time_label'  => $timeLabel,
-                'customer_id'        => $customer ? $customer->id : null,
-                'customer_name'      => $customer ? $customer->name : $data['customerName'],
-                'customer_phone'     => $data['customerPhone'] ?? '',
-                'customer_address'   => $data['customerAddress'] ?? '',
-                'customer_zone'      => $data['customerZone'] ?? '',
-                'snippet'            => implode(' + ', $snippetNames),
-                'total_qty'          => $totalQty,
-                'main_category_name' => $mainCategoryName,
-                'store_sub_total'    => $data['storeSubTotal'],
-                'external_sub_total' => $data['externalSubTotal'],
-                'gross_total'        => $grossTotal,
-                'service_fee'        => $data['deliveryFee'],
-                'invoice_discount'   => $data['discount'],
-                'item_discount'      => 0,
-                'net_value'          => $netValue,
-                'store_net_total'    => $data['storeNetTotal'],
-                'cost_total'         => $totalCost,
-                'profit_total'       => $profitTotal,
-                'returns_value'      => 0,
-                'payment_type'       => $data['paymentType'],
-                'payment_method'     => $data['paymentMethod'],
-                'paid_amount'        => $data['paidAmount'],
-                'due_amount'         => $data['dueAmount'],
-                'safe_name'          => $posUser['safe_name'],
-                'shift_name'         => $posUser['shift_name'],
-                'shift_id'           => $posUser['shift_id'],
-                'shift_period'       => now()->hour < 16 ? 'morning' : 'evening',
-                'created_by'         => $activeUserName,
-                'created_device'     => gethostname() ?: 'DESKTOP-POS',
-                'confirmed_by'       => $confirmedByName,
-                'confirmed_device'   => gethostname() ?: 'DESKTOP-POS',
-                'notes'              => $data['notes'] ?? '',
-            ]);
-
-            foreach ($data['items'] as $row) {
-                $isExternal = !empty($row['isExternal']);
-                $qty = (float) ($row['quantity'] ?? 1);
-                $price = (float) ($row['price'] ?? 0);
-                $buyPrice = (float) ($row['buyPrice'] ?? 0);
-                $itemModel = null;
-                $catName = 'عام';
-
-                if (!$isExternal) {
-                    if (!empty($row['itemId']) && is_numeric($row['itemId'])) {
-                        $itemModel = Item::with('category')->find($row['itemId']);
-                    }
-                    if (!$itemModel && !empty($row['barcode'])) {
-                        $itemModel = Item::with('category')->where('barcode', $row['barcode'])->first();
-                    }
-
-                    if ($itemModel) {
-                        $beforeQty = (float) $itemModel->qty;
-                        $afterQty = $beforeQty - $qty;
-                        $buyPrice = (float) $itemModel->last_buy_price;
-                        $catName = $itemModel->category ? $itemModel->category->name : 'عام';
-
-                        $itemModel->update([
-                            'qty'            => $afterQty,
-                            'last_move_date' => now()->format('Y-m-d'),
-                            'is_synced'      => false,
-                        ]);
-
-                        ItemMovement::create([
-                            'item_id'    => $itemModel->id,
-                            'move_date'  => now()->format('Y/m/d h:i A'),
-                            'type'       => 'فاتورة مبيعات',
-                            'ref_no'     => 'SAL-' . $invoice->order_no,
-                            'party'      => $invoice->customer_name,
-                            'user_name'  => $activeUserName,
-                            'before_qty' => $beforeQty,
-                            'in_qty'     => 0,
-                            'out_qty'    => $qty,
-                            'after_qty'  => $afterQty,
-                            'price'      => $price,
-                        ]);
-                    }
+                $existingInvoice = SalesInvoice::withTrashed()->where('request_id', $data['requestId'])->first();
+                if ($existingInvoice) {
+                    return $this->invoiceStoreResponse($existingInvoice);
                 }
 
-                SalesInvoiceItem::create([
-                    'sales_invoice_id' => $invoice->id,
-                    'item_id'          => $itemModel ? $itemModel->id : null,
-                    'name'             => $row['name'],
-                    'barcode'          => $row['barcode'] ?? '',
-                    'category_name'    => $catName,
-                    'qty'              => $qty,
-                    'returned_qty'     => 0,
-                    'quantity_type'    => $row['quantityType'] ?? 'piece',
-                    'unit'             => ($row['quantityType'] ?? 'piece') === 'weight' ? 'كيلو' : 'قطعة',
-                    'cost'             => $isExternal ? $price : $buyPrice,
-                    'price'            => $price,
-                    'total'            => (float) ($row['total'] ?? ($qty * $price)),
-                    'is_external'      => $isExternal,
+                $fail = fn (string $message, int $status = 422) => response()->json(['status' => 'error', 'message' => $message], $status);
+
+                $shift = PosAuth::openShift();
+                if (!$shift) {
+                    return $fail('الوردية الخاصة بهذه الجلسة مقفولة. سجّل الدخول مرة أخرى لفتح وردية جديدة.', 409);
+                }
+                if ($clockError = Clock::guard()) {
+                    return $fail($clockError, 409);
+                }
+
+                $customer = !empty($data['customerId']) ? Customer::find($data['customerId']) : null;
+
+                // 1) إعادة حساب كل سطر على السيرفر بالقروش والتحقق من السعر المعتمد
+                $lines = [];
+                $storeSubP = 0;
+                $externalSubP = 0;
+                $costP = 0;
+                $totalQty = 0;
+                foreach ($data['items'] as $row) {
+                    $isExternal = !empty($row['isExternal']);
+                    $qty = round((float) $row['quantity'], 3);
+                    $price = (float) $row['price'];
+                    $item = $isExternal ? null : Stock::find($row['itemId'] ?? null, $row['barcode'] ?? null);
+
+                    if ($item) {
+                        $expected = $this->tierPrice($item, $data['priceTier']);
+                        if (abs($price - $expected) > 0.009 && !$item->allow_price_edit && !PosAuth::can('pos.edit_price')) {
+                            return $fail("سعر الصنف ({$item->name}) تم تعديله من {$expected} إلى {$price} بدون تصريح مدير.", 403);
+                        }
+                    }
+
+                    $lineP = Money::line($qty, $price);
+                    $unitCost = $item ? Stock::unitCost($item) : ($isExternal ? $price : (float) $row['buyPrice']);
+                    $lineCostP = $isExternal ? 0 : Money::line($qty, $unitCost);
+                    if ($isExternal) {
+                        $externalSubP += $lineP;
+                    } else {
+                        $storeSubP += $lineP;
+                    }
+                    $costP += $lineCostP;
+                    $totalQty += $qty;
+                    $lines[] = compact('row', 'item', 'qty', 'price', 'lineP', 'unitCost', 'isExternal');
+                }
+
+                // 2) الخصم (على أصناف المحل فقط) والتوصيل والتقريب
+                $discountP = Money::p($data['discount']);
+                if ($discountP > 0 && !PosAuth::can('pos.discount')) {
+                    return $fail('الخصم على الفاتورة يحتاج تصريح مدير.', 403);
+                }
+                if ($discountP > $storeSubP) {
+                    return $fail('قيمة الخصم أكبر من إجمالي أصناف المحل.');
+                }
+                $deliveryP = Money::p($data['deliveryFee']);
+                $beforeRoundP = $storeSubP - $discountP + $externalSubP + $deliveryP;
+                $totalP = Money::roundInvoice($beforeRoundP);
+                $roundingP = $totalP - $beforeRoundP;
+
+                if (abs($totalP - Money::p($data['total'])) > 1) {
+                    return $fail('إجمالي الفاتورة غير مطابق لحساب الأصناف (' . Money::egp($totalP) . ' ج.م). حدّث الفاتورة وحاول مرة أخرى.');
+                }
+
+                $paidP = min(Money::p($data['paidAmount']), $totalP);
+                $dueP = $totalP - $paidP;
+                if (!$customer && $dueP > 0) {
+                    return $fail('لا يمكن حفظ فاتورة آجل لعميل نقدي! اختر عميلاً مسجلاً أولاً (F2).');
+                }
+
+                // 3) توزيع الخصم على أصناف المحل والتقريب على كل الأسطر → صافي كل سطر (أساس المرتجع)
+                $discountParts = Money::allocate(-$discountP, array_map(fn ($l) => $l['isExternal'] ? 0 : $l['lineP'], $lines));
+                $roundingParts = Money::allocate($roundingP, array_map(fn ($l) => $l['lineP'], $lines));
+
+                $orderNo = (string) Sequence::next('sales_invoice');
+                $actor = PosAuth::name();
+                $now = now();
+                $storeNetP = $storeSubP - $discountP;
+
+                $invoice = SalesInvoice::create([
+                    'request_id'          => $data['requestId'],
+                    'order_no'            => $orderNo,
+                    'order_type'          => $data['fulfillment'],
+                    'price_tier'          => $data['priceTier'],
+                    'status'              => 'closed',
+                    'invoice_date'        => $now->toDateString(),
+                    'created_time_label'  => $now->format('Y-m-d h:iA'),
+                    'closed_time_label'   => $now->format('Y-m-d h:iA'),
+                    'customer_id'         => $customer?->id,
+                    'customer_name'       => $customer ? $customer->name : $data['customerName'],
+                    'customer_phone'      => $data['customerPhone'] ?? '',
+                    'customer_address'    => $data['customerAddress'] ?? '',
+                    'customer_zone'       => $data['customerZone'] ?? '',
+                    'snippet'             => implode(' + ', array_slice(array_column(array_column($lines, 'row'), 'name'), 0, 4)),
+                    'total_qty'           => $totalQty,
+                    'main_category_name'  => 'عام',
+                    'store_sub_total'     => Money::egp($storeSubP),
+                    'external_sub_total'  => Money::egp($externalSubP),
+                    'gross_total'         => Money::egp($storeSubP + $externalSubP),
+                    'service_fee'         => Money::egp($deliveryP),
+                    'rounding_adjustment' => Money::egp($roundingP),
+                    'invoice_discount'    => Money::egp($discountP),
+                    'item_discount'       => 0,
+                    'net_value'           => Money::egp($totalP),
+                    'store_net_total'     => Money::egp($storeNetP),
+                    'cost_total'          => Money::egp($costP),
+                    'profit_total'        => Money::egp($storeNetP + $roundingP - $costP),
+                    'returns_value'       => 0,
+                    'payment_type'        => $dueP > 0 ? 'credit' : 'cash',
+                    'payment_method'      => $data['paymentMethod'],
+                    'paid_amount'         => Money::egp($paidP),
+                    'due_amount'          => Money::egp($dueP),
+                    'safe_name'           => $posUser['safe_name'],
+                    'shift_name'          => 'وردية ' . $shift->shift_no,
+                    'shift_id'            => $shift->id,
+                    'shift_period'        => $now->hour < 16 ? 'morning' : 'evening',
+                    'created_by'          => $actor,
+                    'created_by_id'       => PosAuth::id(),
+                    'created_device'      => substr((string) request()->ip(), 0, 60),
+                    'confirmed_by'        => $discountP > 0 ? PosAuth::authorizedBy('pos.discount') : $actor,
+                    'confirmed_device'    => substr((string) request()->ip(), 0, 60),
+                    'notes'               => $data['notes'] ?? '',
                 ]);
-            }
 
-            if ($customer && $data['dueAmount'] > 0) {
-                $signedBalance = ($customer->balance_type === 'credit' ? -1 : 1) * (float) $customer->balance;
-                $newSigned = $signedBalance + (float) $data['dueAmount'];
-                $customer->update([
-                    'balance'      => abs($newSigned),
-                    'balance_type' => $newSigned < 0 ? 'credit' : 'debit',
-                    'is_synced'    => false,
-                ]);
-            }
+                foreach ($lines as $i => $l) {
+                    $item = $l['item'];
+                    if ($item) {
+                        Stock::move($item, -$l['qty'], 'فاتورة مبيعات', 'SAL-' . $orderNo, $invoice->customer_name, $l['price'], $actor);
+                    }
+                    SalesInvoiceItem::create([
+                        'sales_invoice_id' => $invoice->id,
+                        'item_id'          => $item?->id,
+                        'name'             => $l['row']['name'],
+                        'barcode'          => $l['row']['barcode'] ?? '',
+                        'category_name'    => $item && $item->category ? $item->category->name : 'عام',
+                        'qty'              => $l['qty'],
+                        'returned_qty'     => 0,
+                        'quantity_type'    => $l['row']['quantityType'],
+                        'unit'             => $l['row']['quantityType'] === 'weight' ? 'كيلو' : 'قطعة',
+                        'cost'             => $l['isExternal'] ? $l['price'] : round($l['unitCost'], 2),
+                        'price'            => $l['price'],
+                        'total'            => Money::egp($l['lineP']),
+                        'net_total'        => Money::egp($l['lineP'] + $discountParts[$i] + $roundingParts[$i]),
+                        'is_external'      => $l['isExternal'],
+                    ]);
+                }
 
-            $this->recordActivity(
-                'pos.invoice.create',
-                "حفظ فاتورة مبيعات رقم #{$invoice->order_no} للعميل ({$invoice->customer_name}) بإجمالي {$invoice->net_value} ج.م بواسطة {$activeUserName}",
-                'نجحت'
-            );
+                $invoice->load('items');
+                $invoice->update(['profit_total' => $invoice->computeProfit()]);
 
-            return $this->invoiceStoreResponse($invoice);
+                Balance::customer($customer?->id, Money::egp($dueP));
+
+                $this->recordActivity('pos.invoice.create', "حفظ فاتورة مبيعات رقم #{$orderNo} للعميل ({$invoice->customer_name}) بإجمالي {$invoice->net_value} ج.م بواسطة {$actor}", 'نجحت');
+
+                return $this->invoiceStoreResponse($invoice);
             });
         } catch (QueryException $e) {
-            $existingInvoice = SalesInvoice::withTrashed()
-                ->where('request_id', $data['requestId'])
-                ->first();
-
+            $existingInvoice = SalesInvoice::withTrashed()->where('request_id', $data['requestId'])->first();
             if ($existingInvoice) {
                 return $this->invoiceStoreResponse($existingInvoice);
             }
-
             throw $e;
         }
+    }
+
+    private function tierPrice(Item $item, string $tier): float
+    {
+        $retail = (float) $item->retail_price;
+        $tierPrice = (float) ($tier === 'semi_wholesale' ? $item->semi_wholesale_price : ($tier === 'wholesale' ? $item->wholesale_price : 0));
+        return $tierPrice > 0 ? $tierPrice : $retail;
     }
 
     private function invoiceStoreResponse(SalesInvoice $invoice)
@@ -442,7 +484,7 @@ class PosSalesController extends Controller
         return response()->json([
             'status'            => 'success',
             'invoiceNumber'     => $invoice->order_no,
-            'nextInvoiceNumber' => (SalesInvoice::withTrashed()->max('id') ?? 0) + 1,
+            'nextInvoiceNumber' => \App\Support\Sequence::peek('sales_invoice'),
             'customerBalance'   => $customer ? (float) $customer->balance : 0,
         ]);
     }
