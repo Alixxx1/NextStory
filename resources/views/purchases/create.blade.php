@@ -99,7 +99,7 @@
     const num = v => parseFloat(digits(v).replace(/[^\d.\-]/g, '')) || 0;
     const money = v => (Math.round(v * 100) / 100).toFixed(2);
     const csrf = document.querySelector('meta[name="csrf-token"]').content;
-    const products = @json($initialProducts).map(p => ({ ...p, _k: norm(p.name + ' ' + p.barcode + ' ' + (p.packs || []).map(u => u.barcode).join(' ')) }));
+    const products = @json($initialProducts).map(p => ({ ...p, _k: norm(p.name + ' ' + p.barcode + ' ' + (p.altBarcodes || '')) }));
     const qtyOf = r => r.n * r.f, line = r => Math.max(0, qtyOf(r) * r.cost - r.disc);
     let suppliers = @json($initialSuppliers).map(s => ({ id: s.id, code: s.code, name: s.company || s.contact, phone: s.phone }));
     let supplier = null, rows = [], editingId = null, hits = [], hitIdx = 0, supHits = [], supIdx = 0;
@@ -138,7 +138,8 @@
         const q = norm($('itemSearch').value);
         if (!q) { $('results').style.display = 'none'; return; }
         const words = q.split(/\s+/);
-        hits = products.filter(p => words.every(w => p._k.includes(w))).slice(0, 60); hitIdx = 0;
+        const nm = p => norm(p.name), rank = p => nm(p) === q ? 0 : nm(p).startsWith(q) ? 1 : nm(p).includes(q) ? 2 : 3; // المطابق بالظبط أولاً
+        hits = products.filter(p => words.every(w => p._k.includes(w))).sort((a, b) => rank(a) - rank(b)).slice(0, 60); hitIdx = 0;
         $('results').style.display = 'block';
         $('results').innerHTML = hits.length ? hits.map((p, i) => `<div class="${i ? '' : 'on'}" data-i="${i}"><span>${esc(p.name)}</span><span class="en text-muted">${esc(p.barcode)} • رصيد ${p.stock}</span></div>`).join('') : '<div class="text-muted">لا توجد أصناف مطابقة</div>';
     }

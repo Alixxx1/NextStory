@@ -1528,6 +1528,7 @@
                         <button type="button" class="ns-tab-btn" data-tab="tabItemOptions">خيارات والموقع</button>
                     </div>
                     <div class="ns-tab-pane active" id="tabSubUnits">
+                        <div class="xb-box" id="extraBarcodesBox"></div>
                         <table class="pk-table">
                             <thead><tr><th>العبوة</th><th>فيها كام</th><th>باركود العبوة</th><th>تكلفتها عليك</th><th>سعر بيعها</th><th>ربح %</th><th>القطعة بكام</th><th></th></tr></thead>
                             <tbody id="packRows"></tbody>
@@ -1597,7 +1598,7 @@
     <div class="ns-modal-backdrop" id="packModal">
         <div class="ns-modal-window" style="width:620px;">
             <div class="ns-modal-header">
-                <span><i class="fa-solid fa-boxes-stacked"></i> عبوة لصنف موجود — باركود <span class="en-digit" id="packBarcodeLabel"></span></span>
+                <span><i class="fa-solid fa-boxes-stacked"></i> ربط الباركود بصنف موجود — <span class="en-digit" id="packBarcodeLabel"></span></span>
                 <button type="button" class="btn-close-modal" data-pack-close><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="ns-modal-body">
@@ -1612,6 +1613,7 @@
                         <div class="f-field">
                             <label>نوع العبوة</label>
                             <select class="ns-control pk-name" id="packName">
+                                <option value="extra">باركود إضافي لنفس القطعة (ريحة/شكل تاني)</option>
                                 @foreach (['علبة', 'كرتونة', 'باكت', 'دستة', 'شريط', 'شيكارة'] as $u)<option value="{{ $u }}">{{ $u }}</option>@endforeach
                             </select>
                         </div>
@@ -2015,6 +2017,7 @@
     <script src="/vendor/jquery/jquery-3.6.0.min.js"></script>
     <script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
     <script src="/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+    <script src="/js/nextstore-extra-barcodes.js"></script>
     <script src="/js/nextstore-printer.js"></script>
     <script src="/js/nextstore-receipt.js"></script>
     <script src="/vendor/jsbarcode/JsBarcode.all.min.js"></script>
@@ -2274,6 +2277,16 @@
                     .trim();
             }
 
+            // بحث الأصناف مرتب: الاسم المطابق بالظبط ← يبدأ بالمكتوب ← فيه العبارة ← كل الكلمات في أول كلمات ← الباقي
+            function searchCatalog(query) {
+                const q = normalizeSearchText(query).replace(/\s+/g, ' '), terms = q.split(' ').filter(Boolean);
+                if (!terms.length) return [];
+                const rank = r => r.name === q ? 0 : r.name.startsWith(q) ? 1 : r.name.includes(q) ? 2
+                    : terms.every(t => (' ' + r.name).includes(' ' + t)) ? 3 : 4;
+                return catalogSearchIndex.filter(r => terms.every(t => r.text.includes(t)))
+                    .map((r, i) => ({ r, i, k: rank(r) })).sort((a, b) => a.k - b.k || a.i - b.i).map(x => x.r.product);
+            }
+
             function escapeHtml(value) {
                 return $('<div>').text(value == null ? '' : String(value)).html()
                     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -2289,6 +2302,7 @@
                     const barcode = toEnglishDigits(product.barcode || '').trim();
                     catalogSearchIndex.push({
                         product,
+                        name: normalizeSearchText(product.name).replace(/\s+/g, ' '),
                         text: normalizeSearchText(`${product.name} ${product.desc} ${product.barcode}`)
                     });
 
@@ -2304,9 +2318,10 @@
                     if (Array.isArray(product.subUnits)) {
                         product.subUnits.forEach(unit => {
                             const unitBarcode = toEnglishDigits(unit && unit.barcode || '').trim();
-                            if (unitBarcode && !catalogSubUnitBarcodeIndex.has(unitBarcode)) {
-                                catalogSubUnitBarcodeIndex.set(unitBarcode, { product, unit });
-                            }
+                            if (!unitBarcode) return;
+                            // باركود إضافي لنفس القطعة (معامل 1 وبدون سعر خاص) = كأنه باركود الصنف نفسه
+                            if (Number(unit.factor) === 1 && !Number(unit.price)) { if (!catalogBarcodeIndex.has(unitBarcode)) catalogBarcodeIndex.set(unitBarcode, product); }
+                            else if (!catalogSubUnitBarcodeIndex.has(unitBarcode)) catalogSubUnitBarcodeIndex.set(unitBarcode, { product, unit });
                         });
                     }
                 });
@@ -3588,7 +3603,7 @@
                     confirmButtonText: '<i class="fas fa-plus"></i> تسجيل صنف جديد',
                     confirmButtonColor: '#119744',
                     showDenyButton: !info.scale,
-                    denyButtonText: '<i class="fas fa-boxes-stacked"></i> علبة / كرتونة لصنف موجود',
+                    denyButtonText: '<i class="fas fa-link"></i> باركود تاني أو علبة لصنف موجود',
                     denyButtonColor: '#17283d',
                     focusConfirm: true
                 }).then(r => {
@@ -3623,6 +3638,7 @@
                     $('#formOnlinePrice').val('');
                     $('#formOnlineComparePrice').val('');
                     $('#packRows').empty();
+                    extraBarcodes.set([]);
                     $('#formItemType').val('صنف مخزني');
                     $('#formOptAllowPriceEdit').prop('checked', false);
                     $('#formOptPinned').prop('checked', false);
@@ -3711,6 +3727,12 @@
                 return { name: r.find('.pk-name').val(), factor: numVal(r.find('.pk-factor')), barcode: toEnglishDigits(r.find('.pk-barcode').val()).trim(), price: numVal(r.find('.pk-price')) };
             }).get().filter(u => u.factor > 0);
 
+            const extraBarcodes = NSExtraBarcodes(document.getElementById('extraBarcodesBox'), { taken(code) {
+                if (code === toEnglishDigits($('#formBarcode').val()).trim() || collectPackRows().some(u => u.barcode === code)) return 'نفس الصنف';
+                const p = catalogBarcodeIndex.get(code) || (catalogSubUnitBarcodeIndex.get(code) || {}).product;
+                return p ? p.name : null;
+            } });
+
             // نافذة "عبوة لصنف موجود": باركود جديد اتضرب وهو علبة/كرتونة لصنف متسجل
             let packItem = null, packBarcode = '';
             const packCalc = src => calcPack($('#packModal'), packItem ? Number(packItem.buyPrice) || 0 : 0, packItem ? getEffectiveProductPrice(packItem) : 0, src);
@@ -3721,6 +3743,7 @@
                     packItem = null; packBarcode = String(barcode);
                     $('#packBarcodeLabel').text(packBarcode);
                     $('#packItemSearch, #packFactor, #packPrice, #packMargin').val('');
+                    $('#packName').val('علبة').trigger('change');
                     $('#packItemResults').hide().empty();
                     $('#packItemInfo').removeClass('ok').text('لسه ما اخترتش صنف');
                     packCalc();
@@ -3740,13 +3763,15 @@
             }
 
             $('#packItemSearch').on('input', function() {
-                const words = normalizeSearchText($(this).val()).split(' ').filter(Boolean), code = toEnglishDigits($(this).val()).trim();
+                const code = toEnglishDigits($(this).val()).trim();
                 const hits = catalogBarcodeIndex.has(code) ? [catalogBarcodeIndex.get(code)]
-                    : (words.length ? catalogSearchIndex.filter(e => words.every(w => e.text.includes(w))).slice(0, 8).map(e => e.product) : []);
+                    : searchCatalog($(this).val()).slice(0, 8);
                 $('#packItemResults').data('hits', hits).html(hits.map((p, i) => `<div data-i="${i}" class="${i ? '' : 'on'}"><span>${escapeHtml(p.name)}</span><span class="en-digit">${money2(getEffectiveProductPrice(p))}</span></div>`).join('')).toggle(hits.length > 0);
             });
             $('#packItemResults').on('mousedown', 'div', function() { pickPackItem($('#packItemResults').data('hits')[$(this).data('i')]); });
             $('#packFactor, #packPrice').on('input', () => packCalc());
+            // باركود إضافي: نفس القطعة بنفس السعر، فمفيش عدد ولا حاسبة
+            $('#packName').on('change', function() { const x = this.value === 'extra'; $('#packFactor').val(x ? '1' : '').prop('readonly', x); $('#packModal .pk-calc').toggle(!x); packCalc(); });
             $('#packMargin').on('input', () => packCalc('margin'));
             $('#packModal').on('click', '[data-pack-close]', closePackModal);
 
@@ -3769,11 +3794,13 @@
             }
 
             $('#btnSavePack').on('click', async function() {
-                const unit = { name: $('#packName').val(), factor: numVal('#packFactor'), barcode: packBarcode, price: numVal('#packPrice') };
+                const extra = $('#packName').val() === 'extra';
+                const unit = extra ? { name: (packItem && packItem.unit) || 'قطعة', factor: 1, barcode: packBarcode, price: 0 }
+                    : { name: $('#packName').val(), factor: numVal('#packFactor'), barcode: packBarcode, price: numVal('#packPrice') };
                 const warn = t => Swal.fire({ icon: 'warning', title: 'بيانات ناقصة', text: t, confirmButtonColor: '#119744' });
                 if (!packItem) return warn('اختار الصنف اللي جوه العبوة الأول.');
                 if (unit.factor <= 0) return warn('اكتب العبوة فيها كام.');
-                if (unit.price <= 0) return warn('اكتب سعر بيع العبوة أو نسبة الربح.');
+                if (!extra && unit.price <= 0) return warn('اكتب سعر بيع العبوة أو نسبة الربح.');
                 try {
                     const res = await fetch(`/api/inventory/items/${packItem.id}/units`, {
                         method: 'POST',
@@ -3785,9 +3812,9 @@
                     packItem.subUnits = out.subUnits;
                     buildCatalogIndexes();
                     $('#packModal').removeClass('open');
-                    addProductToCart(packProduct(packItem, unit), 1, '');
+                    addProductToCart(extra ? { ...packItem, salePrice: getEffectiveProductPrice(packItem) } : packProduct(packItem, unit), 1, '');
                     clearProductSearch();
-                    Swal.fire({ toast: true, position: 'bottom-start', icon: 'success', title: `تم تسجيل ${unit.name} (${qtyLabel(unit.factor)}) وإضافتها للفاتورة`, showConfirmButton: false, timer: 2000 });
+                    Swal.fire({ toast: true, position: 'bottom-start', icon: 'success', title: extra ? `الباركود اتربط بـ "${packItem.name}" واتضاف للفاتورة` : `تم تسجيل ${unit.name} (${qtyLabel(unit.factor)}) وإضافتها للفاتورة`, showConfirmButton: false, timer: 2000 });
                 } catch (err) {
                     Swal.fire('خطأ', err.message, 'error');
                 }
@@ -3885,7 +3912,7 @@
                     isPublishedOnline: $('#formPublishedOnline').is(':checked'),
                     onlinePrice: parseOptionalFloat($('#formOnlinePrice').val()),
                     onlineCompareAtPrice: parseOptionalFloat($('#formOnlineComparePrice').val()),
-                    subUnits: collectPackRows(),
+                    subUnits: collectPackRows().concat(extraBarcodes.get(unit)),
                     taxIncluded: $('#formTaxIncluded').is(':checked'),
                     taxMode: $('#formTaxMode').val(),
                     taxRate: parseFloat(toEnglishDigits($('#formTaxRate').val())) || 0,
@@ -4020,13 +4047,9 @@
             let searchRenderTimer = null;
 
             function renderSearchResults(query) {
-                let normalizedQuery = normalizeSearchText(query);
-                let terms = normalizedQuery.split(/\s+/).filter(Boolean);
                 let dropdown = $('#search-results-dropdown');
 
-                searchMatches = catalogSearchIndex
-                    .filter(record => terms.every(term => record.text.includes(term)))
-                    .map(record => record.product);
+                searchMatches = searchCatalog(query);
 
                 if (searchMatches.length === 0) {
                     dropdown.html(`

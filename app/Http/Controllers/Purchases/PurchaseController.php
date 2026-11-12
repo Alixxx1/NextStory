@@ -95,6 +95,7 @@ class PurchaseController extends Controller
                 'salePrice' => (float) $item->retail_price,
                 'description' => $item->description ?? '',
                 'packs' => array_values(array_filter(json_decode($item->sub_units ?: '[]', true) ?: [], fn ($u) => (float) ($u['factor'] ?? 0) > 1)),
+                'altBarcodes' => implode(' ', array_column(json_decode($item->sub_units ?: '[]', true) ?: [], 'barcode')), // باركودات العبوات والباركودات الإضافية للبحث
             ])
             ->values()
             ->all();

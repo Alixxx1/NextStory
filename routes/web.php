@@ -111,6 +111,7 @@ Route::prefix('api/inventory')->group(function () {
     Route::post('/items/{id}/quick-update-pos', [InventoryItemController::class, 'quickUpdateFromPos']);
     Route::post('/items/save', [InventoryItemController::class, 'saveItem']);
     Route::post('/items/{id}/units', [InventoryItemController::class, 'addUnit']);
+    Route::post('/items/merge', [InventoryItemController::class, 'mergeItems']);
     Route::post('/categories/quick', [InventoryItemController::class, 'quickCategory']);
     Route::post('/items/batch', [InventoryItemController::class, 'batchAction']);
     Route::get('/pos-items', [InventoryItemController::class, 'posItemsApi']);

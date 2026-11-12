@@ -179,6 +179,26 @@ class AccountingIntegrityTest extends TestCase
         $this->assertDatabaseHas('items', ['id' => $this->itemId, 'qty' => 20, 'avg_cost' => 50, 'last_buy_price' => 60]);
     }
 
+    public function test_merging_items_moves_barcodes_and_stock_to_the_main_item(): void
+    {
+        $mk = fn ($name, $barcode, $qty, $cost) => DB::table('items')->insertGetId(['uuid' => (string) Str::uuid(), 'name' => $name, 'barcode' => $barcode, 'qty' => $qty,
+            'last_buy_price' => $cost, 'avg_cost' => $cost, 'retail_price' => 55, 'created_at' => now(), 'updated_at' => now()]);
+        $b = $mk('أرز ريحة 2', '222', 10, 60);
+        $c = $mk('أرز ريحة 3', '333', 0, 99);
+
+        $this->as(['pos.sales'])->postJson('/api/inventory/items/merge', ['mainId' => $this->itemId, 'ids' => [$b, $c]])->assertForbidden();
+        $this->as(['inventory.items'])->postJson('/api/inventory/items/merge', ['mainId' => $this->itemId, 'ids' => [$b, $c]])->assertOk();
+
+        // 10 × 40 + 10 × 60 ← 20 قطعة بمتوسط 50، والباركودات بقت إضافية والأصناف المدموجة اتحذفت
+        $this->assertDatabaseHas('items', ['id' => $this->itemId, 'qty' => 20, 'avg_cost' => 50, 'retail_price' => 50]);
+        $this->assertSame(['222', '333'], array_column(json_decode(DB::table('items')->where('id', $this->itemId)->value('sub_units'), true), 'barcode'));
+        $this->assertSame(2, DB::table('items')->whereIn('id', [$b, $c])->whereNotNull('deleted_at')->where('qty', 0)->count());
+
+        // البيع بباركود الريحة يخصم من الصنف الأساسي
+        $this->as(['pos.sales'])->postJson('/api/pos/invoices/store', $this->sale([], ['itemId' => null, 'barcode' => '222']))->assertOk();
+        $this->assertDatabaseHas('items', ['id' => $this->itemId, 'qty' => 18]);
+    }
+
     public function test_purchase_with_changed_cost_updates_reviewed_pack_prices(): void
     {
         DB::table('items')->where('id', $this->itemId)->update(['sub_units' => json_encode([['name' => 'علبة', 'factor' => 12, 'barcode' => '999', 'price' => 560], ['name' => 'كرتونة', 'factor' => 48, 'barcode' => '', 'price' => 2100]])]);

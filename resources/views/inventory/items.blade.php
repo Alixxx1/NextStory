@@ -1364,6 +1364,7 @@
 
                     <!-- تبويب 2: وحدات القياس الفرعية -->
                     <div class="ns-tab-pane" id="tabSubUnits">
+                        <div class="xb-box" id="extraBarcodesBox"></div>
                         <table class="table table-sm table-bordered align-middle text-center mb-2">
                             <thead><tr><th style="width:130px">العبوة</th><th style="width:100px">فيها كام</th><th>باركود العبوة</th><th style="width:110px">تكلفتها عليك</th><th style="width:120px">سعر بيعها</th><th style="width:110px">القطعة بكام</th><th style="width:40px"></th></tr></thead>
                             <tbody id="packRows"></tbody>
@@ -1453,6 +1454,7 @@
     </div>
 
     <!-- ==================== 6. الكود البرمجي المربوط بقاعدة البيانات الحقيقية ==================== -->
+    <script src="/js/nextstore-extra-barcodes.js"></script>
     <script>
     (function () {
         'use strict';
@@ -2017,7 +2019,8 @@
 
             // العبوات (علبة/كرتونة...): صفوف براحتك، كل صف بباركود وسعر ومعامل
             document.getElementById('packRows').innerHTML = '';
-            (isEdit && item.subUnits || []).forEach(addPackRow);
+            extraBarcodes.set(isEdit ? item.subUnits : []);
+            extraBarcodes.packsOnly(isEdit ? item.subUnits : []).forEach(addPackRow);
 
             // الضرائب والخيارات
             document.getElementById('formTaxIncluded').checked = isEdit ? Boolean(item.taxIncluded ?? true) : true;
@@ -2091,7 +2094,7 @@
                 factor: parseFloat(toEnglishDigits(tr.querySelector('.pk-factor').value)) || 0,
                 barcode: toEnglishDigits(tr.querySelector('.pk-barcode').value).trim(),
                 price: parseFloat(toEnglishDigits(tr.querySelector('.pk-price').value)) || 0
-            })).filter(u => u.factor > 0);
+            })).filter(u => u.factor > 0).concat(extraBarcodes.get(document.getElementById('formMainUnit').value));
 
             const payload = {
                 id: id || null,
@@ -2476,80 +2479,47 @@
             });
         });
 
+        // دمج الأصناف المحددة في صنف أساسي واحد: باركوداتها تبقى باركودات إضافية له وكمياتها تتضاف عليه
         document.getElementById('toolMergeSelectedItems').addEventListener('click', () => {
-            const primaryItem = (activeRowIndex >= 0 && filteredProducts[activeRowIndex]) ? filteredProducts[activeRowIndex] : products[0];
-            if (!primaryItem) return;
-
-            const checkedArr = [...checkedProductIds].filter(id => id !== primaryItem.id);
-            const preSelectedSecondId = checkedArr.length > 0 ? checkedArr[0] : '';
-
-            const catOpts = `<option value="all">التصنيف: الكل (تلقائي)</option>` +
-                categories.filter(c => !c.isDeleted).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-
-            const buildSecondItemsOptions = (catId = 'all', q = '') => {
-                const cleanQ = toEnglishDigits(q).trim().toLowerCase();
-                return products
-                    .filter(p => !p.isDeleted && p.id !== primaryItem.id)
-                    .filter(p => catId === 'all' || String(p.categoryId) === String(catId))
-                    .filter(p => !cleanQ || p.name.toLowerCase().includes(cleanQ) || String(p.barcode).includes(cleanQ))
-                    .map(p => `<option value="${p.id}" ${String(p.id) === String(preSelectedSecondId) ? 'selected' : ''}>${p.name} (باركود: ${p.barcode} | رصيد: ${p.qty})</option>`)
-                    .join('');
+            const list = products.filter(p => checkedProductIds.has(p.id) && !p.isDeleted);
+            if (list.length < 2) {
+                return Swal.fire({ icon: 'info', title: 'حدد الأصناف الأول', text: 'ابحث عن الصنف (مثلاً: اكس) وحدد بعلامة ✓ كل الأصناف اللي هي نفس المنتج، وبعدين اختار "دمج الأصناف المحددة".', confirmButtonColor: '#119744' });
+            }
+            let mainId = [...list].sort((x, y) => y.qty - x.qty)[0].id; // مبدئياً الأكبر رصيداً، والمستخدم يغيّره
+            const e = v => String(v ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+            const body = () => {
+                const main = list.find(p => p.id === mainId), others = list.filter(p => p.id !== mainId);
+                const diff = others.filter(p => Math.abs(p.retailPrice - main.retailPrice) > 0.009);
+                return `<table class="table table-sm table-bordered align-middle text-center" style="font-size:13.5px">
+                    <thead><tr><th>الأساسي</th><th>الصنف</th><th>الباركود</th><th>الكمية</th><th>سعر الشراء</th><th>سعر البيع</th></tr></thead><tbody>
+                    ${list.map(p => `<tr style="${p.id === mainId ? 'background:#dcfce7;font-weight:800' : ''}">
+                        <td><input type="radio" name="mergeMain" value="${p.id}" ${p.id === mainId ? 'checked' : ''}></td>
+                        <td class="text-start">${e(p.name)}</td><td class="en-digit">${e(p.barcode)}</td><td class="en-digit">${formatNum(p.qty)}</td>
+                        <td class="en-digit">${formatNum(p.lastBuyPrice)}</td>
+                        <td class="en-digit" style="${p.id !== mainId && Math.abs(p.retailPrice - main.retailPrice) > 0.009 ? 'color:#dc2626;font-weight:800' : ''}">${formatNum(p.retailPrice)}</td></tr>`).join('')}
+                    </tbody></table>
+                    <div style="text-align:start;font-weight:700;font-size:13.5px;line-height:1.9">
+                        الصنف اللي هيفضل: <b>${e(main.name)}</b> بسعر بيع <b class="en-digit">${formatNum(main.retailPrice)}</b><br>
+                        هيتضاف عليه <b class="en-digit">${others.filter(p => p.barcode).length}</b> باركود، والكمية هتبقى <b class="en-digit">${formatNum(list.reduce((s, p) => s + p.qty, 0))}</b> ${e(main.unit)} (كانت <span class="en-digit">${formatNum(main.qty)}</span>)<br>
+                        باقي الأصناف (<span class="en-digit">${others.length}</span>) هتتشال من القايمة وتفضل في المحذوفات.
+                        ${diff.length ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px 10px;margin-top:6px;color:#b91c1c">
+                            <i class="fa-solid fa-triangle-exclamation"></i> ${diff.length} صنف سعره مختلف (${diff.map(p => `${e(p.name)}: ${formatNum(p.retailPrice)}`).join(' ، ')}).<br>
+                            <label style="cursor:pointer"><input type="checkbox" id="mergePriceOk"> موافق إنهم كلهم يتباعوا بسعر الصنف الأساسي (<span class="en-digit">${formatNum(main.retailPrice)}</span>)</label></div>` : ''}
+                    </div>`;
             };
-
             Swal.fire({
-                title: 'دمج مجموعة من الأصناف',
-                width: '540px',
-                html: `
-                    <div style="text-align:right; display:flex; flex-direction:column; gap:10px; font-size:13.5px;">
-                        <div style="background:#e8f7ee; border:1px solid #119744; padding:10px; border-radius:8px;">
-                            <small style="color:#0d7a36; font-weight:800; display:block;">الصنف الأساسي (الذي سيبقى وتُدمج فيه الكميات والحركات):</small>
-                            <strong style="font-size:15px; color:#17283d;">${primaryItem.name} (رصيد: ${primaryItem.qty})</strong>
-                        </div>
-                        <div>
-                            <label style="font-weight:800; display:block; margin-bottom:4px;">فلترة بالتصنيف:</label>
-                            <select id="mergeCatFilter" class="ns-control" style="width:100%; height:36px;">${catOpts}</select>
-                        </div>
-                        <div>
-                            <label style="font-weight:800; display:block; margin-bottom:4px;">ابحث عن الصنف الثاني المراد دمجه:</label>
-                            <input type="text" id="mergeSearchBox" class="ns-control" style="width:100%; height:36px;" placeholder="ابحث بالاسم أو الباركود...">
-                        </div>
-                        <div>
-                            <label style="font-weight:800; display:block; margin-bottom:4px;">اختر الصنف الثاني لدمجه في الصنف الأساسي:</label>
-                            <select id="mergeSecondItemSelect" class="ns-control" size="5" style="width:100%; height:120px; padding:6px;">
-                                ${buildSecondItemsOptions()}
-                            </select>
-                        </div>
-                    </div>
-                `,
-                showCancelButton: true,
-                confirmButtonText: 'موافق (دمج الصنفين)',
-                cancelButtonText: 'إلغاء',
-                confirmButtonColor: '#119744',
-                didOpen: () => {
-                    const catSel = document.getElementById('mergeCatFilter');
-                    const searchBox = document.getElementById('mergeSearchBox');
-                    const listSel = document.getElementById('mergeSecondItemSelect');
-                    const refreshList = () => { listSel.innerHTML = buildSecondItemsOptions(catSel.value, searchBox.value); };
-                    catSel.addEventListener('change', refreshList);
-                    searchBox.addEventListener('input', refreshList);
+                title: 'دمج الأصناف في صنف واحد', width: 820, html: `<div id="mergeBody">${body()}</div>`,
+                showCancelButton: true, confirmButtonText: 'موافق، ادمج', cancelButtonText: 'إلغاء', confirmButtonColor: '#119744',
+                didOpen: el => el.querySelector('#mergeBody').addEventListener('change', ev => {
+                    if (ev.target.name === 'mergeMain') { mainId = products.find(p => String(p.id) === ev.target.value).id; el.querySelector('#mergeBody').innerHTML = body(); }
+                }),
+                preConfirm: async () => {
+                    const ok = document.getElementById('mergePriceOk');
+                    if (ok && !ok.checked) return Swal.showValidationMessage('علّم على الموافقة إن الأصناف تتباع بسعر الصنف الأساسي');
+                    try { return await apiPost('/api/inventory/items/merge', { mainId, ids: list.filter(p => p.id !== mainId).map(p => p.id) }); }
+                    catch (err) { return Swal.showValidationMessage(err.message); }
                 },
-                preConfirm: () => {
-                    const secId = document.getElementById('mergeSecondItemSelect').value;
-                    if (!secId) {
-                        Swal.showValidationMessage('يرجى اختيار الصنف الثاني المراد دمجه');
-                        return false;
-                    }
-                    return secId;
-                }
-            }).then(async res => {
-                if (!res.isConfirmed || !res.value) return;
-                await apiPost('/api/inventory/items/batch', {
-                    action: 'merge',
-                    primaryId: primaryItem.id,
-                    secondId: res.value
-                });
-                window.location.reload();
-            });
+            }).then(res => { if (res.isConfirmed) window.location.reload(); });
         });
 
         function closeAllMenus() {
@@ -2676,6 +2646,14 @@
         document.getElementById('btnCloseItemModal').addEventListener('click', () => document.getElementById('itemFormModal').classList.remove('open'));
         document.getElementById('btnCancelItemForm').addEventListener('click', () => document.getElementById('itemFormModal').classList.remove('open'));
         document.getElementById('btnSaveItemForm').addEventListener('click', saveItemFromModal);
+
+        // باركودات إضافية لنفس الصنف: الباركود لازم ما يكونش على صنف/عبوة تانية ولا مكرر في النموذج
+        const extraBarcodes = NSExtraBarcodes(document.getElementById('extraBarcodesBox'), { taken(code) {
+            const id = document.getElementById('formItemId').value, own = toEnglishDigits(document.getElementById('formBarcode').value).trim();
+            if (code === own || [...document.querySelectorAll('#packRows .pk-barcode')].some(i => i.value.trim() === code)) return 'نفس الصنف';
+            const p = products.find(p => String(p.id) !== String(id) && !p.isDeleted && (String(p.barcode) === code || (p.subUnits || []).some(u => u && String(u.barcode) === code)));
+            return p ? p.name : null;
+        } });
 
         // صف عبوة: تكلفتها = سعر الشراء × العدد، وسعر القطعة = سعر العبوة ÷ العدد
         function addPackRow(u) {

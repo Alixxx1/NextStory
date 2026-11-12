@@ -268,6 +268,47 @@ class InventoryItemController extends Controller
         });
     }
 
+    /**
+     * دمج أصناف (نفس المنتج بباركودات مختلفة) في صنف أساسي: باركوداتها تبقى باركودات إضافية له،
+     * وكمياتها تتنقل عليه بحركات مخزون ومتوسط تكلفة مرجّح، والأصناف المدموجة تتحذف (soft) فتفضل فواتيرها القديمة سليمة.
+     */
+    public function mergeItems(Request $request)
+    {
+        abort_unless(\App\Support\PosAuth::can('inventory.items'), 403, 'لا تملك صلاحية تعديل أصناف المخزن');
+        $data = $request->validate(['mainId' => 'required|integer', 'ids' => 'required|array|min:1', 'ids.*' => 'integer|different:mainId']);
+
+        return DB::transaction(function () use ($data) {
+            $main = Item::whereKey($data['mainId'])->lockForUpdate()->firstOrFail();
+            $units = (array) $main->sub_units;
+            $seen = array_filter(array_merge([(string) $main->barcode], array_column($units, 'barcode')));
+            $byWeight = fn (Item $i) => in_array($i->unit, ['كيلو', 'لتر'], true);
+            $ref = 'MRG-' . $main->id . '-' . now()->format('ymdHis');
+
+            foreach (Item::whereIn('id', $data['ids'])->lockForUpdate()->get() as $it) {
+                abort_if($byWeight($it) !== $byWeight($main), 422, "الصنف ({$it->name}) وحدته ({$it->unit}) مختلفة عن الصنف الأساسي ({$main->unit}).");
+                foreach (array_merge([['name' => $main->unit, 'factor' => 1, 'barcode' => $it->barcode, 'price' => 0]], (array) $it->sub_units) as $u) {
+                    $barcode = trim((string) ($u['barcode'] ?? ''));
+                    if ($barcode === '' || in_array($barcode, $seen, true) || (float) ($u['factor'] ?? 0) <= 0) {
+                        continue;
+                    }
+                    $seen[] = $barcode;
+                    $units[] = ['name' => $u['name'] ?: $main->unit, 'factor' => (float) $u['factor'], 'barcode' => $barcode, 'price' => (float) ($u['price'] ?? 0)];
+                }
+                $qty = (float) $it->qty;
+                $cost = \App\Support\Stock::unitCost($it);
+                if ($qty > 0) {
+                    \App\Support\Stock::applyWeightedCost($main, $qty, $cost);
+                }
+                \App\Support\Stock::move($it, -$qty, "دمج في ({$main->name})", $ref, 'دمج أصناف', $cost);
+                \App\Support\Stock::move($main, $qty, "دمج صنف ({$it->name})", $ref, 'دمج أصناف', $cost);
+                $it->delete();
+            }
+            $main->update(['sub_units' => $units]);
+
+            return response()->json(['status' => 'success', 'item' => $this->formatItemForFrontend($main->fresh())]);
+        });
+    }
+
     // إضافة تصنيف جديد سريع
     public function quickCategory(Request $request)
     {
@@ -338,33 +379,6 @@ class InventoryItemController extends Controller
                         'is_synced' => false,
                     ]);
                 }
-            } elseif ($action === 'merge') {
-                $primary = Item::withTrashed()->findOrFail($request->input('primaryId'));
-                $second = Item::withTrashed()->findOrFail($request->input('secondId'));
-
-                $oldQty = (float) $primary->qty;
-                $addedQty = (float) $second->qty;
-                $primary->qty = $oldQty + $addedQty;
-                $primary->last_move_date = now()->format('Y-m-d');
-                $primary->is_synced = false;
-                $primary->save();
-
-                ItemMovement::where('item_id', $second->id)->update(['item_id' => $primary->id]);
-                ItemMovement::create([
-                    'item_id' => $primary->id,
-                    'move_date' => now()->format('Y/m/d h:i A'),
-                    'type' => 'دمج صنف (' . $second->name . ')',
-                    'ref_no' => 'MRG-' . rand(100, 999),
-                    'party' => 'دمج مخزني',
-                    'user_name' => 'المدير',
-                    'before_qty' => $oldQty,
-                    'in_qty' => $addedQty >= 0 ? $addedQty : 0,
-                    'out_qty' => $addedQty < 0 ? abs($addedQty) : 0,
-                    'after_qty' => $primary->qty,
-                    'price' => $primary->last_buy_price,
-                ]);
-
-                $second->forceDelete();
             }
 
             return response()->json(['status' => 'success']);
