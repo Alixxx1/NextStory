@@ -91,13 +91,13 @@ class WorkReportController extends Controller
         $salesReturnsCashRefund = 0.0;
 
         if (Schema::hasTable('sales_returns')) {
-            $sRetQuery = DB::table('sales_returns')->whereNull('deleted_at');
-            $applyDateFilter($sRetQuery, 'return_date');
+            $sRetQuery = DB::table('sales_returns as r')->join('sales_invoices as si', 'si.id', '=', 'r.sales_invoice_id')->whereNull('r.deleted_at')->whereNull('si.deleted_at');
+            $applyDateFilter($sRetQuery, 'r.return_date');
 
             $sRetRow = $sRetQuery->selectRaw('
-                COALESCE(SUM(total), 0) as total_returns,
-                COALESCE(SUM(cost_total), 0) as total_cost,
-                COALESCE(SUM(cash_refund), 0) as total_cash_refund
+                COALESCE(SUM(r.total), 0) as total_returns,
+                COALESCE(SUM(r.cost_total), 0) as total_cost,
+                COALESCE(SUM(r.cash_refund), 0) as total_cash_refund
             ')->first();
 
             $salesReturnsCost = (float) ($sRetRow->total_cost ?? 0);
@@ -519,6 +519,14 @@ class WorkReportController extends Controller
             }
         }
 
+        // 5ب) مرتجعات المشتريات اللي المورد ردّ فلوسها في الدرج: داخلة للكاشير
+        if (Schema::hasTable('purchase_returns')) {
+            foreach ($byDay(DB::table('purchase_returns')->whereNull('deleted_at')->where('source', 'drawer')->where('cash_refund', '>', 0), 'return_date')->get(['user_name', 'cash_refund']) as $pr) {
+                $add($pr->user_name, ['out' => -(float) $pr->cash_refund]);
+                $mine($pr->user_name) && $supplierCollectedTotal += (float) $pr->cash_refund;
+            }
+        }
+
         // 6) مرتجعات المبيعات النقدية في تاريخ الوردية
         $salesReturnsRefund = 0.0;
         if (Schema::hasTable('sales_returns')) {
@@ -554,7 +562,7 @@ class WorkReportController extends Controller
         $itemsList = $inScope(DB::table('sales_invoice_items as i')->join('sales_invoices as s', 's.id', '=', 'i.sales_invoice_id')->whereNull('s.deleted_at'), 's.')
             ->when($user !== 'all', fn ($q) => $q->where('s.created_by', $user))
             ->groupBy('i.name')->orderByDesc('total')->limit(500)
-            ->selectRaw('i.name, SUM(i.qty) as qty, SUM(i.returned_qty) as returned, SUM(COALESCE(i.net_total, i.total)) as total')->get()
+            ->selectRaw('i.name, SUM(i.qty * COALESCE(i.unit_factor, 1)) as qty, SUM(i.returned_qty * COALESCE(i.unit_factor, 1)) as returned, SUM(COALESCE(i.net_total, i.total)) as total')->get()
             ->map(fn ($r) => ['name' => $r->name, 'qty' => round((float) $r->qty, 3), 'returned' => round((float) $r->returned, 3), 'total' => round((float) $r->total, 2)])->all();
 
         $suspendedList = [];

@@ -219,5 +219,48 @@
         </article>`;
     }
 
-    window.NextStoreReceipt = { qr, sales, page, printSales, barcode, tafqeet };
+    // كشف تسليم الطيار: الطلبات اللي خرجت معاه وقيمتها وعمولته والصافي المطلوب منه (نفس مقاس ورق فاتورة المبيعات)
+    function riderSlip(run, s, paper) {
+        const wide = paper === 'a4' || paper === 'a5', tiny = paper === '58mm'; // رول 58: خط أصغر والعناوين تلف
+        const g = `border:1px solid #000;padding:${tiny ? '2px' : '3px 4px'};line-height:1.35`;
+        const L = `font-weight:700;${tiny ? '' : 'white-space:nowrap;'}background:#eee`;
+        const fs = Number(s.print_font_size) || 12;
+        const net = Number(run.net) || 0;
+        const kv = (a, b, big) => `<tr><td style="${g};${L}">${a}</td><td style="${g};text-align:center;white-space:nowrap;${big ? 'font-weight:800;font-size:1.25em' : ''}">${b}</td></tr>`;
+        const cols = wide ? ['#', 'رقم الطلب', 'العميل', 'العنوان', 'الفاتورة', 'هيحصّل', 'العمولة'] : ['طلب', 'العميل', 'تحصيل', 'عمولة'];
+        const rows = (run.orders || []).map((o, i) => (wide
+            ? [i + 1, `#${o.orderNo}`, o.customerName, o.customerAddress || '', money(o.amount), money(o.collect ?? o.amount), money(o.commission)]
+            : [`#${o.orderNo}`, o.customerName, money(o.collect ?? o.amount), money(o.commission)])
+            .map((v, j) => `<td style="${g};${j === (wide ? 2 : 1) || (wide && j === 3) ? 'text-align:right' : 'text-align:center;white-space:nowrap'}">${esc(v)}</td>`).join(''));
+        return `<article dir="rtl" style="font-family:${esc(s.print_font_family || 'Tahoma')},Arial,sans-serif;font-size:${tiny ? Math.min(fs, 10) : fs}px;color:#000;padding:${wide ? 8 : 2}px">
+            <div style="text-align:center;font-weight:800;font-size:1.2em">${esc(s.shop_name || '')}</div>
+            <div style="text-align:center;font-weight:800;border-top:1.5px solid #000;border-bottom:1.5px solid #000;margin:4px 0;padding:2px">كشف تسليم طيار رقم ${esc(run.runNo)}</div>
+            <table style="width:100%;border-collapse:collapse;margin-bottom:4px">
+                ${kv('الطيار', esc(run.riderName) + (run.riderPhone ? ` - ${esc(run.riderPhone)}` : ''))}${kv('التاريخ', esc(String(run.createdAt || '').slice(0, 16)))}${run.createdBy ? kv('سلّمه', esc(run.createdBy)) : ''}
+            </table>
+            <table style="width:100%;border-collapse:collapse;margin-bottom:4px;${wide ? '' : 'table-layout:fixed'}">
+                <thead><tr style="background:#ddd">${cols.map((c, j) => `<th style="${g};white-space:nowrap;${wide || j === 1 ? '' : `width:${[17, 0, 21, 18][j]}%`}">${c}</th>`).join('')}</tr></thead>
+                <tbody>${rows.map(r => `<tr>${r}</tr>`).join('')}</tbody>
+            </table>
+            <table style="width:${wide ? '56%' : '100%'};border-collapse:collapse;margin-inline-end:auto">
+                ${kv('عدد الطلبات', run.ordersCount)}${kv('إجمالي الفواتير', money(run.ordersTotal))}${kv('المطلوب تحصيله', money(run.collectTotal))}${kv('عمولة الطيار', money(run.commission))}
+                ${kv(net >= 0 ? 'الصافي المطلوب منه' : 'المستحق للطيار', `${money(Math.abs(net))} ج.م`, true)}
+            </table>
+            ${run.notes ? `<div style="margin-top:4px">ملاحظات: ${esc(run.notes)}</div>` : ''}
+            <div style="display:flex;justify-content:space-between;margin-top:${wide ? 30 : 16}px"><span>توقيع الطيار: ..........</span><span>المسؤول: ..........</span></div>
+        </article>`;
+    }
+
+    async function printRiderSlip(run) {
+        const s = (window.NextStoreReceiptConfig || {}).settings || {};
+        const paper = ((s.print_templates || {}).sales_invoice || {}).paper || s.receipt_paper || '80mm';
+        return window.NextStorePrinter.silentPrint({
+            html: riderSlip(run, s, paper), paper, fontFamily: s.print_font_family, fontSize: s.print_font_size,
+            printerName: s.printer_primary, backupPrinterName: s.printer_backup, useBackupOnFailure: s.printer_backup_auto,
+            comPort: s.com_port, pageWidth: s.page_width_px, savePrintImages: s.save_print_images,
+            margins: { left: s.margin_left, right: s.margin_right, top: s.margin_top, bottom: s.margin_bottom }, settings: s
+        });
+    }
+
+    window.NextStoreReceipt = { qr, sales, page, printSales, barcode, tafqeet, riderSlip, printRiderSlip };
 })();

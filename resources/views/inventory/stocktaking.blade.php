@@ -514,7 +514,7 @@
             </div>
         </footer>
     </main>
-
+    <script src="/js/nextstore-search.js"></script>
     <script>
     (function () {
         'use strict';
@@ -596,6 +596,7 @@
                 }
                 return true;
             });
+            filteredItems = NSSearch.sort(filteredItems, q, i => ({ code: i.barcode, name: i.name }));
 
             if (selectedRowIndex >= filteredItems.length) {
                 selectedRowIndex = filteredItems.length > 0 ? 0 : -1;

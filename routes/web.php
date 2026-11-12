@@ -69,6 +69,7 @@ Route::prefix('api/pos')->group(function () {
     Route::post('/suspended', [\App\Http\Controllers\POS\SuspendedInvoiceController::class, 'store']);
     Route::delete('/suspended/{clientId}', [\App\Http\Controllers\POS\SuspendedInvoiceController::class, 'destroy']);
     Route::post('/invoices/store', [PosSalesController::class, 'storeInvoice'])->middleware('pos.auth:pos.sales');
+    Route::get('/invoices/next-number', [PosSalesController::class, 'nextNumber']);
     Route::get('/riders', [DeliveryRunController::class, 'riders']);
     Route::post('/riders/save', [DeliveryRunController::class, 'saveRider'])->middleware('pos.auth:delivery.riders');
     Route::get('/dispatch/order', [DeliveryRunController::class, 'order'])->middleware('pos.auth:pos.sales');
@@ -106,7 +107,7 @@ Route::prefix('inventory')->group(function () {
 
 });
 
-Route::prefix('api/inventory')->group(function () {
+Route::prefix('api/inventory')->middleware('pos.auth:inventory.items|inventory.categories|inventory.movement|inventory.stocktaking|inventory.manufacturing|inventory.adjustments|inventory.orders,write')->group(function () {
     Route::post('/import-items/process', [InventorySubController::class, 'importItemsProcessApi']);
     Route::post('/items/{id}/quick-update-pos', [InventoryItemController::class, 'quickUpdateFromPos']);
     Route::post('/items/save', [InventoryItemController::class, 'saveItem']);
@@ -160,7 +161,7 @@ Route::prefix('customers')->group(function () {
     Route::get('/payments-report', [ShowController::class, 'paymentsReportView'])->name('customers.payments_report');
 });
 
-Route::prefix('api/customers')->name('api.customers.')->group(function () {
+Route::prefix('api/customers')->name('api.customers.')->middleware('pos.auth:customers.manage,write')->group(function () {
     Route::get('/delivery-zones', [CustomerController::class, 'getDeliveryZones'])->name('zones.index');
     Route::post('/delivery-zones', [CustomerController::class, 'storeDeliveryZone'])->name('zones.store');
     Route::put('/delivery-zones/{id}', [CustomerController::class, 'updateDeliveryZone'])->name('zones.update');
@@ -216,7 +217,7 @@ Route::prefix('purchases')->name('purchases.')->group(function () {
     Route::get('/index', [PurchaseController::class, 'index'])->name('index');
 });
 
-Route::prefix('api/purchases')->name('api.purchases.')->group(function () {
+Route::prefix('api/purchases')->name('api.purchases.')->middleware('pos.auth:purchases.manage,write')->group(function () {
     Route::get('/bootstrap', [PurchaseController::class, 'bootstrapData'])->name('bootstrap');
     Route::get('/log', [PurchaseController::class, 'getInvoicesLog'])->name('log');
     Route::post('/save', [PurchaseController::class, 'saveInvoice'])->middleware('pos.auth:purchases.manage')->name('save');
@@ -235,7 +236,7 @@ Route::prefix('suppliers')->name('suppliers.')->group(function () {
     Route::get('/payments', [SupplierController::class, 'payments'])->name('payments');
 });
 
-Route::prefix('api/suppliers')->name('api.suppliers.')->group(function () {
+Route::prefix('api/suppliers')->name('api.suppliers.')->middleware('pos.auth:suppliers.manage|purchases.manage,write')->group(function () {
     Route::get('/list', [SupplierController::class, 'listApi'])->name('list');
     Route::post('/save', [SupplierController::class, 'save'])->name('save');
     Route::delete('/{id}', [SupplierController::class, 'destroy'])->name('delete');
@@ -252,7 +253,7 @@ Route::prefix('expenses')->name('expenses.')->group(function () {
     Route::get('/reports', [ExpenseController::class, 'reports'])->name('reports');
 });
 
-Route::prefix('api/expenses')->name('api.expenses.')->group(function () {
+Route::prefix('api/expenses')->name('api.expenses.')->middleware('pos.auth:expenses.manage,write')->group(function () {
     Route::get('/bootstrap', [ExpenseController::class, 'bootstrapApi'])->name('bootstrap');
     Route::post('/tree/save', [ExpenseController::class, 'saveTree'])->name('tree.save');
     Route::post('/save', [ExpenseController::class, 'saveExpense'])->name('save');
@@ -269,7 +270,7 @@ Route::post('/api/system/update/upload', [SystemUpdateController::class, 'upload
 Route::post('/api/system/update/online', [SystemUpdateController::class, 'online'])->middleware(['pos.auth:settings.manage', 'throttle:5,1'])->name('api.system.update.online');
 
 // ================= 10. قسم تقارير العمل وتقارير الموقع (Work Reports) =================
-Route::prefix('reports')->name('reports.')->group(function () {
+Route::prefix('reports')->name('reports.')->middleware('pos.auth:reports.shift|reports.comprehensive')->group(function () {
     Route::get('/shift', [WorkReportController::class, 'shiftSummaryView'])->name('shift');
     Route::get('/comprehensive', [WorkReportController::class, 'comprehensiveView'])->name('comprehensive');
     Route::get('/income', fn () => redirect('/reports/comprehensive?tab=profits'))->name('income');
@@ -277,7 +278,7 @@ Route::prefix('reports')->name('reports.')->group(function () {
     Route::get('/website', fn () => redirect('/reports/comprehensive?tab=website'))->name('website');
 });
 
-Route::prefix('api/reports')->name('api.reports.')->group(function () {
+Route::prefix('api/reports')->name('api.reports.')->middleware('pos.auth:reports.shift|reports.comprehensive')->group(function () {
     Route::get('/comprehensive-data', [WorkReportController::class, 'comprehensiveDataApi'])->name('comprehensive.data');
     Route::get('/shift-data', [WorkReportController::class, 'shiftSummaryDataApi'])->name('shift.data');
 });
@@ -288,7 +289,7 @@ Route::prefix('employees')->name('employees.')->group(function () {
     Route::get('/log', [EmployeeController::class, 'logView'])->name('log');
 });
 
-Route::prefix('api/employees')->name('api.employees.')->group(function () {
+Route::prefix('api/employees')->name('api.employees.')->middleware('pos.auth:employees.manage')->group(function () {
     Route::get('/bootstrap', [EmployeeController::class, 'bootstrapApi'])->name('bootstrap');
     Route::post('/save', [EmployeeController::class, 'saveEmployee'])->name('save');
     Route::post('/{id}/transactions', [EmployeeController::class, 'storeTransaction'])->name('transactions.store');
@@ -329,6 +330,10 @@ Route::prefix('api/security')->group(function () {
     Route::get('/pending', [SecurityAlertController::class, 'pending']);
     Route::post('/ack', [SecurityAlertController::class, 'ack']);
     Route::get('/list', [SecurityAlertController::class, 'list']);
+    Route::post('/cart-audit', [\App\Http\Controllers\Admin\CartAuditController::class, 'store'])->middleware('throttle:120,1');
+    Route::get('/cart-audits', [\App\Http\Controllers\Admin\CartAuditController::class, 'list']);
+    Route::post('/cart-audits/seen', [\App\Http\Controllers\Admin\CartAuditController::class, 'seen']);
+    Route::post('/cart-audits/delete', [\App\Http\Controllers\Admin\CartAuditController::class, 'destroy']);
 });
 
 Route::prefix('api/admin')->group(function () {
@@ -341,14 +346,14 @@ Route::prefix('api/admin')->group(function () {
     Route::get('/login-log/list', [AdminAuthController::class, 'loginLogApi']);
 
     Route::get('/safes/bootstrap', [AdminAuthController::class, 'safesBootstrapApi']);
-    Route::post('/safes/save', [AdminAuthController::class, 'saveSafeApi']);
-    Route::post('/safes/transaction', [AdminAuthController::class, 'safeTransactionApi']);
+    Route::post('/safes/save', [AdminAuthController::class, 'saveSafeApi'])->middleware('pos.auth:admin.safes');
+    Route::post('/safes/transaction', [AdminAuthController::class, 'safeTransactionApi'])->middleware('pos.auth:admin.safes');
 });
 
 
 
 
-Route::prefix('api/tools')->group(function () {
+Route::prefix('api/tools')->middleware('pos.auth:customers.manage|suppliers.manage|inventory.items')->group(function () {
     Route::post('/import-customers-process', [InventorySubController::class, 'importCustomersProcessApi']);
     Route::post('/import-suppliers-process', [InventorySubController::class, 'importSuppliersProcessApi']);
 });
@@ -375,8 +380,8 @@ Route::prefix('license')->group(function () {
 // ================= سندات الموبايل المعلقة (اعتماد الكاشير) =================
 Route::middleware('pos.auth')->group(function () {
     Route::get('/admin/remote-vouchers', [\App\Http\Controllers\RemoteVoucherController::class, 'index']);
-    Route::post('/admin/remote-vouchers/sync', [\App\Http\Controllers\RemoteVoucherController::class, 'sync']);
-    Route::post('/admin/remote-vouchers/{id}', [\App\Http\Controllers\RemoteVoucherController::class, 'decide']);
+    Route::post('/admin/remote-vouchers/sync', [\App\Http\Controllers\RemoteVoucherController::class, 'sync'])->middleware('pos.auth:settings.manage');
+    Route::post('/admin/remote-vouchers/{id}', [\App\Http\Controllers\RemoteVoucherController::class, 'decide'])->middleware('pos.auth:settings.manage');
 });
 
 // ================= موبايل Cloud Pro وسيرفر المالك (HQ_ENABLED=true فقط) =================

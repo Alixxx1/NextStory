@@ -26,8 +26,23 @@
         dirty = true;
     }, true);
     const _fetch = window.fetch;
+    // منع التكرار: مفتاح جديد لكل عملية إرسال؛ الضغطة المزدوجة وإعادة الإرسال بعد قطع الشبكة بياخدوا نفس المفتاح
+    // (فالسيرفر بيرجّع الرد الأول)، وبعد ما العملية تنجح بثانيتين المفتاح بيتشال فأي عملية جديدة مقصودة بتتسجل عادي حتى لو مطابقة
+    const idemKeys = new Map();
+    const newKey = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36).slice(2));
     window.fetch = function (url, opts) {
+        let sig = null;
+        if (opts && /^(POST|PUT|PATCH|DELETE)$/i.test(opts.method || '') && typeof opts.body === 'string' && !/\/api\/(auth|security)\//.test(String(url))) {
+            const headers = new Headers(opts.headers || {});
+            if (!headers.has('X-Idempotency-Key')) {
+                sig = `${opts.method} ${url} ${opts.body}`;
+                idemKeys.has(sig) || idemKeys.set(sig, newKey());
+                headers.set('X-Idempotency-Key', idemKeys.get(sig));
+                arguments[1] = { ...opts, headers };
+            }
+        }
         const p = _fetch.apply(this, arguments);
+        sig && p.then(r => { if (r.ok) setTimeout(() => idemKeys.delete(sig), 2000); }).catch(() => {}); // قطع الشبكة: المفتاح يفضل لإعادة المحاولة
         if (opts && /^(POST|PUT|PATCH|DELETE)$/i.test(opts.method || '')) p.then(r => { if (r.ok) dirty = false; }).catch(() => {});
         return p;
     };
@@ -58,7 +73,8 @@
     };
     function topPopup() {
         if (window.Swal && Swal.isVisible && Swal.isVisible()) return { swal: true };
-        const vis = [...document.querySelectorAll(POPUPS)].filter(el => el !== dlg && !/modal-(backdrop|dialog)/.test(el.className) && shown(el));
+        // نستبعد خلفية/حاوية بوتستراب بس (modal-backdrop بالظبط)، مش ns-modal-backdrop و custom-modal-backdrop اللي هي النوافذ نفسها
+        const vis = [...document.querySelectorAll(POPUPS)].filter(el => el !== dlg && !el.classList.contains('modal-backdrop') && !el.classList.contains('modal-dialog') && shown(el));
         vis.sort((a, b) => (parseInt(getComputedStyle(a).zIndex) || 0) - (parseInt(getComputedStyle(b).zIndex) || 0));
         return vis.length ? { el: vis[vis.length - 1] } : null;
     }
@@ -95,6 +111,8 @@
             else if (e.key === 'Enter') { e.preventDefault(); e.stopImmediatePropagation(); dlg.querySelector('[data-ok]').click(); }
             return;
         }
+        // بوتستراب بيقفل نافذته قبل ما هاندلر الصفحة يشتغل، فبنسجل هنا (capture) إن كان في نافذة مفتوحة وقت الضغط
+        if (e.key === 'Escape') window.nsEscHadPopup = !!topPopup();
         if (!keys || e.key !== 'Escape' || e.defaultPrevented) return;
         const t = e.target;
         if (t && t.matches && t.matches('input,textarea') && t.value && !t.readOnly && !t.closest(POPUPS) && (t.type === 'search' || /search|find|query/i.test(`${t.id} ${t.name} ${t.className}`))) { // أول Esc يمسح البحث

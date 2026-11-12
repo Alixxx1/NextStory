@@ -793,16 +793,28 @@
 
             <div class="settings-pane" id="tab-network">
                 <div class="pane-title"><div><i class="fas fa-network-wired text-info me-1"></i> أجهزة الكاشير على الشبكة المحلية</div></div>
-                <div class="lan-card">
-                    <p class="fw-bold">افتح الرابط التالي من الأجهزة المتصلة بنفس شبكة المحل. يجب أن يظل جهاز الخادم وقاعدة البيانات قيد التشغيل.</p>
-                    @if($lanAddress)
-                        <a class="en-digit fs-5 fw-bold" href="{{ request()->getScheme() }}://{{ $lanAddress }}:{{ request()->getPort() }}/login" target="_blank" rel="noopener">
-                            {{ request()->getScheme() }}://{{ $lanAddress }}:{{ request()->getPort() }}
-                        </a>
-                    @else
-                        <div class="text-warning fw-bold">تعذر اكتشاف عنوان IPv4 محلي تلقائياً. استخدم عنوان الجهاز الذي يستضيف Laravel.</div>
-                    @endif
-                    <p class="text-muted mt-3 mb-0">جميع الأجهزة تتصل بقاعدة البيانات نفسها على الخادم؛ تأكد من إعداد جدار الحماية والسماح بالمنفذ المستخدم داخل الشبكة فقط.</p>
+                <div class="lan-card" id="netCard">
+                    <div class="fw-bold mb-2">وضع الجهاز ده</div>
+                    <div class="d-flex flex-column gap-2 mb-3" id="netModes">
+                        <label class="form-check fw-bold"><input class="form-check-input" type="radio" name="netMode" value="standalone"> جهاز مستقل <small class="text-muted fw-normal">— الداتا على الجهاز ده بس (الافتراضي)</small></label>
+                        <label class="form-check fw-bold"><input class="form-check-input" type="radio" name="netMode" value="server"> جهاز رئيسي <small class="text-muted fw-normal">— الداتا عليه، والأجهزة التانية في المحل بتتصل بيه</small></label>
+                        <label class="form-check fw-bold"><input class="form-check-input" type="radio" name="netMode" value="client"> جهاز كاشير تابع <small class="text-muted fw-normal">— بيشتغل على داتا الجهاز الرئيسي</small></label>
+                    </div>
+                    <div class="mb-3" id="netServerWrap" style="display:none">
+                        <label class="form-label fw-bold">عنوان الجهاز الرئيسي</label>
+                        <input type="text" class="form-control en-digit" id="netServer" placeholder="192.168.1.10:8787" dir="ltr" style="max-width:280px">
+                    </div>
+                    <div class="mb-3 p-2 rounded" id="netThisBox" style="background:#f8fafc;border:1px solid #e2e8f0;display:none">
+                        <div class="small text-muted fw-bold">عنوان الجهاز ده (اكتبه في الأجهزة التابعة):</div>
+                        <div class="en-digit fs-5 fw-bold" id="netThisIps" dir="ltr"></div>
+                    </div>
+                    <button type="button" class="btn btn-success fw-bold" id="netSave"><i class="fas fa-rotate"></i> حفظ وإعادة تشغيل البرنامج</button>
+                    <div class="small fw-bold mt-2" id="netMsg"></div>
+                    <div class="text-muted small mt-3" id="netBrowserNote">
+                        @if($lanAddress)
+                            من متصفح على جهاز تاني: <span class="en-digit fw-bold" dir="ltr">{{ request()->getScheme() }}://{{ $lanAddress }}:{{ request()->getPort() }}</span>
+                        @endif
+                    </div>
                 </div>
             </div>
 
@@ -811,7 +823,14 @@
                 <div class="pane-title">
                     <div><i class="fas fa-shield-halved text-danger me-1"></i> <span>صلاحيات الكاشير والنسخ الاحتياطي</span></div>
                 </div>
-                <p class="text-muted fw-bold">هذا القسم مخصص للتحكم في الأمان وقفل الشاشات والنسخ الاحتياطي المحلي لقاعدة البيانات.</p>
+                <div class="setting-field" style="max-width:560px">
+                    <label class="ns-label">حذف صنف من الفاتورة المفتوحة (للكاشير اللي مالوش صلاحية)</label>
+                    <select class="ns-form-control" data-setting="cart_delete_mode">
+                        <option value="manager">يطلب باسورد المدير (الوضع الحالي)</option>
+                        <option value="log">يحذف عادي، وكل حذف يتسجل في مراجعة فواتير الكاشير</option>
+                    </select>
+                    <small class="text-muted fw-bold d-block mt-1">في الوضع التاني: كل فاتورة اتحذف منها حاجة بتظهر للمدير في (التنبيهات الأمنية ← مراجعة فواتير الكاشير) بوقت كل إضافة وحذف، والمشبوه بيطلع له تنبيه.</small>
+                </div>
             </div>
 
             <!-- 5. تبويب تحديث النظام -->
@@ -1586,6 +1605,32 @@
             // ===== تحديث النظام =====
             const updStatus = document.getElementById('updStatus');
             const setUpd = (text, cls) => { updStatus.textContent = text; updStatus.className = `mt-3 small fw-bold ${cls}`; };
+            // ===== وضع الشبكة (برنامج سطح المكتب بس) =====
+            (async () => {
+                const api = window.electronAPI;
+                if (!api?.getNetwork) { document.getElementById('netModes').innerHTML = '<div class="text-muted fw-bold">إعداد الشبكة متاح من برنامج سطح المكتب بس.</div>'; document.getElementById('netSave').style.display = 'none'; return; }
+                const n = await api.getNetwork();
+                const sync = () => {
+                    const m = document.querySelector('[name="netMode"]:checked')?.value;
+                    document.getElementById('netServerWrap').style.display = m === 'client' ? '' : 'none';
+                    document.getElementById('netThisBox').style.display = m === 'server' ? '' : 'none';
+                };
+                document.querySelector(`[name="netMode"][value="${n.mode}"]`).checked = true;
+                document.getElementById('netServer').value = n.server || '';
+                document.getElementById('netThisIps').textContent = (n.ips.length ? n.ips : ['غير متصل بشبكة']).map(ip => `${ip}:${n.port}`).join('   ');
+                document.querySelectorAll('[name="netMode"]').forEach(r => r.addEventListener('change', sync));
+                sync();
+                document.getElementById('netSave').addEventListener('click', async () => {
+                    const mode = document.querySelector('[name="netMode"]:checked').value, server = document.getElementById('netServer').value.trim();
+                    const ok = await Swal.fire({ icon: 'question', title: 'إعادة تشغيل البرنامج', text: mode === 'client' ? 'الجهاز ده هيشتغل على داتا الجهاز الرئيسي، وداتاه المحلية هتفضل محفوظة زي ما هي. متابعة؟' : 'البرنامج هيتقفل ويفتح تاني بالوضع الجديد. متابعة؟', showCancelButton: true, confirmButtonText: 'متابعة', cancelButtonText: 'إلغاء', confirmButtonColor: '#119744' });
+                    if (!ok.isConfirmed) return;
+                    const r = await api.setNetwork({ mode, server });
+                    const msg = document.getElementById('netMsg');
+                    msg.className = 'small fw-bold mt-2 ' + (r.ok ? 'text-success' : 'text-danger');
+                    msg.textContent = r.ok ? 'جاري إعادة التشغيل...' : r.message;
+                });
+            })();
+
             async function loadUpdateInfo() {
                 const res = await fetch('/api/system/update/info', { headers: { Accept: 'application/json' } });
                 const d = await res.json().catch(() => ({}));

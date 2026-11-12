@@ -611,6 +611,7 @@
     <script src="/vendor/jquery/jquery-3.6.0.min.js"></script>
     <script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
     <script src="/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+    <script src="/js/nextstore-search.js"></script>
     <script>
     $(document).ready(function() {
         'use strict';
@@ -825,7 +826,7 @@
             $('#btn-edit-supplier').prop('disabled', Boolean(activeSupplier.isCash || activeSupplier.code === '000'));
 
             let isCredit = totals.balance >= 0;
-            $('#supplier-balance-label').text(isCredit ? 'قيمة الحساب (دائن - له)' : 'قيمة الحساب (مدين - عليه)');
+            $('#supplier-balance-label').text(isCredit ? 'قيمة الحساب (دائن - علينا للمورد)' : 'قيمة الحساب (مدين - لنا عند المورد)');
             $('#supplier-balance-display')
                 .text(`${money(totals.balance)} ج.م`)
                 .toggleClass('text-success', isCredit)
@@ -838,7 +839,7 @@
             $('#summary-payments').val(money(totals.payments));
             $('#summary-collections').val(money(totals.collections));
             $('#summary-settlements').val(money(totals.settlements));
-            $('#summary-balance').val(`${isCredit ? 'دائن / ' : 'مدين / '}${money(totals.balance)}`);
+            $('#summary-balance').val(`${isCredit ? 'علينا (دائن) / ' : 'لنا (مدين) / '}${money(totals.balance)}`);
 
             let all = accountEntriesFor(activeSupplier);
             $('#count-orders').text(all.filter(e => e.type === 'purchase').length);
@@ -1046,7 +1047,7 @@
                         <td>${typeBadge(e.type)} <small class="text-muted ms-1">${escapeHtml(e.note || '')}</small></td>
                         <td class="en-digit text-danger">${delta < 0 ? money(delta) : '-'}</td>
                         <td class="en-digit text-success">${delta > 0 ? money(delta) : '-'}</td>
-                        <td class="en-digit fw-bold">${running >= 0 ? 'دائن ' : 'مدين '}${money(running)}</td>
+                        <td class="en-digit fw-bold">${running >= 0 ? 'علينا ' : 'لنا '}${money(running)}</td>
                     </tr>
                 `);
             });
@@ -1140,6 +1141,7 @@
             pickerMatches = allSuppliers.filter(s =>
                 `${s.code} ${s.company} ${s.contact} ${s.phone}`.toLocaleLowerCase('ar').includes(norm)
             );
+            pickerMatches = NSSearch.sort(pickerMatches, norm, s => ({ code: s.code, name: s.company || s.contact || s.name, phones: [s.phone, s.contact] }));
             activePickerIndex = 0;
 
             let $tbody = $('#picker-modal-tbody');
@@ -1207,6 +1209,7 @@
             searchMatches = allSuppliers.filter(s =>
                 `${s.code} ${s.company} ${s.contact} ${s.phone}`.toLocaleLowerCase('ar').includes(q)
             );
+            searchMatches = NSSearch.sort(searchMatches, q, s => ({ code: s.code, name: s.company || s.contact || s.name, phones: [s.phone, s.contact] }));
             activeSearchIndex = searchMatches.length ? 0 : -1;
 
             if (!searchMatches.length) {

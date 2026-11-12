@@ -68,7 +68,7 @@
         </div>
         <div class="rd-scroll">
             <table class="rd-table">
-                <thead><tr><th>#</th><th>التاريخ</th><th>الطيار</th><th>الطلبات</th><th>التحصيل</th><th>العمولة</th><th>الصافي</th><th>بواسطة</th></tr></thead>
+                <thead><tr><th>#</th><th>التاريخ</th><th>الطيار</th><th>الطلبات</th><th>التحصيل</th><th>العمولة</th><th>الصافي</th><th>بواسطة</th><th></th></tr></thead>
                 <tbody id="rdRuns"></tbody>
             </table>
         </div>
@@ -85,7 +85,7 @@
     const api = (url, body) => fetch(url, body ? { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf }, body: JSON.stringify(body) } : { headers: { Accept: 'application/json' } })
         .then(async r => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.message || 'حصل خطأ'); return d; });
     const form = $('rdForm');
-    let riders = [], selected = null;
+    let riders = [], selected = null, lastRuns = [];
 
     function renderRiders() {
         $('rdCount').textContent = `${riders.filter(r => r.isActive).length} نشط`;
@@ -99,14 +99,15 @@
         const r = riders.find(x => x.id === selected);
         $('rdRunsTitle').textContent = r ? `سجل تسليمات ${r.name}${r.phone ? ' · ' + r.phone : ''}` : 'سجل التسليمات (كل الطيارين)';
         const { runs } = await api('/api/pos/dispatch/runs' + (selected ? `?rider_id=${selected}` : ''));
+        lastRuns = runs;
         const sum = k => runs.reduce((s, x) => s + Number(x[k] || 0), 0);
         $('stOrders').textContent = sum('ordersCount'); $('stCollect').textContent = money(sum('collectTotal'));
         $('stComm').textContent = money(sum('commission')); $('stNet').textContent = money(sum('net'));
         $('rdRuns').innerHTML = runs.map(x => `<tr><td class="num">${x.runNo}</td><td class="num">${esc(String(x.createdAt).slice(0, 16))}</td>
             <td><b>${esc(x.riderName)}</b><div class="num small text-muted">${esc(x.riderPhone || '')}</div></td>
             <td>${x.ordersCount} طلب<ul class="rd-orders">${x.orders.map(o => `<li><span class="num">#${esc(o.orderNo)}</span><span>${esc(o.customerName)}</span><span class="text-muted">${esc(o.customerAddress || '')}</span><span class="num ms-auto">${money(o.amount)}</span>${o.commission ? `<span class="num text-danger">-${money(o.commission)}</span>` : ''}</li>`).join('')}</ul></td>
-            <td class="num">${money(x.collectTotal)}</td><td class="num text-danger">${money(x.commission)}</td><td class="num text-success fw-bold">${money(x.net)}</td><td>${esc(x.createdBy || '')}</td></tr>`).join('')
-            || '<tr><td colspan="8" class="rd-empty">مفيش تسليمات لسه.</td></tr>';
+            <td class="num">${money(x.collectTotal)}</td><td class="num text-danger">${money(x.commission)}</td><td class="num text-success fw-bold">${money(x.net)}</td><td>${esc(x.createdBy || '')}</td><td><button class="rd-link" data-print="${x.id}" type="button"><i class="fas fa-print"></i> طباعة</button></td></tr>`).join('')
+            || '<tr><td colspan="9" class="rd-empty">مفيش تسليمات لسه.</td></tr>';
     }
 
     async function loadRiders() { riders = (await api('/api/pos/riders')).riders; renderRiders(); }
@@ -136,6 +137,7 @@
         if (row) { selected = Number(row.dataset.id); renderRiders(); loadRuns(); }
     });
 
+    $('rdRuns').addEventListener('click', e => { const b = e.target.closest('[data-print]'); if (b) NextStoreDispatch.printRun(lastRuns.find(r => r.id === Number(b.dataset.print))); });
     document.addEventListener('ns:dispatched', () => loadRiders().then(loadRuns));
     loadRiders().then(loadRuns).catch(err => Swal.fire('خطأ', err.message, 'error'));
 })();

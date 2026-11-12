@@ -66,8 +66,15 @@ class DeliveryRunTest extends TestCase
 
         $this->user()->getJson('/api/pos/dispatch/pending')->assertOk()->assertJsonCount(2, 'orders');
         $drawerBefore = Drawer::expected(DB::table('pos_shifts')->find($this->shiftId));
+        $profitBefore = $this->user()->getJson('/api/reports/comprehensive-data')->json('profits');
         $this->user()->postJson('/api/pos/dispatch', ['rider_id' => $rider, 'orders' => [['id' => $a['id'], 'commission' => 5], ['id' => $b['id'], 'commission' => 10]]])
-            ->assertOk()->assertJsonPath('net', 285)->assertJsonPath('commission', 15);
+            ->assertOk()->assertJsonPath('net', 285)->assertJsonPath('commission', 15)
+            ->assertJsonPath('run.ordersCount', 2)->assertJsonPath('run.collectTotal', 300)->assertJsonCount(2, 'run.orders'); // بيانات كشف الطيار المطبوع
+
+        // العمولة مصروف تشغيل: بتقلل صافي الربح بنفس قيمتها
+        $profitAfter = $this->user()->getJson('/api/reports/comprehensive-data')->json('profits');
+        $this->assertEquals($profitBefore['nonCapitalExpenses'] + 15, $profitAfter['nonCapitalExpenses']);
+        $this->assertEquals($profitBefore['netProfit'] - 15, $profitAfter['netProfit']);
 
         $this->assertDatabaseHas('expenses', ['item_name' => 'عمولة طيار', 'amount' => 15, 'source' => 'الدرج']);
         $this->assertEquals($drawerBefore - 15, Drawer::expected(DB::table('pos_shifts')->find($this->shiftId)));

@@ -1,0 +1,103 @@
+/* NextStore - شئون العاملين (إضافة موظف + سجل الموظفين): نفس هوية nextstore-erp.css وصفحات التقارير */
+body.emp-page { --line: #e2e8f0; --bd: #d5dde6; font-size: 13.5px; }
+body.emp-page .en-digit { direction: ltr; unicode-bidi: isolate; }
+
+/* الهيدر الأبيض: تبويبات مقسمة وزرار إضافة أخضر */
+body.emp-page .ns-header { justify-content: flex-start; }
+body.emp-page .ns-header .btn-exit { margin-inline-start: auto; }
+body.emp-page .ns-logo-icon { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+body.emp-page .view-tabs { display: flex; gap: 0; padding: 3px; background: #f1f5f9; border: 1px solid var(--bd); border-radius: 8px; }
+body.emp-page .view-tab-btn { color: #475569 !important; background: transparent; border: 0; height: 32px; padding: 0 14px; border-radius: 6px; font-weight: 800; font-size: 13px; }
+body.emp-page .view-tab-btn.active { background: #fff !important; color: #17283d !important; box-shadow: 0 0 0 1px var(--bd); }
+body.emp-page .view-tab-btn.active i { color: #119744; }
+body.emp-page .view-tab-btn.tab-terminated.active i { color: #dc2626; }
+body.emp-page .ns-header .btn-op.op-settle, body.emp-page .ns-header .btn-top-link { height: 38px !important; }
+
+/* اللوحات: كارت أبيض بعنوان رمادي هادي بدل الكحلي */
+body.emp-page .emp-workspace, body.emp-page .log-workspace { padding: 0 12px 12px; gap: 10px; }
+body.emp-page .ns-panel { border: 1px solid var(--bd) !important; border-radius: 10px !important; box-shadow: none !important; }
+body.emp-page .ns-panel-header, body.emp-page .ns-panel-header.danger-header {
+    background: #f8fafc !important; color: #17283d !important; border: 0 !important; border-bottom: 1px solid var(--bd) !important; border-radius: 0 !important; padding: 10px 14px; font-size: 14px;
+}
+body.emp-page .ns-panel-header i { color: #119744; }
+body.emp-page .ns-panel-header.danger-header i { color: #dc2626; }
+body.emp-page .ns-panel-header small { color: #64748b !important; }
+
+/* الحقول */
+body.emp-page .ns-input, body.emp-page .ns-select { height: 38px; border: 1px solid #cbd5e1; border-radius: 7px; font-weight: 700; color: #0f172a; }
+body.emp-page .field-box label { color: #475569; font-weight: 800; }
+body.emp-page .section-card { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+body.emp-page .section-card-title { border-bottom: 1px solid var(--line); color: #17283d; font-size: 13.5px; padding-bottom: 7px; }
+body.emp-page .age-badge-box { height: 38px; background: #f8fafc; border: 1px solid #cbd5e1; color: #17283d; }
+body.emp-page .hour-preset-btn { height: 38px; border: 1px solid #cbd5e1; font-weight: 800; }
+body.emp-page .hour-preset-btn.active { background: #ecfdf3; color: #0d7a36; border-color: #86d6a5; }
+body.emp-page .doc-check-chip { border: 1px solid #cbd5e1; padding: 6px 12px; }
+body.emp-page .doc-check-chip:has(input:checked) { background: #ecfdf3; border-color: #86d6a5; color: #0d7a36; }
+
+/* شريط حاسبة الراتب: كروت هادية بدل التدرج الكحلي */
+body.emp-page .salary-live-ribbon { background: none; padding: 0; gap: 8px; }
+body.emp-page .ribbon-stat { background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+body.emp-page .ribbon-stat small { color: #64748b; font-weight: 800; }
+body.emp-page .ribbon-stat strong { color: #17283d; font-size: 18px; }
+body.emp-page .ribbon-stat:last-child { background: #ecfdf3; border-color: #86d6a5; }
+body.emp-page .ribbon-stat:last-child strong { color: #0d7a36 !important; }
+
+body.emp-page .panel-footer { background: #f8fafc; border-top: 1px solid var(--bd); }
+body.emp-page .btn-save-emp { border-radius: 8px; }
+
+/* قائمة الموظفين الجانبية */
+body.emp-page .side-search { padding: 10px 10px 0; }
+body.emp-page .side-search .ns-input { width: 100%; }
+body.emp-page .emp-card-item { border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; margin-bottom: 7px; }
+body.emp-page .emp-card-item:hover { border-color: #86d6a5; background: #f0faf4; }
+body.emp-page .emp-card-item.is-editing { border-color: #119744; background: #ecfdf3; box-shadow: inset -3px 0 0 #119744; }
+
+/* شارات الحالة (الصفحة مش محمّلة بوتستراب) */
+body.emp-page .badge { display: inline-block; padding: 2px 9px; border-radius: 6px; font-size: 11.5px; font-weight: 800; line-height: 1.6; border: 1px solid transparent; }
+body.emp-page .badge.bg-success { background: #ecfdf3 !important; color: #0d7a36 !important; border-color: #bfe5cd; }
+body.emp-page .badge.bg-danger { background: #fef2f2 !important; color: #dc2626 !important; border-color: #fecaca; }
+body.emp-page .badge.bg-secondary, body.emp-page .badge.bg-light { background: #f1f5f9 !important; color: #334155 !important; border-color: var(--bd); }
+body.emp-page .me-1 { margin-inline-end: 4px; }
+
+/* الجداول */
+body.emp-page .search-bar-strip { background: #fff; border-bottom: 1px solid var(--line); padding: 10px 12px; }
+body.emp-page .status-pill { border: 1px solid #cbd5e1; padding: 4px 12px; }
+body.emp-page .status-pill.active { background: #17283d; border-color: #17283d; }
+body.emp-page .ns-table thead th { background: #e9edf2 !important; color: #334155 !important; border-left: 0; border-bottom: 1px solid #cbd5e1; padding: 9px 8px; font-size: 12.5px; }
+body.emp-page .ns-table tbody td { border-left: 0; padding: 8px; font-size: 13px; }
+body.emp-page .ns-table tbody tr:nth-child(even) { background: #fafbfc; }
+body.emp-page .ns-table tbody tr:hover { background: #f0faf4; }
+body.emp-page .ns-table tbody tr.selected-row { background: #dcfce7 !important; outline: 0; box-shadow: inset -3px 0 0 #119744; }
+body.emp-page .ns-table tbody tr.terminated-row { background: #fff7f7; }
+body.emp-page .table-foot { display: flex; gap: 18px; align-items: center; padding: 9px 14px; border-top: 1px solid var(--bd); background: #f8fafc; font-weight: 700; color: #475569; flex-shrink: 0; }
+body.emp-page .table-foot b { color: #17283d; font-size: 15px; }
+body.emp-page .table-foot .due b { color: #0d7a36; }
+
+/* كشف حساب الموظف */
+body.emp-page .emp-ledger-body { padding: 12px; gap: 12px; }
+body.emp-page .kpi-grid-4 { gap: 8px; }
+body.emp-page .kpi-box { background: #fff; border: 1px solid var(--bd); border-radius: 10px; padding: 9px 10px; text-align: right; }
+body.emp-page .kpi-box small { font-size: 12px; color: #64748b; }
+body.emp-page .kpi-box strong { font-size: 18px !important; display: block; margin-top: 2px; }
+body.emp-page .kpi-box:last-child { background: #ecfdf3 !important; border-color: #86d6a5 !important; }
+
+/* الأزرار: أبيض بحدود، والأساسي أخضر، والخطر أحمر هادي */
+body.emp-page .btn-op { height: 38px; border: 1px solid #cbd5e1; border-radius: 7px; font-weight: 800; background: #fff; color: #1e293b; }
+body.emp-page .btn-op:hover { transform: none; background: #f8fafc; border-color: #94a3b8; }
+body.emp-page .btn-op.op-deduct, body.emp-page .btn-op.op-advance, body.emp-page .btn-op.op-bonus { background: #fff; color: #1e293b; border-color: #cbd5e1; }
+body.emp-page .btn-op.op-deduct i, body.emp-page .btn-op.btn-del-tx { color: #dc2626 !important; }
+body.emp-page .btn-op.op-advance i { color: #d97706; }
+body.emp-page .btn-op.op-bonus i { color: #119744; }
+body.emp-page .btn-op.op-settle { background: #119744; border-color: #119744; color: #fff; }
+body.emp-page .btn-op.op-settle i { color: #fff; }
+body.emp-page .btn-op.op-settle:hover { background: #0d7a36; }
+body.emp-page .btn-op.op-danger-solid { background: #fff; color: #dc2626; border-color: #fecaca; }
+body.emp-page .btn-op.op-danger-solid:hover { background: #fef2f2; }
+body.emp-page .termination-card { background: #fff; border: 1px solid #fecaca; border-radius: 10px; box-shadow: inset -3px 0 0 #dc2626; }
+body.emp-page .grid-4 { grid-template-columns: 110px minmax(0, 1.6fr) minmax(0, 1.2fr) minmax(0, 1fr) 90px; }
+body.emp-page .field-box label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 1200px) {
+    body.emp-page .emp-workspace { grid-template-columns: 1fr 290px; }
+    body.emp-page .grid-4, body.emp-page .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    body.emp-page .salary-live-ribbon { grid-template-columns: repeat(2, 1fr); }
+}

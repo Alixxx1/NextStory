@@ -1235,8 +1235,7 @@ class InventorySubController extends Controller
             $deficitSale = 0.0;
 
             $preparedRows = [];
-            $nextNo = (StockAdjustment::withTrashed()->max('id') ?? 0) + 1;
-            $docCode = $oldDoc ? ($oldDoc->doc_code ?: ('ADJ-' . $oldDoc->id)) : ('ADJ-' . (100 + $nextNo));
+            $docCode = $oldDoc ? ($oldDoc->doc_code ?: ('ADJ-' . $oldDoc->id)) : ('ADJ-' . (100 + \App\Support\Sequence::next('stock_adjustment')));
             $regLabel = now()->format('Y/m/d h:iA');
             $statement = trim($data['statement'] ?? '') ?: 'عملية ضبط وتعديل رصيد';
 
@@ -1419,8 +1418,7 @@ class InventorySubController extends Controller
             $deficitCost = 0.0;
             $deficitSale = 0.0;
 
-            $nextNo = (StockAdjustment::withTrashed()->max('id') ?? 0) + 1;
-            $docCode = 'ADJ-' . (100 + $nextNo);
+            $docCode = 'ADJ-' . (100 + \App\Support\Sequence::next('stock_adjustment'));
             $regLabel = now()->format('Y/m/d h:iA');
 
             foreach ($items as $item) {
@@ -1712,7 +1710,7 @@ class InventorySubController extends Controller
             ->values()
             ->all();
 
-        $nextOrderNumber = (WarehouseOrder::withTrashed()->max('order_number') ?? 0) + 1;
+        $nextOrderNumber = \App\Support\Sequence::peek('warehouse_order');
 
         return [
             'initialCategories' => $categories,
@@ -1781,7 +1779,7 @@ class InventorySubController extends Controller
 
             $orderNumber = $oldOrder
                 ? $oldOrder->order_number
-                : ((WarehouseOrder::withTrashed()->max('order_number') ?? 0) + 1);
+                : \App\Support\Sequence::next('warehouse_order');
 
             $regLabel = now()->format('Y/m/d h:iA');
             $preparedRows = [];
@@ -2204,7 +2202,7 @@ class InventorySubController extends Controller
             ->values()
             ->all();
 
-        $nextPermNumber = (AdminPermission::withTrashed()->max('perm_number') ?? 0) + 1;
+        $nextPermNumber = \App\Support\Sequence::peek('admin_permission');
 
         return [
             'initialCategories' => $categories,
@@ -2269,7 +2267,7 @@ class InventorySubController extends Controller
 
             $permNumber = $oldPerm
                 ? $oldPerm->perm_number
-                : ((AdminPermission::withTrashed()->max('perm_number') ?? 0) + 1);
+                : \App\Support\Sequence::next('admin_permission');
 
             $regLabel = now()->format('Y/m/d h:iA');
             $preparedRows = [];
@@ -2851,7 +2849,7 @@ class InventorySubController extends Controller
                     'addr2'             => $addr2 ?: null,
                     'addr3'             => $addr3 ?: null,
                     'addresses'         => $addressesJson,
-                    'opening_balance'   => $balanceAbs,
+                    'opening_balance'   => $balanceType === 'credit' ? -$balanceAbs : $balanceAbs, // موجب = عليه، سالب = له
                     'balance'           => $balanceAbs,
                     'balance_type'      => $balanceType,
                     'is_synced'         => 0,
@@ -2939,7 +2937,7 @@ class InventorySubController extends Controller
                 if ($hasCol('phone'))           $payload['phone'] = $phone;
                 if ($hasCol('phone1'))          $payload['phone1'] = $phone;
                 if ($hasCol('address'))         $payload['address'] = $address;
-                if ($hasCol('opening_balance')) $payload['opening_balance'] = $balAbs;
+                if ($hasCol('opening_balance')) $payload['opening_balance'] = $balType === 'debit' ? -$balAbs : $balAbs; // موجب = علينا، سالب = لنا
                 if ($hasCol('balance'))         $payload['balance'] = $balAbs;
                 if ($hasCol('balance_type'))    $payload['balance_type'] = $balType;
                 if ($hasCol('is_synced'))       $payload['is_synced'] = 0;

@@ -66,6 +66,7 @@
     </div>
 </div>
 
+<script>window.NextStoreReceiptConfig = window.NextStoreReceiptConfig || { settings: @json(\App\Support\SystemSettings::all()) };</script>
 <script>
 window.NextStoreDispatch = (() => {
     const $ = id => document.getElementById(id);
@@ -78,6 +79,16 @@ window.NextStoreDispatch = (() => {
     let orders = [], riders = [], modal;
 
     const rider = () => riders.find(r => String(r.id) === $('dsRider').value);
+
+    // كشف الطيار المطبوع (بمقاس ورق فاتورة المبيعات): بيحمّل مكتبة الطباعة لو الصفحة مش محمّلاها
+    const loadJs = src => new Promise((ok, no) => { const el = document.createElement('script'); el.src = src; el.onload = ok; el.onerror = no; document.head.appendChild(el); });
+    async function printRun(run) {
+        try {
+            if (!window.NextStorePrinter) await loadJs('/js/nextstore-printer.js');
+            if (!window.NextStoreReceipt || !NextStoreReceipt.printRiderSlip) await loadJs('/js/nextstore-receipt.js');
+            await NextStoreReceipt.printRiderSlip(run);
+        } catch (e) { toast('error', 'تعذرت طباعة كشف الطيار'); }
+    }
 
     function render() {
         $('dsRows').innerHTML = orders.map((o, i) => `<tr><td class="num">${i + 1}</td><td class="num fw-bold">#${esc(o.orderNo)}</td>
@@ -147,7 +158,9 @@ window.NextStoreDispatch = (() => {
             if (!res.ok) throw new Error(d.message || 'تعذر الحفظ');
             orders = []; $('dsNotes').value = ''; render(); modal.hide();
             document.dispatchEvent(new CustomEvent('ns:dispatched'));
-            Swal.fire({ icon: 'success', title: `تم التسليم رقم ${d.runNo}`, html: `الصافي المطلوب من الطيار <b class="num">${money(d.net)}</b> ج.م${d.commission ? `<br>العمولة <b class="num">${money(d.commission)}</b> ج.م اتسجلت مصروف من الدرج` : ''}`, confirmButtonColor: '#119744' });
+            const done = await Swal.fire({ icon: 'success', title: `تم التسليم رقم ${d.runNo}`, html: `الصافي المطلوب من الطيار <b class="num">${money(d.net)}</b> ج.م${d.commission ? `<br>العمولة <b class="num">${money(d.commission)}</b> ج.م اتسجلت مصروف من الدرج` : ''}`,
+                showCancelButton: true, confirmButtonText: '<i class="fas fa-print"></i> طباعة كشف الطيار', cancelButtonText: 'تم', confirmButtonColor: '#119744' });
+            if (done.isConfirmed && d.run) printRun(d.run);
         } catch (e) { Swal.fire('تعذر الحفظ', e.message, 'error'); } finally { $('dsSave').disabled = false; }
     }
 
@@ -174,6 +187,6 @@ window.NextStoreDispatch = (() => {
 
     // كود الطيار في الرسيت: d + رقم الطلب (ولو الكيبورد عربي بيوصل ي + الرقم)
     const match = code => (digits(code).match(/^[dDي\]][-\s]?(\d{1,12})$/) || [])[1];
-    return { open, add, match };
+    return { open, add, match, printRun };
 })();
 </script>

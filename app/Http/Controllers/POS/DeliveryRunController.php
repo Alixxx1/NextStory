@@ -68,20 +68,27 @@ class DeliveryRunController extends Controller
     {
         $runs = DB::table('delivery_runs')->when($request->integer('rider_id'), fn ($q, $id) => $q->where('rider_id', $id))
             ->orderByDesc('id')->limit(200)->get();
+
+        return response()->json(['runs' => $this->formatRuns($runs)]);
+    }
+
+    /** التسليمات بطلباتها (للسجل ولكشف الطيار المطبوع) */
+    private function formatRuns($runs): array
+    {
         $items = DB::table('delivery_run_items as i')->join('sales_invoices as s', 's.id', '=', 'i.sales_invoice_id')
-            ->whereIn('i.run_id', $runs->pluck('id'))->get(['i.run_id', 'i.order_no', 'i.amount', 'i.commission', 's.customer_name', 's.customer_address'])
+            ->whereIn('i.run_id', $runs->pluck('id'))->orderBy('i.id')->get(['i.run_id', 'i.order_no', 'i.amount', 'i.collect', 'i.commission', 's.customer_name', 's.customer_address'])
             ->groupBy('run_id');
 
-        return response()->json(['runs' => $runs->map(fn ($r) => [
+        return $runs->map(fn ($r) => [
             'id' => (int) $r->id, 'runNo' => (int) $r->run_no, 'riderName' => $r->rider_name, 'riderPhone' => $r->rider_phone,
             'ordersCount' => (int) $r->orders_count, 'ordersTotal' => (float) $r->orders_total, 'collectTotal' => (float) $r->collect_total,
             'commission' => (float) $r->commission_total, 'net' => (float) $r->net_total, 'notes' => $r->notes,
-            'createdBy' => $r->created_by, 'createdAt' => $r->created_at,
+            'createdBy' => $r->created_by, 'createdAt' => (string) $r->created_at,
             'orders' => ($items[$r->id] ?? collect())->map(fn ($i) => [
-                'orderNo' => $i->order_no, 'amount' => (float) $i->amount, 'commission' => (float) $i->commission,
+                'orderNo' => $i->order_no, 'amount' => (float) $i->amount, 'collect' => (float) $i->collect, 'commission' => (float) $i->commission,
                 'customerName' => $i->customer_name, 'customerAddress' => $i->customer_address,
             ])->values(),
-        ])]);
+        ])->values()->all();
     }
 
     /** طلبات التوصيل بتاعة النهارده اللي لسه ما اتسلمتش لطيار (للتسليم اليدوي بدون سكان) */
@@ -181,7 +188,8 @@ class DeliveryRunController extends Controller
             DB::table('sales_invoices')->whereIn('id', $invoices->keys())
                 ->update(['delivery_run_id' => $runId, 'courier_name' => $rider->name, 'is_synced' => false, 'updated_at' => $now]);
 
-            return response()->json(['ok' => true, 'runNo' => $runNo, 'net' => Money::egp($collectP - $commP), 'commission' => Money::egp($commP)]);
+            return response()->json(['ok' => true, 'runNo' => $runNo, 'net' => Money::egp($collectP - $commP), 'commission' => Money::egp($commP),
+                'run' => $this->formatRuns(DB::table('delivery_runs')->where('id', $runId)->get())[0]]);
         });
     }
 

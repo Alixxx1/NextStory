@@ -90,7 +90,8 @@
 <script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
 <script src="/vendor/sweetalert2/sweetalert2.all.min.js"></script>
 <script src="/js/nextstore-supplier-add.js"></script>
-<script>
+    <script src="/js/nextstore-search.js"></script>
+    <script>
 (() => {
     const $ = id => document.getElementById(id);
     const digits = v => String(v ?? '').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
@@ -113,7 +114,8 @@
     const supOpen = () => $('supOverlay').style.display === 'flex';
     function renderSup() {
         const q = norm($('supSearch').value);
-        supHits = [{ id: 'cash-supplier', code: '000', name: 'مورد نقدي عام', phone: '' }, ...suppliers].filter(s => norm(`${s.code} ${s.name} ${s.phone}`).includes(q)).slice(0, 100);
+        supHits = [{ id: 'cash-supplier', code: '000', name: 'مورد نقدي عام', phone: '' }, ...suppliers].filter(s => norm(`${s.code} ${s.name} ${s.phone}`).includes(q));
+        supHits = NSSearch.sort(supHits, q, s => ({ code: s.code, name: s.name, phones: [s.phone] })).slice(0, 100);
         supIdx = 0;
         $('supList').innerHTML = supHits.length ? supHits.map((s, i) => `<div class="${i ? '' : 'on'}" data-i="${i}"><span><span class="badge bg-secondary en me-2">${esc(s.code)}</span>${esc(s.name)}</span><span class="en text-muted">${esc(s.phone || '')}</span></div>`).join('')
             : '<div class="text-muted justify-content-center">لا يوجد مورد بهذا الاسم — اضغط F2 لإضافته</div>';

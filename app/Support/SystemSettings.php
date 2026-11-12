@@ -78,6 +78,7 @@ class SystemSettings
             'whatsapp_delivery_enabled' => true,
             'whatsapp_owner_alert' => true,
             'invoice_rounding' => '1',
+            'cart_delete_mode' => 'manager', // manager: باسورد مدير لحذف صنف من الفاتورة، log: حذف حر ويتسجل للمراجعة
             'print_silent' => false,
             'printer_primary' => '',
             'printer_backup' => '',

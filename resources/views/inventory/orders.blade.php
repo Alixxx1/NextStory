@@ -827,7 +827,7 @@
             </div>
         </div>
     </footer>
-
+    <script src="/js/nextstore-search.js"></script>
     <script>
     (function () {
         'use strict';
@@ -923,6 +923,7 @@
                 return (p.name || '').toLowerCase().includes(cleanQ) ||
                        String(p.barcode || '').toLowerCase().includes(cleanQ);
             });
+            dropdownMatches = NSSearch.sort(dropdownMatches, cleanQ, p => ({ code: p.barcode, name: p.name, phones: (p.subUnits || []).map(u => u && u.barcode) }));
 
             if (dropdownMatches.length === 0) {
                 searchDropdown.innerHTML = `<div style="padding:10px; text-align:center; color:var(--ns-muted);">لا توجد أصناف مطابقة في المخزن</div>`;

@@ -253,6 +253,19 @@ class LicenseTest extends TestCase
         $this->get('/login')->assertOk();
     }
 
+    public function test_repeated_activation_requests_do_not_duplicate(): void
+    {
+        config(['license.server' => 'https://hq.test']);
+        Http::fake(['hq.test/*' => fn ($r) => Http::response($this->postJson('/api/hq/' . basename($r->url()), $r->data())->json())]);
+        $f = ['store_name' => 'الأمل', 'owner' => 'محمود', 'phone' => '012'];
+        foreach ([1, 2, 3] as $i) {
+            License::forget();
+            $this->post('/license/request', $f + ['address' => "عنوان $i"]);
+        }
+        $this->assertSame(1, DB::table('hq_requests')->where('fingerprint', License::fingerprint())->count());
+        $this->assertSame('عنوان 3', DB::table('hq_requests')->value('address'));
+    }
+
     public function test_portal_plans_stores_and_account_management(): void
     {
         $this->hqLogin()->get(self::PORTAL . '/plans')->assertOk()->assertSee('Cloud Pro');

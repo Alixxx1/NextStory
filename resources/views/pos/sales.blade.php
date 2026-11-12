@@ -3392,6 +3392,7 @@
 
                 persistSuspended(snapshot).then(() => {
                     editingSuspendedInvoiceId = null;
+                    sendCartAudit('suspended');
                     performResetCurrentInvoice();
                     $('#item-search-input').trigger('focus');
                 }).catch(err => Swal.fire('تعذر تعليق الفاتورة', err.message || 'تحقق من الاتصال بالسيرفر. الفاتورة لسه مفتوحة.', 'error'));
@@ -4239,6 +4240,8 @@
             function commitProductDetailsToCart(qty, price, isWeight, notes) {
                 if (activeCartRowForProductDetails && activeCartRowForProductDetails.length) {
                     let r = activeCartRowForProductDetails;
+                    const diff = qty - rowQty(r); // تقليل الكمية = حذف جزئي
+                    diff && logCart(diff > 0 ? 'add' : 'remove', r.attr('data-raw-name'), Math.abs(diff), price);
                     r.find('.item-qty').text(isWeight ? `${qty.toFixed(3)} كجم` : `${qty} ${activeProductForAdd.unit || 'قطعة'}`);
                     r.find('.item-price').text(price.toFixed(2));
                     r.attr('data-item-notes', notes);
@@ -4277,6 +4280,7 @@
             });
 
             function addProductToCart(product, addedQty = 1, notes = '') {
+                logCart('add', product.name, addedQty, product.salePrice);
                 let isWeight = product.quantityType === 'weight';
                 let unitLabel = isWeight ? 'كجم' : (product.unit || 'قطعة');
                 let existingRow = $('#cart-items .cart-item-row').filter(function() {
@@ -4418,8 +4422,27 @@
                 });
                 return { items, total: Math.round(total.v * 100) / 100 };
             }
+            // ===== مراجعة فواتير الكاشير: كل إضافة وحذف بوقته، وبيتبعت للمدير لو اتحذف حاجة =====
+            var cartLog = []; // var: ممكن أصناف تتضاف (استرجاع فاتورة) قبل ما السطر ده يتنفذ
+            const freeDelete = () => systemSettings.cart_delete_mode === 'log';
+            const rowQty = r => parseFloat(r.find('.item-qty').text()) || 0;
+            function logCart(act, name, qty, price) {
+                (cartLog = cartLog || []).push({ t: new Date().toLocaleTimeString('en-GB'), act, name: String(name || '').slice(0, 190), qty: Math.round((Number(qty) || 0) * 1000) / 1000, price: Number(price) || 0 });
+            }
+            function sendCartAudit(status, requestId) {
+                const events = cartLog;
+                cartLog = [];
+                if (!events.some(e => e.act !== 'add')) return; // مفيش حذف
+                try { fetch('/api/security/cart-audit', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    body: JSON.stringify({ status, requestId, events, finalTotal: status === 'saved' ? currentGrandTotal : 0 }) }); } catch (e) {}
+            }
+            // حذف صنف/مسح الفاتورة: باسورد مدير، أو في وضع "log" بيتنفذ على طول ويتسجل للمراجعة
+            const guardDelete = (label, cb) => freeDelete() ? cb() : requirePermissionOrManager('pos.delete_item', label, cb);
+
             window.nsReportCartLoss = (type) => {
                 const s = cartSnapshot();
+                if (type === 'cart_abandoned') { $('#cart-items .cart-item-row').each(function () { logCart('remove', $(this).attr('data-raw-name'), rowQty($(this)), $(this).find('.item-price').text()); }); sendCartAudit('abandoned'); }
+                if (freeDelete()) return; // في وضع السجل المراجعة بتغني عن التنبيه الفوري
                 if (s.items.length) NSSecurity.report(type, { 'عدد الأصناف': s.items.length, 'الأصناف': s.items.slice(0, 15).join(' | '), 'العميل': (typeof selectedCustomer !== 'undefined' && selectedCustomer && selectedCustomer.name) || '' }, s.total, String($('#current-order-number').text() || ''));
             };
 
@@ -4430,9 +4453,10 @@
                 if (idx < 0) return;
 
                 const itemName = selectedRow.attr('data-raw-name') || 'صنف';
-                requirePermissionOrManager('pos.delete_item', `حذف الصنف (${itemName}) من الفاتورة الحالية`, function() {
+                guardDelete(`حذف الصنف (${itemName}) من الفاتورة الحالية`, function() {
                     const sn = cartSnapshot(rows.eq(idx));
-                    NSSecurity.report('cart_item_removed', { 'الصنف': sn.items[0], 'مصرّح بواسطة': lastAuthorizedManagerName || 'صلاحية المستخدم', 'الفاتورة المفتوحة': cartSnapshot().total + ' ج.م' }, sn.total, String($('#current-order-number').text() || ''));
+                    logCart('remove', itemName, rowQty(rows.eq(idx)), rows.eq(idx).find('.item-price').text());
+                    if (!freeDelete()) NSSecurity.report('cart_item_removed', { 'الصنف': sn.items[0], 'مصرّح بواسطة': lastAuthorizedManagerName || 'صلاحية المستخدم', 'الفاتورة المفتوحة': cartSnapshot().total + ' ج.م' }, sn.total, String($('#current-order-number').text() || ''));
                     rows.eq(idx).remove();
                     let rem = $('#cart-items .cart-item-row');
                     if (rem.length) rem.eq(Math.min(idx, rem.length - 1)).addClass('active-row');
@@ -4728,22 +4752,28 @@
                 };
 
                 try {
-                    const res = await fetch('/api/pos/invoices/store', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken
-                        },
-                        body: JSON.stringify(invoicePayload)
-                    });
-                    let out;
+                    // طابور إعادة المحاولة: انقطاع لحظي أو السيرفر مشغول بفاتورة جهاز تاني ← نفس requestId فمستحيل تتسجل مرتين
+                    let res, out;
+                    for (let attempt = 1; ; attempt++) {
+                        try {
+                            res = await fetch('/api/pos/invoices/store', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                                body: JSON.stringify(invoicePayload)
+                            });
+                        } catch (netErr) {
+                            res = null;
+                        }
+                        if (res && res.status < 500 && res.status !== 429) break;
+                        if (attempt >= 4) throw new Error('السيرفر مش بيرد. الفاتورة لسه مفتوحة، جرّب تاني بأمان (مش هتتسجل مرتين).');
+                        await new Promise(r => setTimeout(r, 300 * attempt));
+                    }
                     try {
                         out = await res.json();
                     } catch (e) {
                         throw new Error('استجابة السيرفر غير صالحة. لم يتم تأكيد حفظ الفاتورة.');
                     }
-                    if (!res.ok) {
+                    if (!res.ok || out.status === 'error' || !out.invoiceNumber) {
                         throw new Error(out.message || 'رفض السيرفر حفظ الفاتورة. راجع البيانات وحاول مرة أخرى.');
                     }
 
@@ -4770,6 +4800,7 @@
                 }
 
                 try { localStorage.removeItem(INVOICES_STORAGE_KEY); } catch (e) {}
+                sendCartAudit('saved', invoicePayload.requestId);
 
                 if (editingSuspendedInvoiceId) {
                     removeSuspended(editingSuspendedInvoiceId);
@@ -4826,6 +4857,7 @@
             $('#btn-save-only').on('click', () => finishOrder('save'));
 
             function performResetCurrentInvoice() {
+                cartLog = []; // تايملاين جديد لكل فاتورة (اللي يتبعت اتبعت قبل كده)
                 $('#cart-items').empty();
                 rowCount = 0;
                 appliedDiscountValue = 0;
@@ -4850,16 +4882,37 @@
 
             function resetCurrentInvoice() {
                 if ($('#cart-items .cart-item-row').length > 0) {
-                    requirePermissionOrManager('pos.delete_item', 'إلغاء ومسح الفاتورة المفتوحة بالكامل (زر جديد)', function() {
+                    guardDelete('إلغاء ومسح الفاتورة المفتوحة بالكامل (زر جديد)', function() {
                         nsReportCartLoss('cart_cleared');
+                        $('#cart-items .cart-item-row').each(function () { logCart('remove', $(this).attr('data-raw-name'), rowQty($(this)), $(this).find('.item-price').text()); });
+                        logCart('clear', 'مسح الفاتورة كلها', 0, 0);
+                        sendCartAudit('cleared');
                         performResetCurrentInvoice();
                     });
                     return;
                 }
+                sendCartAudit('cleared'); // الفاتورة فضيت بالحذف صنف صنف وبعدين "جديد": بتتسجل كمسح (لو مفيش حذف بتتجاهل)
                 performResetCurrentInvoice();
             }
 
             $('#btn-new-invoice').on('click', resetCurrentInvoice);
+
+            // الرقم الظاهر للعرض بس: بيتحدّث من السيرفر كل 15 ثانية وعند أول صنف، عشان لو جهاز تاني حفظ فواتير الرقم ما يبقاش قديم
+            async function refreshNextNumber() {
+                if (isSavingOrder || document.hidden) return;
+                try {
+                    const d = await fetch('/api/pos/invoices/next-number', { headers: { Accept: 'application/json' } }).then(r => r.ok ? r.json() : null);
+                    const n = Number(d && d.next);
+                    if (n && !isSavingOrder && n !== currentInvoiceNumber) {
+                        currentInvoiceNumber = n;
+                        nextInvoiceNumber = n + 1;
+                        $('#current-order-number').text(n);
+                    }
+                } catch (e) {}
+            }
+            setInterval(refreshNextNumber, 15000);
+            new MutationObserver(() => { if ($('#cart-items .cart-item-row').length === 1) refreshNextNumber(); })
+                .observe(document.getElementById('cart-items'), { childList: true });
 
             const customerModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('customerModal'));
             $('#btn-select-customer').on('click', function() {
@@ -5170,6 +5223,7 @@ function handleExitPos() {
                 if ($('.modal.show').length > 0 || Swal.isVisible()) return;
 
                 if (e.key === 'Escape') {
+                    if (window.nsEscHadPopup) { window.nsEscHadPopup = false; return; } // ESC قفل نافذة منبثقة بس، ما يخرجش من البيع
                     e.preventDefault();
                     if ($('#search-results-dropdown').is(':visible')) {
                         $('#search-results-dropdown').hide().empty();

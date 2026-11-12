@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Purchases;
 use App\Support\Balance;
 use App\Support\Money;
 use App\Support\PosAuth;
+use App\Support\Sequence;
 use App\Support\Stock;
 use App\Http\Controllers\Controller;
 use App\Models\Item;
@@ -115,8 +116,7 @@ class PurchaseController extends Controller
             ->values()
             ->all();
 
-        $maxCode = PurchaseInvoice::withTrashed()->max('code') ?? 780;
-        $nextCode = max(781, ((int) $maxCode) + 1);
+        $nextCode = Sequence::peek('purchase_invoice'); // للعرض بس، الرقم الفعلي بيتحجز وقت الحفظ
 
         return [
             'initialProducts' => $products,
@@ -265,8 +265,7 @@ class PurchaseController extends Controller
             $paid = $paymentType === 'cash' ? $grandTotal : min($grandTotal, round((float) $data['paid'], 2));
             $remaining = max(0, round($grandTotal - $paid, 2));
 
-            $maxCode = PurchaseInvoice::withTrashed()->max('code') ?? 780;
-            $code = $invoice ? $invoice->code : max(781, ((int) $maxCode) + 1);
+            $code = $invoice ? $invoice->code : Sequence::next('purchase_invoice');
             $paperNumber = !empty($data['paperNumber']) ? $data['paperNumber'] : (string) $code;
             $invoiceDate = !empty($data['date']) ? $data['date'] : now()->toDateString();
 
@@ -509,7 +508,7 @@ class PurchaseController extends Controller
             ];
         }
 
-        $nextNumber = (PurchaseReturn::withTrashed()->max('id') ?? 0) + 1;
+        $nextNumber = Sequence::peek('purchase_return');
 
         return [
             'initialSuppliersList' => array_values($suppliersMap),
@@ -584,7 +583,7 @@ class PurchaseController extends Controller
             }
 
             $uniqueInvoiceCodes = array_values(array_unique($invoiceCodes));
-            $nextNumber = (PurchaseReturn::withTrashed()->max('id') ?? 0) + 1;
+            $nextNumber = Sequence::next('purchase_return');
             $returnNumber = 'SRET-' . str_pad((string) $nextNumber, 3, '0', STR_PAD_LEFT);
 
             $isCashSettle = ($data['settlementType'] === 'cash' || $isCashSupplier);

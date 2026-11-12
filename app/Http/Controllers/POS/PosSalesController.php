@@ -261,6 +261,12 @@ class PosSalesController extends Controller
         return response()->json(['status' => 'success', 'customer' => $this->formatCustomer($customer->fresh())]);
     }
 
+    /** الرقم المتوقع التالي للعرض بس (الرقم الفعلي بيتحجز وقت الحفظ) */
+    public function nextNumber()
+    {
+        return response()->json(['next' => \App\Support\Sequence::peek('sales_invoice')]);
+    }
+
     // 4. حفظ فاتورة المبيعات (F12) وخصم المخزون وتسميعها في أرشيف الطلبات وحساب العميل
     public function storeInvoice(Request $request)
     {

@@ -130,6 +130,7 @@ class SupplierController extends Controller
                     'tax_number' => trim($data['taxNumber'] ?? ''),
                     'tax_card' => trim($data['taxCard'] ?? ''),
                     'notes' => trim($data['notes'] ?? ''),
+                    'opening_balance' => (($data['balanceType'] ?? 'credit') === 'debit' ? -1 : 1) * (float) ($data['openingBalance'] ?? 0),
                     'is_synced' => false,
                 ]);
                 $this->recalculateSupplierBalance($supplier->id);
@@ -351,7 +352,7 @@ class SupplierController extends Controller
                 ]);
                 $tx = $editingTx;
             } else {
-                $nextNo = (SupplierTransaction::withTrashed()->max('id') ?? 0) + 1;
+                $nextNo = \App\Support\Sequence::next('supplier_tx');
                 $prefix = match ($type) {
                     'collection' => 'COL',
                     'settlement' => 'SET',
@@ -521,7 +522,8 @@ class SupplierController extends Controller
         $paidInInvoices = (float) $invoices->sum('paid');
 
         // إجمالي المرتجعات للمورد
-        $returnsTotal = (float) PurchaseReturn::where('supplier_id', $supplier->id)->sum('total');
+        // المرتجع بيقلل اللي علينا بالجزء المخصوم من الحساب بس؛ اللي رجع لنا كاش اتقبض فعلاً
+        $returnsTotal = (float) PurchaseReturn::where('supplier_id', $supplier->id)->sum('account_deduction');
 
         // الحركات المالية المباشرة (دفعات، تحصيلات، تسويات)
         $txs = SupplierTransaction::where('supplier_id', $supplier->id)->get();

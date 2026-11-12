@@ -8,4 +8,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getMachineId: () => ipcRenderer.invoke('ns:machine-id'),
     quit: () => ipcRenderer.invoke('ns:quit'),
     getAppInfo: () => ipcRenderer.invoke('ns:app-info'),
+    getNetwork: () => ipcRenderer.invoke('ns:network-get'),
+    setNetwork: (n) => ipcRenderer.invoke('ns:network-set', n),
 });

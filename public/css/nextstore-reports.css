@@ -76,7 +76,22 @@ body.rp-page span.en-digit, body.rp-page b.en-digit { display: inline-block; }
 .metric-row.final .metric-value-box { font-size: 21px; color: #0d7a36; }
 .metric-row.final.loss { background: #fef2f2; }
 .metric-row.final.loss .metric-label, .metric-row.final.loss .metric-value-box { color: #dc2626; }
-.rp-sheet { max-width: 720px; }
+.rp-title small { color: #94a3b8; font-weight: 700; font-size: 11.5px; }
 
-@media (max-width: 1100px) { .rp-kpis { grid-template-columns: repeat(4, 1fr); } .rp-grid { grid-template-columns: 1fr; overflow: auto; } }
+/* أقسام التقرير الشامل: كروت جنب بعض بتملا العرض */
+.rp-secs { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 12px; padding: 12px; align-content: start; }
+.rp-sec { border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background: #fff; }
+.rp-sec h3 { margin: 0; padding: 8px 16px; font-size: 13.5px; font-weight: 800; color: #17283d; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+.rp-sec .metric-row:last-child { border-bottom: 0; }
+.rp-sec-wide { grid-column: 1 / -1; }
+.rp-dist { padding: 12px 16px; }
+.rp-dist-title { font-weight: 800; color: #17283d; font-size: 13.5px; margin-bottom: 8px; }
+.rp-dist-bar { display: flex; height: 16px; border-radius: 4px; overflow: hidden; background: #f1f5f9; }
+.rp-dist-bar span { display: block; height: 100%; }
+.rp-dist-legend { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-top: 9px; font-weight: 700; color: #334155; font-size: 13px; }
+.rp-dist-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-inline-end: 6px; }
+.rp-dist-legend small { color: #94a3b8; }
+
+@media (max-width: 1100px) { body.rp-page { height: auto; overflow: auto; } .rp-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; } .rp-grid { grid-template-columns: 1fr; } .rp-grid .rp-card, .rp-card { flex: none; min-height: 0; } .rp-body { overflow: visible; } }
 @media print { .ns-header, .rp-filters, .rp-foot, .rp-tabs { display: none !important; } body.rp-page { height: auto; overflow: visible; } }
+.rp-sec .metric-row { padding: 7px 16px; }

@@ -101,7 +101,7 @@ class SettingsController extends Controller
             array_keys(self::STRING_SETTINGS),
             array_keys(self::INTEGER_SETTINGS),
             self::BOOLEAN_SETTINGS,
-            ['banner_mode', 'invoice_rounding', 'receipt_paper', 'print_font_family', 'table_borders', 'qr_mode', 'print_templates', 'page_print_templates']
+            ['banner_mode', 'invoice_rounding', 'cart_delete_mode', 'receipt_paper', 'print_font_family', 'table_borders', 'qr_mode', 'print_templates', 'page_print_templates']
         );
         $unknown = array_diff(array_keys($settings), $allowed);
         if ($unknown) {
@@ -123,6 +123,7 @@ class SettingsController extends Controller
         }
         $rules['settings.banner_mode'] = ['sometimes', Rule::in(['repeat-x', 'cover'])];
         $rules['settings.invoice_rounding'] = ['sometimes', Rule::in(['none', '0.5', '1'])];
+        $rules['settings.cart_delete_mode'] = ['sometimes', Rule::in(['manager', 'log'])];
         $rules['settings.receipt_paper'] = ['sometimes', Rule::in(['80mm', '58mm', 'a5', 'a4'])];
         $rules['settings.print_font_family'] = ['sometimes', Rule::in(['Arial', 'Cairo', 'Tahoma', 'Segoe UI', 'IBM Plex Sans Arabic'])];
         $rules['settings.table_borders'] = ['sometimes', Rule::in(['full', 'none', 'horizontal'])];

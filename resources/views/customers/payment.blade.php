@@ -1161,7 +1161,7 @@
         <i class="fa-solid fa-circle-check"></i>
         <span id="nsToastMessage">تمت العملية بنجاح</span>
     </div>
-
+    <script src="/js/nextstore-search.js"></script>
     <script>
     (function () {
         'use strict';
@@ -1243,6 +1243,7 @@
                 const phoneMatch = String(c.phone || '').includes(cleanQuery);
                 return !cleanQuery || nameMatch || codeMatch || phoneMatch;
             });
+            filteredCustomersForDropdown = NSSearch.sort(filteredCustomersForDropdown, cleanQuery, c => ({ code: c.code || c.id, name: c.name, phones: [c.phone] }));
 
             if (filteredCustomersForDropdown.length === 0) {
                 dropdownEl.innerHTML = `<div style="padding:12px; text-align:center; color:var(--ns-muted); font-size:13px;">لا يوجد عميل مطابق للبحث</div>`;

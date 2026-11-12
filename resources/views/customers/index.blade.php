@@ -548,12 +548,12 @@
                             <input type="text" class="form-control" id="form-cust-contact-note" placeholder="ملاحظات الاتصال بالعميل...">
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-bold small">رصيد الحساب</label>
+                            <label class="form-label fw-bold small">رصيد أول المدة</label>
                             <div class="input-group">
                                 <input type="text" inputmode="decimal" class="form-control numeric-input" id="form-cust-balance" value="0">
                                 <select class="form-select fw-bold" id="form-cust-balance-type" style="max-width: 110px;">
-                                    <option value="debit">مدين</option>
-                                    <option value="credit">دائن</option>
+                                    <option value="debit">عليه (مدين)</option>
+                                    <option value="credit">له (دائن)</option>
                                 </select>
                             </div>
                         </div>
@@ -652,6 +652,7 @@
     <script src="/vendor/jquery/jquery-3.6.0.min.js"></script>
     <script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
     <script src="/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+    <script src="/js/nextstore-search.js"></script>
     <script>
         $(document).ready(function() {
             'use strict';
@@ -970,6 +971,8 @@
                     const addrBlob = (c.addresses || []).map(a => `${a.fullAddress} ${a.zoneName} ${a.deliveryNote}`).join(' ');
                     return normalize(`${c.code} ${c.name} ${c.phone1} ${c.phone2} ${addrBlob} ${c.contactNote} ${c.invoiceNote}`).includes(q);
                 });
+                const ranked = NSSearch.sort(filtered, q, c => ({ code: c.code, name: c.name, phones: [c.phone1, c.phone2, c.phone] })); // كود/تليفون/اسم مطابق أولاً
+                filtered.splice(0, filtered.length, ...ranked);
 
                 const $tbody = $('#customers-tbody');
                 lastFiltered = [];
@@ -1014,8 +1017,10 @@
                 $('#form-cust-phone2').val(customer ? customer.phone2 : '');
                 $('#form-cust-contact-note').val(customer ? customer.contactNote : '');
                 $('#form-cust-invoice-note').val(customer ? customer.invoiceNote : '');
-                $('#form-cust-balance').val(customer ? customer.balance : 0);
-                $('#form-cust-balance-type').val(customer ? customer.balanceType : 'debit');
+                // الخانة دي رصيد أول المدة (موجب = عليه، سالب = له)، والرصيد الحالي بيتحسب من الحركات
+                const opening = customer ? Number(customer.openingBalance) || 0 : 0;
+                $('#form-cust-balance').val(Math.abs(opening));
+                $('#form-cust-balance-type').val(opening < 0 ? 'credit' : 'debit');
 
                 formAddressesDraft = customer && Array.isArray(customer.addresses) && customer.addresses.length === 3
                     ? JSON.parse(JSON.stringify(customer.addresses))

@@ -49,7 +49,7 @@ class CloudSync
         $payloads[] = ['acks' => $acks];
         try {
             foreach ($payloads as $p) {
-                $r = Http::withToken($l['sync_token'])->timeout(30)->post(rtrim(config('license.server'), '/') . '/api/cloud/sync', $p)->throw()->json();
+                $r = Http::withToken($l['sync_token'])->connectTimeout(3)->timeout(15)->post(rtrim(config('license.server'), '/') . '/api/cloud/sync', $p)->throw()->json();
                 foreach ($r['vouchers'] ?? [] as $v) {
                     DB::table('remote_vouchers')->insertOrIgnore(['remote_id' => $v['id'], 'type' => $v['type'], 'party_kind' => $v['party_kind'], 'party_id' => $v['party_id'],
                         'party_name' => $v['party_name'], 'amount' => $v['amount'], 'note' => $v['note'], 'status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);

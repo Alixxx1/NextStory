@@ -738,6 +738,7 @@
     <script src="/vendor/jquery/jquery-3.6.0.min.js"></script>
     <script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
     <script src="/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+    <script src="/js/nextstore-search.js"></script>
     <script>
         $(function() {
             'use strict';
@@ -905,6 +906,7 @@
                 matchedCustomers = customers.filter(c =>
                     !norm || normalize(`${c.code} ${c.name} ${c.phone1} ${c.phone2} ${c.addr1}`).includes(norm)
                 );
+                matchedCustomers = NSSearch.sort(matchedCustomers, norm, c => ({ code: c.code, name: c.name, phones: [c.phone1, c.phone2, c.phone] }));
                 dropdownIndex = 0;
 
                 const $drop = $('#customer-search-dropdown');

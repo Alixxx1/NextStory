@@ -654,6 +654,7 @@
 
     <script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
     <script src="/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+    <script src="/js/nextstore-search.js"></script>
     <script>
         (() => {
             'use strict';
@@ -719,7 +720,7 @@
                 const roleFilter = roleFilterSelect.value;
                 const q = searchInput.value.trim().toLowerCase();
 
-                return users.filter(u => {
+                return NSSearch.sort(users.filter(u => {
                     if (Boolean(u.isDeleted) !== showDeleted) return false;
                     if (roleFilter !== 'all' && u.role !== roleFilter) return false;
                     if (q) {
@@ -727,7 +728,7 @@
                         if (!haystack.includes(q)) return false;
                     }
                     return true;
-                });
+                }), q, u => ({ code: u.username, name: u.fullName }));
             }
 
             function renderTable() {

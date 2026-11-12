@@ -1070,6 +1070,7 @@ class AdminAuthController extends Controller
         try {
             $encryptedContent = $this->buildEncryptedBackup();
             $fileName = 'NextStore_Backup_' . now()->format('Y_m_d_His') . '.nsbak';
+            $this->keepLocalBackupCopy($fileName, $encryptedContent); // نسخة كمان جوه البرنامج لو الملف المتحمّل ضاع
 
             return response($encryptedContent, 200, [
                 'Content-Type'        => 'application/octet-stream',
@@ -1082,13 +1083,71 @@ class AdminAuthController extends Controller
         }
     }
 
+    /** يحفظ نسخة في storage/app/backups ويحتفظ بآخر 20 نسخة بس */
+    private function keepLocalBackupCopy(string $fileName, string $content): string
+    {
+        $dir = storage_path('app/backups');
+        is_dir($dir) || mkdir($dir, 0775, true);
+        $path = $dir . DIRECTORY_SEPARATOR . $fileName;
+        file_put_contents($path, $content, LOCK_EX);
+        $files = glob($dir . DIRECTORY_SEPARATOR . 'NextStore_*.nsbak') ?: [];
+        usort($files, fn ($x, $y) => filemtime($y) <=> filemtime($x));
+        foreach (array_slice($files, 20) as $old) {
+            @unlink($old);
+        }
+        return $path;
+    }
+
+    /** ملفات المحل المرفوعة (اللوجو وصور الإعدادات والفاتورة) من storage/app/public: [مسار نسبي => base64] */
+    private function collectUploadedFiles(): array
+    {
+        $root = storage_path('app/public');
+        if (!is_dir($root)) {
+            return [];
+        }
+        $files = [];
+        $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS));
+        foreach ($it as $file) {
+            if ($file->isFile() && $file->getFilename() !== '.gitignore') {
+                $rel = str_replace('\\', '/', substr($file->getPathname(), strlen($root) + 1));
+                $files[$rel] = base64_encode((string) file_get_contents($file->getPathname()));
+            }
+        }
+        return $files;
+    }
+
+    /** يرجّع ملفات المحل زي ما كانت وقت النسخة بالظبط (اللي اتضاف بعدها بيتشال) */
+    private function restoreUploadedFiles(array $files): void
+    {
+        $root = storage_path('app/public');
+        foreach (array_keys($files) as $rel) {
+            if (!is_string($rel) || $rel === '' || str_contains($rel, '..') || preg_match('#^([A-Za-z]:|/|\\\\)#', $rel)) {
+                throw new \UnexpectedValueException('The backup contains an invalid file path.');
+            }
+        }
+        if (is_dir($root)) {
+            $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
+            foreach ($it as $item) {
+                if ($item->getFilename() === '.gitignore') {
+                    continue;
+                }
+                $item->isDir() ? @rmdir($item->getPathname()) : @unlink($item->getPathname());
+            }
+        }
+        foreach ($files as $rel => $b64) {
+            $path = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $rel);
+            is_dir(dirname($path)) || mkdir(dirname($path), 0775, true);
+            file_put_contents($path, base64_decode((string) $b64, true) ?: '');
+        }
+    }
+
     /** محتوى نسخة .nsbak مشفرة لقاعدة البيانات الحالية (يُستخدم للتحميل وقبل التحديث). */
     public function buildEncryptedBackup(): string
     {
             $driver = DB::connection()->getDriverName();
             $payload = [
                 'system'     => 'NextStore_POS_Protected_Backup',
-                'version'    => '2025.1',
+                'version'    => '2026.2',
                 'driver'     => $driver,
                 'created_at' => now()->toDateTimeString(),
             ];
@@ -1098,20 +1157,17 @@ class AdminAuthController extends Controller
                 if (!is_file($dbPath)) {
                     throw new \RuntimeException('SQLite database file not found.');
                 }
-
-                $pdo = DB::connection()->getPdo();
-                $checkpoint = $pdo->query('PRAGMA wal_checkpoint(FULL)')->fetch(\PDO::FETCH_NUM);
-                if (!$checkpoint || (int) $checkpoint[0] !== 0 || (int) $checkpoint[1] !== (int) $checkpoint[2]) {
-                    throw new \RuntimeException('Unable to checkpoint the SQLite database before backup.');
-                }
-                $pdo->exec('BEGIN IMMEDIATE');
+                // VACUUM INTO بيعمل لقطة كاملة ومتسقة حتى لو في جهاز تاني بيكتب في نفس اللحظة (WAL)
+                $snapshot = tempnam(sys_get_temp_dir(), 'nsbak');
+                @unlink($snapshot);
                 try {
-                    $sqliteBinary = file_get_contents($dbPath);
-                    if ($sqliteBinary === false) {
-                        throw new \RuntimeException('Unable to read the SQLite database file.');
+                    DB::connection()->getPdo()->exec('VACUUM INTO ' . DB::connection()->getPdo()->quote($snapshot));
+                    $sqliteBinary = file_get_contents($snapshot);
+                    if ($sqliteBinary === false || substr($sqliteBinary, 0, 16) !== "SQLite format 3\0") {
+                        throw new \RuntimeException('Unable to read the SQLite snapshot.');
                     }
                 } finally {
-                    $pdo->exec('ROLLBACK');
+                    is_file($snapshot) && @unlink($snapshot);
                 }
                 $payload['raw_sqlite_base64'] = base64_encode($sqliteBinary);
             } elseif ($driver === 'mysql') {
@@ -1127,6 +1183,8 @@ class AdminAuthController extends Controller
             } else {
                 throw new \RuntimeException('Unsupported database driver for backup.');
             }
+
+            $payload['files'] = $this->collectUploadedFiles();
 
             $compressed = gzencode(json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR), 9);
             if ($compressed === false) {
@@ -1179,11 +1237,14 @@ class AdminAuthController extends Controller
                     ], 422);
                 }
 
+                $safety = $this->keepLocalBackupCopy('NextStore_BeforeRestore_' . now()->format('Y_m_d_His') . '.nsbak', $this->buildEncryptedBackup());
                 $this->replaceSqliteDatabase($sqliteBinary);
+                $this->afterRestore($request, $payload);
 
                 return response()->json([
                     'ok'      => true,
-                    'message' => 'تم استيراد واستعادة النسخة الاحتياطية بالكامل بنجاح! (تاريخ النسخة: ' . ($payload['created_at'] ?? '') . ')',
+                    'message' => 'تم استعادة النسخة الاحتياطية بالكامل (تاريخ النسخة: ' . ($payload['created_at'] ?? '') . '). البيانات قبل الاستعادة اتحفظت في: ' . basename($safety),
+                    'relogin' => true,
                 ]);
             }
 
@@ -1191,10 +1252,13 @@ class AdminAuthController extends Controller
                 && ($payload['driver'] ?? null) === 'mysql'
                 && isset($payload['tables_data'])
                 && is_array($payload['tables_data'])) {
+                $safety = $this->keepLocalBackupCopy('NextStore_BeforeRestore_' . now()->format('Y_m_d_His') . '.nsbak', $this->buildEncryptedBackup());
                 $this->restoreTableBackup($payload['tables_data']);
+                $this->afterRestore($request, $payload);
                 return response()->json([
                     'ok'      => true,
-                    'message' => 'تم استبدال بيانات الجداول الحالية ببيانات النسخة الاحتياطية بنجاح.',
+                    'message' => 'تم استبدال كل البيانات ببيانات النسخة الاحتياطية. البيانات قبل الاستعادة اتحفظت في: ' . basename($safety),
+                    'relogin' => true,
                 ]);
             }
 
@@ -1218,6 +1282,21 @@ class AdminAuthController extends Controller
                 'message' => 'تعذرت استعادة النسخة الاحتياطية. لم يتم اعتماد بيانات ناقصة؛ راجع سجل النظام.',
             ], 500);
         }
+    }
+
+    /** بعد الاستعادة: ملفات المحل، تحديث بنية الداتابيز لو النسخة أقدم، تفريغ الكاش، وتسجيل دخول من جديد */
+    private function afterRestore(Request $request, array $payload): void
+    {
+        if (isset($payload['files']) && is_array($payload['files'])) {
+            $this->restoreUploadedFiles($payload['files']);
+        }
+        try { // نسخة أقدم من البرنامج الحالي: تحديث البنية (لو فشل بيتعاد تلقائياً مع أول تشغيل للبرنامج)
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        } catch (\Throwable $e) {
+            Log::warning('Post-restore migrate failed.', ['exception' => $e]);
+        }
+        \Illuminate\Support\Facades\Cache::flush();
+        $request->hasSession() && $request->session()->flush();
     }
 
     private function sqliteDatabasePath(): string

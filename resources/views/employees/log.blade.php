@@ -364,8 +364,9 @@
         }
     </style>
     <link rel="stylesheet" href="/css/nextstore-erp.css">
+    <link rel="stylesheet" href="/css/nextstore-employees.css">
 </head>
-<body class="ns-erp">
+<body class="ns-erp emp-page">
 
     <header class="ns-header">
         <div class="ns-header-right">
@@ -447,6 +448,7 @@
                     <tbody id="employeesTableBody"></tbody>
                 </table>
             </div>
+            <div class="table-foot" id="empTableFoot"></div>
         </section>
 
         <!-- اليسار: كارت الحساب والتصفية أو كارت تنفيذ قرار الفصل للموظف المحدد -->
@@ -465,7 +467,7 @@
 
     <!-- حاوية الطباعة المخصصة والمنظمة -->
     <div id="customPrintArea" class="paper-80mm"></div>
-
+    <script src="/js/nextstore-search.js"></script>
     <script>
     (function () {
         'use strict';
@@ -566,6 +568,7 @@
                 }
                 return true;
             });
+            filteredEmployees = NSSearch.sort(filteredEmployees, q, e => ({ code: e.code, name: e.name, phones: [e.phone, e.nationalId] }));
 
             if (!filteredEmployees.some(e => String(e.id) === String(selectedEmpId))) {
                 selectedEmpId = filteredEmployees.length > 0 ? filteredEmployees[0].id : null;
@@ -577,6 +580,9 @@
 
         function renderEmployeesTable() {
             const tbody = document.getElementById('employeesTableBody');
+            // إجماليات القايمة الظاهرة: العدد والرواتب والمستحق
+            const sum = k => filteredEmployees.reduce((s, e) => s + (parseFloat(k(e)) || 0), 0), m = v => v.toLocaleString('en-US', { maximumFractionDigits: 2 });
+            document.getElementById('empTableFoot').innerHTML = `<span>عدد الموظفين: <b class="en-digit">${filteredEmployees.length}</b></span><span>إجمالي الرواتب: <b class="en-digit">${m(sum(e => e.baseSalary))}</b></span><span class="due">إجمالي المستحق حالياً: <b class="en-digit">${m(sum(e => (e.currentPeriod || {}).netPayable))}</b></span>`;
             if (filteredEmployees.length === 0) {
                 tbody.innerHTML = `
                     <tr>
@@ -1106,7 +1112,7 @@
 
                         <div style="background:#17283d; color:#fff; padding:10px 14px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
                             <span style="font-weight:900;">صافي المبلغ المستحق للصرف:</span>
-                            <strong class="en-digit" id="swalNetPayableDisplay" style="font-size:20px; color:#4ade80;">${Number(cp.netPayable || 0).toFixed(2)} ج.م</strong>
+                            <strong class="en-digit" id="swalNetPayableDisplay" style="font-size:20px; color:#0d7a36;">${Number(cp.netPayable || 0).toFixed(2)} ج.م</strong>
                         </div>
 
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">

@@ -25,8 +25,10 @@ class HqApiController extends Controller
         $d = $this->in($r);
         validator($d, ['store_name' => 'required|string|max:150', 'owner' => 'required|string|max:120', 'phone' => 'required|string|max:40',
             'address' => 'nullable|string|max:500', 'fingerprint' => ['required', 'regex:/^[a-f0-9]{64}$/']])->validate();
-        $id = DB::table('hq_requests')->insertGetId(['store_name' => $d['store_name'], 'owner' => $d['owner'], 'phone' => $d['phone'], 'address' => $d['address'] ?? null,
-            'plan_key' => 'monthly', 'fingerprint' => $d['fingerprint'], 'status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);
+        $row = ['store_name' => $d['store_name'], 'owner' => $d['owner'], 'phone' => $d['phone'], 'address' => $d['address'] ?? null, 'updated_at' => now()];
+        $id = DB::table('hq_requests')->where('fingerprint', $d['fingerprint'])->where('status', 'pending')->value('id'); // ضغط مكرر أو إعادة فتح البرنامج
+        $id ? DB::table('hq_requests')->where('id', $id)->update($row)
+            : $id = DB::table('hq_requests')->insertGetId($row + ['plan_key' => 'monthly', 'fingerprint' => $d['fingerprint'], 'status' => 'pending', 'created_at' => now()]);
         return $this->out(['id' => $id]);
     }
 

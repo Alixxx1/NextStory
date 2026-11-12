@@ -125,8 +125,8 @@
         <span>دبل كليك أو Enter على الطلب لعرضه · F2 بيع جديد</span>
     </div>
 </div>
-
-<script>
+    <script src="/js/nextstore-search.js"></script>
+    <script>
 (() => {
     'use strict';
     const settings = @json($systemSettings);
@@ -189,6 +189,7 @@
         const rows = orders.filter(o => (type === 'all' || typeKey(o) === type)
             && (courier === 'all' || o.courier === courier)
             && (!q || norm([o.orderNo, o.customerName, o.customerPhone, o.customerAddress, o.customerCode].join(' ')).includes(q)));
+        q && rows.splice(0, rows.length, ...NSSearch.sort(rows, q, o => ({ code: o.orderNo, name: o.customerName, phones: [o.customerPhone, o.customerCode] })));
         $('oaFootLeft').innerHTML = `<span class="oa-num">${rows.length}</span> طلب · الإجمالي <b class="oa-num">${money(rows.reduce((s, o) => s + net(o), 0))}</b> ج.م`;
         if (!rows.length) {
             const scopeText = $('oaScope').value === 'current_shift' ? 'لسه مفيش طلبات في الوردية الحالية.' : 'مفيش طلبات مطابقة.';

@@ -301,7 +301,7 @@ class ShowController extends Controller
                 ? ($balBefore + $amt)
                 : ($balBefore - $amt);
 
-            $nextNo = (CustomerTransaction::withTrashed()->max('id') ?? 0) + 1;
+            $nextNo = \App\Support\Sequence::next('customer_voucher');
             $refNo = 'VCH-' . (1000 + $nextNo);
 
             CustomerTransaction::create([
@@ -475,7 +475,7 @@ class ShowController extends Controller
                 ]);
                 $tx = $editingTx;
             } else {
-                $nextNo = (CustomerTransaction::withTrashed()->max('id') ?? 0) + 1;
+                $nextNo = \App\Support\Sequence::next('customer_voucher');
                 $refNo = 'VCH-' . (1000 + $nextNo);
 
                 $tx = CustomerTransaction::create([
@@ -557,9 +557,6 @@ class ShowController extends Controller
         $invoices = SalesInvoice::where('customer_id', $customer->id)->get();
         $totalSales = (float) $invoices->sum('net_value');
         $invoicePaid = (float) $invoices->sum('paid_amount');
-        $totalCost = (float) $invoices->sum('cost_total');
-        $externalTotal = (float) $invoices->sum('external_sub_total');
-        $serviceTotal = (float) $invoices->sum('service_fee');
 
         // المرتجعات التي خُصمت من حساب العميل أو إجمالي المرتجعات
         // مرتجعات الفواتير الملغاة لا تدخل الحساب (أثرها اتعكس مع إلغاء الفاتورة)
@@ -580,8 +577,7 @@ class ShowController extends Controller
         $balance = round($opening + $netSales - $totalPayments, 2);
 
         // صافي الربح من العميل (بدون الخوارج وخدمة التوصيل)
-        $netStoreSales = max(0, $netSales - $externalTotal - $serviceTotal);
-        $netProfit = round($netStoreSales - $totalCost, 2);
+        $netProfit = round((float) $invoices->sum('profit_total'), 2); // ربح الأصناف بعد المرتجعات (بدون الخوارج والتوصيل)
 
         $customer->update([
             'balance' => abs($balance),

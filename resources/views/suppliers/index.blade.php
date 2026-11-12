@@ -322,12 +322,12 @@
                 <span class="summary-value bg-dark text-white fw-bold en-digit" id="total-suppliers-count">1</span>
             </div>
             <div class="summary-item">
-                <span>إجمالي الديون (مدين):</span>
-                <span class="summary-value text-danger fw-bold en-digit">0.00</span>
+                <span>لنا عند الموردين (مدين):</span>
+                <span class="summary-value text-success fw-bold en-digit">0.00</span>
             </div>
             <div class="summary-item">
-                <span>إجمالي المستحقات (دائن):</span>
-                <span class="summary-value text-success fw-bold en-digit">0.00</span>
+                <span>علينا للموردين (دائن):</span>
+                <span class="summary-value text-danger fw-bold en-digit">0.00</span>
             </div>
         </div>
 
@@ -393,8 +393,8 @@
                                     <div class="account-opening-group">
                                         <input class="form-control numeric-input" id="supplier-opening-balance" inputmode="decimal" placeholder="0.00" value="0">
                                         <select class="form-select" id="supplier-balance-type" aria-label="نوع رصيد أول المدة">
-                                            <option value="credit">دائن (لنا)</option>
-                                            <option value="debit">مدين (علينا)</option>
+                                            <option value="credit">علينا للمورد (دائن)</option>
+                                            <option value="debit">لنا عند المورد (مدين)</option>
                                         </select>
                                     </div>
                                 </div>
@@ -429,6 +429,7 @@
     <script src="/vendor/jquery/jquery-3.6.0.min.js"></script>
     <script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
     <script src="/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+    <script src="/js/nextstore-search.js"></script>
     <script>
     $(document).ready(function() {
         'use strict';
@@ -522,7 +523,7 @@
             let balance = numberValue(supplier.balance);
             if (!balance) return '<span class="text-muted fw-bold">تصفية حساب / <bdi class="en-digit">0.00</bdi></span>';
             let isCredit = supplier.balanceType === 'credit';
-            return `<span class="${isCredit ? 'text-credit' : 'text-debt'}">${isCredit ? 'دائن' : 'مدين'} / <bdi class="en-digit">${formatMoney(balance)}</bdi></span>`;
+            return `<span class="${isCredit ? 'text-debt' : 'text-credit'}">${isCredit ? 'علينا' : 'لنا'} / <bdi class="en-digit">${formatMoney(balance)}</bdi></span>`;
         }
 
         function updateSelection() {
@@ -544,6 +545,7 @@
                 supplier.address,
                 supplier.email
             ].join(' ')).includes(query));
+            visibleSuppliers = NSSearch.sort(visibleSuppliers, query, s => ({ code: s.code, name: s.company || s.contact || s.name, phones: [s.phone, s.contact] }));
 
             $('#print-visible-count').text(visibleSuppliers.length);
 
@@ -609,7 +611,9 @@
                 $('#supplier-phone').val(supplier.phone);
                 $('#supplier-address').val(supplier.address);
                 $('#supplier-email').val(supplier.email);
-                $('#supplier-opening-balance-group').hide();
+                // أول المدة بيتعدل (موجب = علينا، سالب = لنا) والرصيد الحالي بيتحسب من جديد
+                $('#supplier-opening-balance').val(Math.abs(numberValue(supplier.openingBalance)));
+                $('#supplier-balance-type').val(numberValue(supplier.openingBalance) < 0 ? 'debit' : 'credit');
                 $('#supplier-tax-number').val(supplier.taxNumber);
                 $('#supplier-tax-card').val(supplier.taxCard);
                 $('#supplier-notes').val(supplier.notes);
@@ -838,7 +842,7 @@
                 supplier.lastDate,
                 supplier.invoices,
                 numberValue(supplier.purchases).toFixed(2),
-                `${supplier.balanceType === 'credit' ? 'دائن' : 'مدين'} / ${numberValue(supplier.balance).toFixed(2)}`
+                `${supplier.balanceType === 'credit' ? 'علينا' : 'لنا'} / ${numberValue(supplier.balance).toFixed(2)}`
             ])];
             let csv = '\uFEFF' + csvRows.map(row => row.map(value =>
                 `"${String(value == null ? '' : value).replace(/"/g, '""')}"`

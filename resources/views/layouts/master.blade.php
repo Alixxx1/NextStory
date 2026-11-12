@@ -171,6 +171,8 @@
             pointer-events: auto;
             transform: translateY(0);
         }
+        /* قايمة واحدة بس في المرة: لو الماوس على قايمة تانية، اللي واخدة الفوكس من ضغطة قبل كده تستخبى */
+        .top-menubar:hover .nav-item-wrapper:focus-within:not(:hover) .custom-dropdown-menu { opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(8px); }
         .custom-dropdown-item {
             display: flex;
             align-items: center;
@@ -1056,7 +1058,7 @@
                 Swal.fire({
                     icon: 'question',
                     title: 'تأكيد استعادة النسخة الاحتياطية',
-                    text: `سيتم فك تشفير الملف (${file.name}) واسترجاع كافة البيانات والأرصدة والفواتير كما كانت، هل أنت متأكد؟`,
+                    html: `هيتم استبدال <b>كل</b> بيانات البرنامج الحالية (الفواتير والأصناف والعملاء والإعدادات واللوجو) بالنسخة <b>${file.name}</b>، وأي حاجة اتعملت بعدها هتتشال.<br><small>البيانات الحالية هتتحفظ تلقائياً قبل الاستعادة.</small><br>متأكد؟`,
                     showCancelButton: true,
                     confirmButtonColor: '#0284c7',
                     confirmButtonText: 'نعم، استرجاع البيانات الآن',
@@ -1094,7 +1096,7 @@
                             confirmButtonColor: '#119744',
                             confirmButtonText: 'تحديث النظام'
                         }).then(() => {
-                            window.location.reload();
+                            window.location.href = data.relogin ? '/login' : window.location.href; // الجلسة اتمسحت: دخول من جديد
                         });
                     } catch (err) {
                         Swal.fire('خطأ', err.message, 'error');
@@ -1156,7 +1158,7 @@
                             confirmButtonColor: '#119744',
                             confirmButtonText: 'إعادة تحميل النظام'
                         }).then(() => {
-                            window.location.reload();
+                            window.location.href = data.relogin ? '/login' : window.location.href; // الجلسة اتمسحت: دخول من جديد
                         });
                     } catch (err) {
                         Swal.fire('خطأ', err.message, 'error');

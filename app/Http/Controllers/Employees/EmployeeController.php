@@ -163,7 +163,7 @@ class EmployeeController extends Controller
             ->values()
             ->all();
 
-        $nextId = (Employee::withTrashed()->max('id') ?? 0) + 1;
+        $nextId = \App\Support\Sequence::peek('employee');
         $nextCode = 'EMP-' . str_pad((string) $nextId, 3, '0', STR_PAD_LEFT);
 
         return [
@@ -390,8 +390,7 @@ class EmployeeController extends Controller
             if ($employee) {
                 $employee->update($payload);
             } else {
-                $nextId = (Employee::withTrashed()->max('id') ?? 0) + 1;
-                $payload['code'] = !empty($data['code']) ? trim($data['code']) : ('EMP-' . str_pad((string) $nextId, 3, '0', STR_PAD_LEFT));
+                $payload['code'] = !empty($data['code']) ? trim($data['code']) : ('EMP-' . str_pad((string) \App\Support\Sequence::next('employee'), 3, '0', STR_PAD_LEFT));
                 $payload['accrual_start_date'] = $hireDate;
                 $payload['status'] = 'active';
                 $employee = Employee::create($payload);
@@ -518,7 +517,7 @@ class EmployeeController extends Controller
             $periodFrom = $emp->accrual_start_date ? $emp->accrual_start_date->format('Y-m-d') : ($emp->hire_date ? $emp->hire_date->format('Y-m-d') : now()->format('Y-m-d'));
             $periodTo = now()->format('Y-m-d');
 
-            $nextNo = (EmployeeSettlement::withTrashed()->max('id') ?? 0) + 1;
+            $nextNo = \App\Support\Sequence::next('employee_settlement');
             $refNo = 'SAL-' . (1000 + $nextNo);
 
             $expenseId = null;

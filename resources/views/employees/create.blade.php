@@ -317,17 +317,18 @@
         }
     </style>
     <link rel="stylesheet" href="/css/nextstore-erp.css">
+    <link rel="stylesheet" href="/css/nextstore-employees.css">
 </head>
-<body class="ns-erp">
+<body class="ns-erp emp-page">
 
     <header class="ns-header">
         <div class="ns-header-right">
             <div class="ns-logo-icon">
                 <i class="fa-solid fa-user-plus"></i>
             </div>
-            <h1 style="font-size:15.5px; font-weight:800;">شئون العاملين — إضافة وتكويد موظف جديد</h1>
+            <h1>إضافة موظف</h1>
 
-            <div style="display:flex; gap:6px; margin-right:10px;">
+            <div style="display:flex; gap:6px; margin-inline-start:12px;">
                 <a href="/employees/log?tab=active" class="btn-top-link">
                     <i class="fa-solid fa-users-gear"></i> سجل الموظفين والرواتب
                 </a>
@@ -516,11 +517,12 @@
                 <span><i class="fa-solid fa-users"></i> الموظفون المسجلون</span>
                 <span class="badge bg-light text-dark en-digit" id="empCountBadge">0</span>
             </div>
+            <div class="side-search"><input type="text" id="sideSearchInput" class="ns-input" placeholder="ابحث بالاسم أو الكود أو التليفون..." autocomplete="off"></div>
             <div style="padding:10px; flex:1; overflow-y:auto;" id="sideEmployeesList"></div>
         </aside>
 
     </main>
-
+    <script src="/js/nextstore-search.js"></script>
     <script>
     (function () {
         'use strict';
@@ -631,8 +633,11 @@
                 return;
             }
 
-            container.innerHTML = employees.map(e => `
-                <div class="emp-card-item" data-id="${e.id}">
+            const q = toEnglishDigits(document.getElementById('sideSearchInput').value).trim().toLowerCase(), editing = document.getElementById('editingEmpId').value;
+            const list = NSSearch.sort(employees.filter(e => !q || `${e.name} ${e.code} ${e.phone} ${e.jobTitle}`.toLowerCase().includes(q)), q, e => ({ code: e.code, name: e.name, phones: [e.phone] }));
+            if (!list.length) { container.innerHTML = `<div style="text-align:center; padding:35px 10px; color:var(--ns-muted);">مفيش موظف بالبحث ده</div>`; return; }
+            container.innerHTML = list.map(e => `
+                <div class="emp-card-item ${String(e.id) === String(editing) ? 'is-editing' : ''}" data-id="${e.id}">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <strong style="color:var(--ns-navy); font-size:13.5px;">${e.name}</strong>
                         <span class="badge ${e.status === 'active' ? 'bg-success' : 'bg-danger'}" style="font-size:10.5px;">
@@ -687,6 +692,7 @@
             });
 
             recalculateRates();
+            renderSideEmployees();
         }
 
         function resetForm() {
@@ -698,6 +704,7 @@
             ageDisplay.textContent = '-- سنة';
             hoursInput.value = '8';
             recalculateRates();
+            renderSideEmployees();
             document.getElementById('empNameInput').focus();
         }
 
@@ -770,6 +777,7 @@
         }
 
         document.getElementById('btnSaveEmployee').addEventListener('click', saveEmployee);
+        document.getElementById('sideSearchInput').addEventListener('input', renderSideEmployees);
         document.getElementById('btnResetEmpForm').addEventListener('click', resetForm);
         document.getElementById('btnExitPage').addEventListener('click', () => {
             if (window.history.length > 1) window.history.back();
@@ -778,10 +786,7 @@
 
         document.addEventListener('keydown', (e) => {
             if (Swal.isVisible()) return;
-            if (e.key === 'Escape') {
-                e.preventDefault();
-                document.getElementById('btnExitPage').click();
-            } else if (e.key === 'F2') {
+            if (e.key === 'F2') {
                 e.preventDefault();
                 saveEmployee();
             }

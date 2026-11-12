@@ -1455,6 +1455,7 @@
 
     <!-- ==================== 6. الكود البرمجي المربوط بقاعدة البيانات الحقيقية ==================== -->
     <script src="/js/nextstore-extra-barcodes.js"></script>
+    <script src="/js/nextstore-search.js"></script>
     <script>
     (function () {
         'use strict';
@@ -1703,6 +1704,7 @@
                 if (sortMode === 'last_buy_price_desc') return (parseFloat(b.lastBuyPrice) || 0) - (parseFloat(a.lastBuyPrice) || 0);
                 return 0;
             });
+            if (itemQuery && sortMode === 'default') filteredProducts = NSSearch.sort(filteredProducts, itemQuery, p => ({ code: p.barcode, name: p.name, phones: (p.subUnits || []).map(u => u && u.barcode) }));
 
             renderItemsTable();
         }

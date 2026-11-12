@@ -162,18 +162,19 @@ class IndexController extends Controller
                 'addr2'             => $normalizedAddresses[1]['fullAddress'] ?: null,
                 'addr3'             => $normalizedAddresses[2]['fullAddress'] ?: null,
                 'addresses'         => $normalizedAddresses,
-                'balance'           => $balanceVal,
-                'balance_type'      => $balanceType,
                 'is_synced'         => false,
             ];
 
+            // الرقم في النموذج = رصيد أول المدة (موجب = عليه، سالب = له)، والرصيد الحالي بيتحسب من الحركات
+            $payload['opening_balance'] = $balanceType === 'credit' ? -$balanceVal : $balanceVal;
             if ($customer) {
                 $customer->update($payload);
             } else {
                 $payload['uuid'] = (string) Str::uuid();
-                $payload['opening_balance'] = $balanceVal;
-                $customer = Customer::create($payload);
+                $customer = Customer::create($payload + ['balance' => 0, 'balance_type' => 'debit']);
             }
+            app(\App\Http\Controllers\Customers\ShowController::class)->recalculateAndSyncCustomerBalance($customer->id);
+            $customer->refresh();
 
             $zones = DeliveryZone::orderBy('id', 'asc')->get()->map(function (DeliveryZone $z) {
                 return [

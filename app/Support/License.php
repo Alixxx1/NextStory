@@ -215,7 +215,7 @@ class License
         // عند الفشل نأجل المحاولة التالية نصف ساعة فقط
         file_put_contents(self::file('heartbeat.at'), time() - config('license.heartbeat_hours') * 3600 + 1800);
         try {
-            $r = Http::timeout(5)->post("$url/api/hq/heartbeat", ['d' => self::seal(['fp' => self::fingerprint(), 'v' => SystemUpdateController::currentVersion()['version']])]);
+            $r = Http::connectTimeout(2)->timeout(4)->post("$url/api/hq/heartbeat", ['d' => self::seal(['fp' => self::fingerprint(), 'v' => SystemUpdateController::currentVersion()['version']])]);
             $d = self::open($r->json('d'));
         } catch (\Throwable $e) {
             return false;
@@ -269,7 +269,7 @@ class License
     {
         $url = rtrim((string) config('license.server'), '/');
         try {
-            $r = Http::timeout(6)->post("$url/api/hq/status", ['d' => self::seal(['fp' => self::fingerprint()])]);
+            $r = Http::connectTimeout(2)->timeout(5)->post("$url/api/hq/status", ['d' => self::seal(['fp' => self::fingerprint()])]);
             $d = self::open($r->json('d'));
         } catch (\Throwable $e) {
             return [false, 'تعذر الاتصال بسيرفر التراخيص.', 'offline'];

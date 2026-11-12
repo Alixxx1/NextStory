@@ -23,6 +23,28 @@ let php = null;
 let win = null;
 let port = PREFERRED_PORT;
 
+// ================= وضع الشبكة: مستقل / جهاز رئيسي (سيرفر) / جهاز كاشير تابع =================
+// standalone: الداتا على الجهاز ده بس. server: نفس الكلام + الأجهزة التانية على الشبكة تقدر تتصل بيه.
+// client: مفيش داتا محلية؛ البرنامج بيفتح على الجهاز الرئيسي (كل الأجهزة على نفس الداتابيز).
+const NET_FILE = path.join(DATA, 'network.json');
+function readNet() {
+    try { const n = JSON.parse(fs.readFileSync(NET_FILE, 'utf8')); return { mode: ['server', 'client'].includes(n.mode) ? n.mode : 'standalone', server: String(n.server || '').trim() }; }
+    catch (_) { return { mode: 'standalone', server: '' }; }
+}
+const net0 = readNet();
+const clientUrl = () => { const s = net0.server.replace(/\/+$/, ''); return /^https?:\/\//.test(s) ? s : `http://${s}`; };
+const baseUrl = () => (net0.mode === 'client' ? clientUrl() : `http://127.0.0.1:${port}`);
+
+function lanIps() {
+    return Object.values(os.networkInterfaces()).flat().filter(i => i && i.family === 'IPv4' && !i.internal && !i.address.startsWith('169.254.')).map(i => i.address); // 169.254 = مفيش شبكة فعلية
+}
+
+// فتح المنفذ في جدار حماية ويندوز للشبكة الخاصة (لو مفيش صلاحية، ويندوز هيسأل أول مرة: اختار "السماح")
+function openFirewall() {
+    spawnSync('netsh', ['advfirewall', 'firewall', 'delete', 'rule', 'name=NextStore POS'], { windowsHide: true });
+    spawnSync('netsh', ['advfirewall', 'firewall', 'add', 'rule', 'name=NextStore POS', 'dir=in', 'action=allow', 'protocol=TCP', `localport=${PREFERRED_PORT}`, 'profile=private,domain'], { windowsHide: true });
+}
+
 // بيانات العميل تعيش في userData فلا تضيع مع التحديث أو إعادة التسطيب
 const env = {
     ...process.env,
@@ -80,8 +102,8 @@ function waitForServer(timeoutMs = 20000) {
 }
 
 function startPhp() {
-    // راوتر لارافيل يتوقع أن يعمل السيرفر من داخل public (زي artisan serve)
-    php = spawn(PHP, ['-S', `127.0.0.1:${port}`, ROUTER], { cwd: path.join(LARAVEL, 'public'), env, windowsHide: true, stdio: 'ignore' });
+    // راوتر لارافيل يتوقع أن يعمل السيرفر من داخل public (زي artisan serve). الجهاز الرئيسي بيسمع على كل الشبكة
+    php = spawn(PHP, ['-S', `${net0.mode === 'server' ? '0.0.0.0' : '127.0.0.1'}:${port}`, ROUTER], { cwd: path.join(LARAVEL, 'public'), env, windowsHide: true, stdio: 'ignore' });
     php.on('exit', code => {
         php = null;
         if (!app.isQuitting && win) dialog.showErrorBox('NextStore', `توقف سيرفر النظام (code ${code}). أعد تشغيل البرنامج.`);
@@ -115,7 +137,7 @@ async function createWindow() {
         '<body style="margin:0;display:grid;place-items:center;height:100vh;background:#f8fafc;font:700 20px Cairo,Tahoma;color:#17283d" dir="rtl">جاري تشغيل NextStore...</body>'));
     win.once('ready-to-show', () => win.show());
 
-    const origin = () => `http://127.0.0.1:${port}`;
+    const origin = baseUrl;
     win.webContents.setWindowOpenHandler(({ url }) => {
         if (url.startsWith(origin()) || url === 'about:blank') return { action: 'allow' };
         shell.openExternal(url);
@@ -125,9 +147,11 @@ async function createWindow() {
     try {
         // كل فتحة للبرنامج تبدأ بتسجيل دخول جديد (مفيش جلسة محفوظة من المرة اللي فاتت)
         await session.defaultSession.clearStorageData({ storages: ['cookies'] });
+        if (net0.mode === 'client') return await openClient();
         prepareData();
         artisan('migrate', '--force');
-        port = await freePort(PREFERRED_PORT);
+        port = net0.mode === 'server' ? await fixedPort() : await freePort(PREFERRED_PORT);
+        if (net0.mode === 'server') openFirewall();
         env.NS_DEVICE_FP = (await machineId()).fingerprint; // بصمة الجهاز تمر للسيرفر المحلي بدون واجهة
         startPhp();
         await waitForServer();
@@ -137,6 +161,42 @@ async function createWindow() {
         app.quit();
     }
 }
+
+// الجهاز الرئيسي لازم يفضل على نفس المنفذ عشان الأجهزة التابعة تلاقيه
+function fixedPort() {
+    return new Promise((resolve, reject) => {
+        const srv = net.createServer().once('error', () => reject(new Error(`المنفذ ${PREFERRED_PORT} مستخدم على الجهاز ده. اقفل أي نسخة تانية من البرنامج أو أي برنامج بيستخدم المنفذ وافتح تاني.`)))
+            .once('listening', () => srv.close(() => resolve(PREFERRED_PORT))).listen(PREFERRED_PORT, '0.0.0.0');
+    });
+}
+
+// جهاز تابع: يتأكد إن الجهاز الرئيسي شغال ويفتح عليه، ولو مش لاقيه يدي اختيارات واضحة
+async function openClient() {
+    for (;;) {
+        const ok = await new Promise(resolve => http.get(`${clientUrl()}/login`, { timeout: 3000 }, res => { res.resume(); resolve(true); }).on('error', () => resolve(false)).on('timeout', function () { this.destroy(); resolve(false); }));
+        if (ok) return win.loadURL(`${clientUrl()}/login`);
+        const { response } = await dialog.showMessageBox(win, {
+            type: 'warning', title: 'NextStore - الجهاز الرئيسي', buttons: ['إعادة المحاولة', 'تشغيل الجهاز ده مستقل', 'خروج'], defaultId: 0, cancelId: 2,
+            message: `مش قادر يوصل للجهاز الرئيسي (${clientUrl()})`,
+            detail: 'اتأكد إن الجهاز الرئيسي مفتوح وعليه البرنامج شغال، وإن الجهازين على نفس الشبكة (نفس السويتش/الراوتر).',
+        });
+        if (response === 1) { writeNet({ mode: 'standalone', server: net0.server }); return relaunch(); }
+        if (response === 2) { forceClose = true; return app.quit(); }
+    }
+}
+
+function writeNet(n) { fs.writeFileSync(NET_FILE, JSON.stringify(n, null, 2)); }
+function relaunch() { forceClose = true; app.relaunch(); app.exit(0); }
+
+ipcMain.handle('ns:network-get', () => ({ ...net0, port: PREFERRED_PORT, ips: lanIps() }));
+ipcMain.handle('ns:network-set', (_e, n = {}) => {
+    const mode = ['server', 'client'].includes(n.mode) ? n.mode : 'standalone';
+    const server = String(n.server || '').trim();
+    if (mode === 'client' && !server) return { ok: false, message: 'اكتب عنوان الجهاز الرئيسي.' };
+    writeNet({ mode, server });
+    setTimeout(relaunch, 300);
+    return { ok: true };
+});
 
 // ================= IPC: الطابعات والطباعة الصامتة وبصمة الجهاز =================
 ipcMain.handle('ns:get-printers', async () => (await win.webContents.getPrintersAsync()).map(p => p.name));
@@ -176,6 +236,7 @@ async function silentPrint(p) {
 
 // سيرفر PHP بيخدم طلب واحد في المرة، فاللوجو بيتقرا من الديسك مباشرة بدل ما يستنى ورا طلبات الصفحة
 function localImages(html) {
+    if (net0.mode === 'client') return html; // الصور على الجهاز الرئيسي، بتتحمّل من الشبكة
     return html.replace(/(src=")https?:\/\/127\.0\.0\.1:\d+\/([^"?#]+)/g, (m, attr, rel) => {
         rel = decodeURIComponent(rel);
         const file = rel.startsWith('storage/') ? path.join(STORAGE, 'app', 'public', rel.slice(8)) : path.join(LARAVEL, 'public', rel);
@@ -205,7 +266,7 @@ ipcMain.handle('ns:quit', () => { forceClose = true; win && win.close(); });
 ipcMain.handle('ns:app-info', () => {
     let code = {};
     try { code = JSON.parse(fs.readFileSync(path.join(LARAVEL, 'version.json'), 'utf8')); } catch (_) { /* ignore */ }
-    return { shellVersion: app.getVersion(), codeVersion: code.version || null, dataDir: DATA, port };
+    return { shellVersion: app.getVersion(), codeVersion: code.version || null, dataDir: DATA, port, network: net0.mode };
 });
 
 // ================= دورة حياة التطبيق =================
