@@ -52,6 +52,8 @@ class SystemSettings
     public static function defaults(): array
     {
         return [
+            'store_api_token' => '',
+            'cloud_last_sync' => null,
             'shop_name' => 'NextStore',
             'shop_address' => '',
             'shop_phone1' => '',

@@ -371,7 +371,7 @@ class SupplierController extends Controller
                     'shift' => $shift,
                     'ref_no' => $refNo,
                     'note' => $note ?: ($type === 'collection' ? 'تحصيل نقدي من المورد' : ($type === 'payment' ? 'سداد نقدي للمورد' : '')),
-                    'user_name' => 'مدير الفرع',
+                    'user_name' => \App\Support\PosAuth::name(),
                     'is_synced' => false,
                 ]);
             }

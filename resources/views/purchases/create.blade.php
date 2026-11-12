@@ -61,10 +61,10 @@
             <div class="results" id="results"></div>
         </div>
         <div class="tbl-wrap"><table>
-            <thead><tr><th style="width:40px">#</th><th>الصنف</th><th style="width:80px">الوحدة</th><th style="width:100px">الكمية</th><th style="width:110px">سعر الشراء</th><th style="width:100px">خصم</th><th style="width:110px">الإجمالي</th><th style="width:110px">سعر البيع</th><th style="width:44px"></th></tr></thead>
+            <thead><tr><th style="width:40px">#</th><th>الصنف</th><th style="width:140px">الوحدة</th><th style="width:100px">الكمية</th><th style="width:110px">سعر شراء القطعة</th><th style="width:100px">خصم</th><th style="width:120px">الإجمالي</th><th style="width:110px">سعر البيع</th><th style="width:44px"></th></tr></thead>
             <tbody id="rows"></tbody>
         </table></div>
-        <div class="hint"><kbd>↑</kbd> <kbd>↓</kbd> <kbd>Enter</kbd> لإضافة صنف • <kbd>F2</kbd> المورد • <kbd>F3</kbd> البحث • <kbd>F10</kbd> حفظ</div>
+        <div class="hint"><kbd>↑</kbd> <kbd>↓</kbd> <kbd>Enter</kbd> لإضافة صنف • <kbd>F2</kbd> المورد • <kbd>F3</kbd> البحث • <kbd>F10</kbd> حفظ • اشتريت بالكرتونة؟ اختار الوحدة واكتب العدد، واكتب سعر القطعة أو الإجمالي والتاني يتحسب</div>
     </div>
 
     <div class="card-box side">
@@ -99,7 +99,8 @@
     const num = v => parseFloat(digits(v).replace(/[^\d.\-]/g, '')) || 0;
     const money = v => (Math.round(v * 100) / 100).toFixed(2);
     const csrf = document.querySelector('meta[name="csrf-token"]').content;
-    const products = @json($initialProducts).map(p => ({ ...p, _k: norm(p.name + ' ' + p.barcode) }));
+    const products = @json($initialProducts).map(p => ({ ...p, _k: norm(p.name + ' ' + p.barcode + ' ' + (p.packs || []).map(u => u.barcode).join(' ')) }));
+    const qtyOf = r => r.n * r.f, line = r => Math.max(0, qtyOf(r) * r.cost - r.disc);
     let suppliers = @json($initialSuppliers).map(s => ({ id: s.id, code: s.code, name: s.company || s.contact, phone: s.phone }));
     let supplier = null, rows = [], editingId = null, hits = [], hitIdx = 0, supHits = [], supIdx = 0;
     window.nsDirty = () => rows.length > 0;
@@ -143,24 +144,26 @@
     }
     function moveHit(d) { const el = $('results').children; if (!hits.length) return; el[hitIdx]?.classList.remove('on'); hitIdx = (hitIdx + d + hits.length) % hits.length; el[hitIdx].classList.add('on'); el[hitIdx].scrollIntoView({ block: 'nearest' }); }
     function addItem(p) {
-        const ex = rows.find(r => r.p.id === p.id);
-        if (ex) ex.qty += 1; else rows.push({ p, qty: 1, cost: p.lastPurchasePrice || 0, disc: 0, sell: p.salePrice || 0 });
+        const ex = rows.find(r => r.p.id === p.id), scanned = (p.packs || []).find(u => u.barcode && u.barcode === digits($('itemSearch').value).trim()); // باركود كرتونة/علبة
+        if (ex) ex.n += 1; else rows.push({ p, n: 1, f: scanned ? +scanned.factor : 1, cost: p.lastPurchasePrice || 0, disc: 0, sell: p.salePrice || 0 });
         $('itemSearch').value = ''; $('results').style.display = 'none'; draw();
-        const i = rows.findIndex(r => r.p.id === p.id); document.querySelector(`[data-r="${i}"][data-f="qty"]`)?.select();
+        const i = rows.findIndex(r => r.p.id === p.id); document.querySelector(`[data-r="${i}"][data-f="n"]`)?.select();
     }
     $('itemSearch').addEventListener('input', renderHits);
     $('results').addEventListener('click', e => { const d = e.target.closest('[data-i]'); if (d) addItem(hits[+d.dataset.i]); });
 
     function draw() {
-        $('rows').innerHTML = rows.length ? rows.map((r, i) => `<tr><td class="en">${i + 1}</td><td class="text-start">${esc(r.p.name)}</td><td>${esc(r.p.unit)}</td>
-            ${['qty', 'cost', 'disc'].map(f => `<td><input class="form-control" data-r="${i}" data-f="${f}" value="${r[f]}" inputmode="decimal"></td>`).join('')}
-            <td class="en fw-bold" id="lt${i}">${money(Math.max(0, r.qty * r.cost - r.disc))}</td>
+        $('rows').innerHTML = rows.length ? rows.map((r, i) => `<tr><td class="en">${i + 1}</td><td class="text-start">${esc(r.p.name)}</td>
+            <td>${(r.p.packs || []).length ? `<select class="form-select form-select-sm fw-bold" data-r="${i}" data-f="f"><option value="1">${esc(r.p.unit)}</option>${r.p.packs.map(u => `<option value="${+u.factor}"${+u.factor === r.f ? ' selected' : ''}>${esc(u.name)} ×${+u.factor}</option>`).join('')}</select>` : esc(r.p.unit)}
+                <small class="en text-muted d-block" id="pq${i}">${r.f > 1 ? `= ${qtyOf(r)} ${esc(r.p.unit)}` : ''}</small></td>
+            ${['n', 'cost', 'disc'].map(f => `<td><input class="form-control" data-r="${i}" data-f="${f}" value="${r[f]}" inputmode="decimal"></td>`).join('')}
+            <td><input class="form-control fw-bold" data-r="${i}" data-f="tot" value="${money(line(r))}" inputmode="decimal"></td>
             <td><input class="form-control" data-r="${i}" data-f="sell" value="${r.sell}" inputmode="decimal"></td>
             <td><button class="btn btn-sm text-danger" data-del="${i}"><i class="fas fa-trash"></i></button></td></tr>`).join('') : EMPTY;
         totals();
     }
     function totals() {
-        const sub = rows.reduce((a, r) => a + Math.max(0, r.qty * r.cost - r.disc), 0);
+        const sub = rows.reduce((a, r) => a + line(r), 0);
         const total = Math.max(0, sub - num($('invDisc').value)) + num($('invExtra').value);
         const credit = $('payType').value === 'credit';
         $('paidRow').style.display = credit ? 'flex' : 'none';
@@ -170,17 +173,47 @@
     }
     $('rows').addEventListener('input', e => {
         const f = e.target.dataset.f; if (!f) return;
-        const r = rows[+e.target.dataset.r]; r[f] = num(e.target.value);
-        $('lt' + e.target.dataset.r).textContent = money(Math.max(0, r.qty * r.cost - r.disc)); totals();
+        const i = +e.target.dataset.r, r = rows[i], cell = k => document.querySelector(`[data-r="${i}"][data-f="${k}"]`);
+        if (f === 'f') { r.f = num(e.target.value) || 1; return draw(); }
+        if (f === 'tot') { r.cost = qtyOf(r) > 0 ? Math.round((num(e.target.value) + r.disc) / qtyOf(r) * 10000) / 10000 : r.cost; cell('cost').value = r.cost; } // الإجمالي ← سعر القطعة
+        else { r[f] = num(e.target.value); cell('tot').value = money(line(r)); }
+        $('pq' + i).textContent = r.f > 1 ? `= ${qtyOf(r)} ${r.p.unit}` : ''; totals();
     });
     $('rows').addEventListener('click', e => { const b = e.target.closest('[data-del]'); if (b) { rows.splice(+b.dataset.del, 1); draw(); } });
     ['invDisc', 'invExtra', 'payType', 'paid'].forEach(id => $(id).addEventListener('input', totals));
     $('rows').innerHTML = EMPTY;
 
+    // سعر الشراء أو البيع اتغير لصنف له عبوات ← لازم تراجع سعر كل عبوة قبل الحفظ
+    async function reviewPacks() {
+        const list = [];
+        rows.forEach((r, ri) => {
+            const cost = qtyOf(r) > 0 ? line(r) / qtyOf(r) : r.cost, old = r.p.lastPurchasePrice || 0;
+            if (!(r.p.packs || []).length || (Math.abs(cost - old) < 0.005 && Math.abs(r.sell - (r.p.salePrice || 0)) < 0.005)) { r.packs = null; return; }
+            r.p.packs.forEach(u => list.push({ ri, u, f: +u.factor, cost, old, sell: r.sell, keep: (r.packs || []).find(x => x.name === u.name && +x.factor === +u.factor) }));
+        });
+        if (!list.length) return true;
+        const ok = await Swal.fire({
+            title: 'راجع سعر العبوات', width: 760, confirmButtonText: 'تأكيد الأسعار وحفظ الفاتورة', confirmButtonColor: '#119744', showCancelButton: true, cancelButtonText: 'رجوع للفاتورة', allowOutsideClick: false,
+            html: `<div class="text-muted fw-bold mb-2" style="font-size:13px">سعر الصنف اتغير، فسعر العلبة/الكرتونة لازم يتراجع. السعر المقترح محافظ على نفس نسبة ربحك.</div>
+                <table class="table table-sm table-bordered align-middle" style="font-size:13.5px"><thead><tr><th>الصنف</th><th>العبوة</th><th>تكلفتها كانت</th><th>بقت</th><th>سعرها الحالي</th><th style="width:120px">السعر الجديد</th><th>القطعة بكام</th></tr></thead><tbody>
+                ${list.map((x, i) => { const oc = x.old * x.f, nc = x.cost * x.f, sug = x.keep ? x.keep.price : (oc > 0 && +x.u.price > 0 ? +x.u.price * nc / oc : nc);
+                    return `<tr><td class="text-start">${esc(rows[x.ri].p.name)}</td><td>${esc(x.u.name)} ×${x.f}</td><td class="en">${money(oc)}</td><td class="en fw-bold ${nc > oc ? 'text-danger' : 'text-success'}">${money(nc)}</td><td class="en">${money(+x.u.price || 0)}</td>
+                    <td><input class="form-control en fw-bold text-center" data-pk="${i}" value="${money(sug)}" inputmode="decimal"></td><td class="en" id="pkp${i}">${money(sug / x.f)}</td></tr>`; }).join('')}
+                </tbody></table>`,
+            didOpen: el => { el.querySelectorAll('[data-pk]').forEach(inp => inp.addEventListener('input', () => { const x = list[+inp.dataset.pk], v = num(inp.value); el.querySelector('#pkp' + inp.dataset.pk).textContent = money(v / x.f); inp.classList.toggle('is-invalid', v < x.cost * x.f); })); el.querySelector('[data-pk]').select(); },
+            preConfirm: () => { const v = [...Swal.getHtmlContainer().querySelectorAll('[data-pk]')].map(i => num(i.value)); return v.every(p => p > 0) ? v : Swal.showValidationMessage('اكتب سعر لكل عبوة'); },
+        });
+        if (!ok.isConfirmed) return false;
+        rows.forEach(r => { r.packs = null; });
+        list.forEach((x, i) => (rows[x.ri].packs = rows[x.ri].packs || []).push({ name: x.u.name, factor: x.f, price: ok.value[i] }));
+        return true;
+    }
+
     // ---- الحفظ ----
     async function save() {
         if (!supplier) { await Swal.fire('اختر المورد', 'اضغط F2 لاختيار المورد أو إضافته.', 'warning'); return openSup(); }
         if (!rows.length) return Swal.fire('الفاتورة فارغة', 'أضف صنف واحد على الأقل.', 'warning');
+        if (!await reviewPacks()) return;
         const total = totals(), credit = $('payType').value === 'credit';
         $('btnSave').disabled = true;
         try {
@@ -190,7 +223,7 @@
                     id: editingId, paperNumber: $('paperNo').value || null, date: $('invDate').value, supplierId: supplier.id, supplier: supplier.name,
                     paymentType: $('payType').value, paymentMethod: $('payMethod').value, source: $('source').value,
                     invoiceDiscount: num($('invDisc').value), invoiceExtra: num($('invExtra').value), paid: credit ? num($('paid').value) : total,
-                    items: rows.map(r => ({ product: { id: r.p.id, name: r.p.name, category: r.p.category, barcode: r.p.barcode, unit: r.p.unit, quantityType: r.p.quantityType, description: r.p.description }, quantity: r.qty, cost: r.cost, discount: r.disc, sell: r.sell, originalSell: r.p.salePrice })),
+                    items: rows.map(r => ({ product: { id: r.p.id, name: r.p.name, category: r.p.category, barcode: r.p.barcode, unit: r.p.unit, quantityType: r.p.quantityType, description: r.p.description }, quantity: qtyOf(r), cost: r.cost, discount: r.disc, sell: r.sell, originalSell: r.p.salePrice, packs: r.packs || undefined })),
                 }),
             });
             const out = await res.json();
@@ -233,7 +266,7 @@
         $('supName').textContent = supplier.name; $('supBox').classList.add('ok'); closeSup();
         $('invDisc').value = inv.invoiceDiscount; $('invExtra').value = inv.invoiceExtra; $('payType').value = inv.paymentType; $('paid').value = inv.paid;
         $('payMethod').value = inv.paymentMethod === 'credit' ? 'cash' : inv.paymentMethod; $('source').value = inv.source;
-        rows = inv.items.map(i => ({ p: products.find(p => String(p.id) === String(i.product.id)) || i.product, qty: i.quantity, cost: i.cost, disc: i.discount, sell: i.sell })); draw();
+        rows = inv.items.map(i => ({ p: products.find(p => String(p.id) === String(i.product.id)) || i.product, n: i.quantity, f: 1, cost: i.cost, disc: i.discount, sell: i.sell })); draw();
     });
     else setTimeout(openSup, 200);
 })();

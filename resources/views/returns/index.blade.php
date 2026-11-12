@@ -183,9 +183,9 @@
         </div>
 
         <div class="date-navigation">
-            <button class="nav-arrow" id="btn-next-day" title="اليوم التالي"><i class="fas fa-chevron-right"></i></button>
+            <button class="nav-arrow" id="btn-prev-day" title="اليوم السابق"><i class="fas fa-chevron-right"></i></button>
             <span class="current-date-display en-digit" id="display-date"></span>
-            <button class="nav-arrow" id="btn-prev-day" title="اليوم السابق"><i class="fas fa-chevron-left"></i></button>
+            <button class="nav-arrow" id="btn-next-day" title="اليوم التالي"><i class="fas fa-chevron-left"></i></button>
             <select class="date-type-select" id="date-mode" aria-label="تصفية التاريخ">
                 <option value="all">كل التواريخ</option>
                 <option value="day">تاريخ محدد</option>

@@ -73,6 +73,12 @@ class AccountingIntegrityTest extends TestCase
             ->assertForbidden();
         $this->as(['pos.sales'])->postJson('/api/pos/invoices/store', $this->sale(['total' => 5, 'paidAmount' => 5]))
             ->assertStatus(422);
+        // سعر حر لصنف غير متاح تعديل سعره: مرفوض حتى مع الصلاحية، ومسموح بعد تفعيل الخيار على الصنف
+        $free = $this->sale([], ['price' => 45, 'total' => 90]);
+        $this->as(['pos.sales', 'pos.edit_price'])->postJson('/api/pos/invoices/store', $free)->assertForbidden();
+        DB::table('items')->where('id', $this->itemId)->update(['allow_price_edit' => true]);
+        $this->as(['pos.sales'])->postJson('/api/pos/invoices/store', $free)->assertForbidden();
+        DB::table('items')->where('id', $this->itemId)->update(['allow_price_edit' => false]);
         $this->assertDatabaseCount('sales_invoices', 0);
         $this->assertDatabaseHas('items', ['id' => $this->itemId, 'qty' => 10]);
     }
@@ -89,6 +95,27 @@ class AccountingIntegrityTest extends TestCase
         $this->assertDatabaseHas('sales_invoice_items', ['net_total' => 90, 'cost' => 40]);
         $this->assertDatabaseHas('items', ['id' => $this->itemId, 'qty' => 8]);
         $this->assertSame('1', $inv->order_no);
+    }
+
+    public function test_pack_barcode_sells_by_factor_from_same_stock_and_returns_it(): void
+    {
+        DB::table('items')->where('id', $this->itemId)->update(['qty' => 30]);
+        $pack = ['name' => 'علبة', 'factor' => 12, 'barcode' => '999', 'price' => 560];
+        $this->as(['pos.sales'])->postJson("/api/inventory/items/{$this->itemId}/units", $pack)->assertForbidden();
+        $this->as(['inventory.items'])->postJson("/api/inventory/items/{$this->itemId}/units", $pack)->assertOk();
+        $this->as(['inventory.items'])->postJson("/api/inventory/items/{$this->itemId}/units", ['barcode' => '111'] + $pack)->assertStatus(422); // باركود مستخدم
+
+        $line = ['barcode' => '999', 'name' => 'أرز (علبة ×12)', 'price' => 560, 'quantity' => 2, 'total' => 1120];
+        $this->as(['pos.sales'])->postJson('/api/pos/invoices/store', $this->sale([], ['price' => 500, 'total' => 1000] + $line))->assertForbidden(); // سعر العبوة اتغيّر
+        $this->as(['pos.sales'])->postJson('/api/pos/invoices/store', $this->sale([], $line))->assertOk();
+
+        $this->assertDatabaseHas('items', ['id' => $this->itemId, 'qty' => 6]); // 30 − 2×12
+        $this->assertDatabaseHas('sales_invoice_items', ['unit_factor' => 12, 'cost' => 480, 'unit' => 'علبة']);
+        $this->assertEquals(160, DB::table('sales_invoices')->value('profit_total')); // 1120 − 2×480
+
+        $this->as(['pos.returns'])->postJson('/api/returns/partial/save', ['invoiceNumber' => '1', 'items' => [['id' => DB::table('sales_invoice_items')->value('id'), 'quantity' => 1]]])->assertOk();
+        $this->assertDatabaseHas('items', ['id' => $this->itemId, 'qty' => 18]);
+        $this->assertDatabaseHas('sales_returns', ['total' => 560, 'cost_total' => 480]);
     }
 
     public function test_return_refunds_net_price_after_discount_and_profit_drops_returned_cost(): void
@@ -150,6 +177,19 @@ class AccountingIntegrityTest extends TestCase
 
         // (10 × 40 + 10 × 60) ÷ 20 = 50
         $this->assertDatabaseHas('items', ['id' => $this->itemId, 'qty' => 20, 'avg_cost' => 50, 'last_buy_price' => 60]);
+    }
+
+    public function test_purchase_with_changed_cost_updates_reviewed_pack_prices(): void
+    {
+        DB::table('items')->where('id', $this->itemId)->update(['sub_units' => json_encode([['name' => 'علبة', 'factor' => 12, 'barcode' => '999', 'price' => 560], ['name' => 'كرتونة', 'factor' => 48, 'barcode' => '', 'price' => 2100]])]);
+        $this->as(['purchases.manage'])->postJson('/api/purchases/save', [
+            'paymentType' => 'cash', 'paymentMethod' => 'cash', 'source' => 'drawer', 'paid' => 0, 'invoiceDiscount' => 0, 'invoiceExtra' => 0,
+            'items' => [['product' => ['id' => $this->itemId, 'name' => 'أرز', 'barcode' => '111'], 'quantity' => 12, 'cost' => 45, 'sell' => 55, 'packs' => [['name' => 'علبة', 'factor' => 12, 'price' => 620]]]],
+        ])->assertOk();
+
+        $units = json_decode(DB::table('items')->where('id', $this->itemId)->value('sub_units'), true);
+        $this->assertEquals([620, 2100], array_column($units, 'price'));
+        $this->assertSame('999', $units[0]['barcode']);
     }
 
     public function test_clock_moved_backwards_blocks_sales(): void

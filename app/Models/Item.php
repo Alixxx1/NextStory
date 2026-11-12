@@ -51,6 +51,18 @@ class Item extends Model
         });
     }
 
+    /** عبوة الصنف (علبة/كرتونة...) اللي ليها الباركود ده: ['name','factor','barcode','price'] أو null */
+    public function packByBarcode(?string $barcode): ?array
+    {
+        $barcode = trim((string) $barcode);
+        foreach ((array) $this->sub_units as $u) {
+            if ($barcode !== '' && (string) ($u['barcode'] ?? '') === $barcode && (float) ($u['factor'] ?? 0) > 0) {
+                return $u;
+            }
+        }
+        return null;
+    }
+
     public function category()
     {
         return $this->belongsTo(Category::class, 'category_id')->withTrashed();

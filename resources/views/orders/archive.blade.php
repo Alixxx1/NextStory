@@ -159,9 +159,9 @@
                 <option value="all">كل الأيام</option>
             </select>
             <div class="date-stepper" id="single-day-stepper">
-                <button type="button" class="step-arrow" id="btn-next-day" title="اليوم التالي"><i class="fas fa-chevron-right"></i></button>
+                <button type="button" class="step-arrow" id="btn-prev-day" title="اليوم السابق"><i class="fas fa-chevron-right"></i></button>
                 <button type="button" class="date-label-box" id="archive-date-display" title="اختيار يوم">—</button>
-                <button type="button" class="step-arrow" id="btn-prev-day" title="اليوم السابق"><i class="fas fa-chevron-left"></i></button>
+                <button type="button" class="step-arrow" id="btn-next-day" title="اليوم التالي"><i class="fas fa-chevron-left"></i></button>
             </div>
             <div class="d-none align-items-center gap-2" id="range-date-inputs">
                 <span class="range-label">من</span>

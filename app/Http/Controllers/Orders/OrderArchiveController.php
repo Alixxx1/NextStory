@@ -263,7 +263,7 @@ class OrderArchiveController extends Controller
         foreach ($invoice->items as $line) {
             $remain = max(0, (float) $line->qty - (float) $line->returned_qty);
             if (!$line->is_external && $remain > 0) {
-                Stock::move(Stock::find($line->item_id, $line->barcode), -$direction * $remain, $movementType, 'SAL-' . $invoice->order_no, $invoice->customer_name, (float) $line->price);
+                Stock::move(Stock::find($line->item_id, $line->barcode), -$direction * $remain * ((float) $line->unit_factor ?: 1), $movementType, 'SAL-' . $invoice->order_no, $invoice->customer_name, (float) $line->price);
             }
         }
         $activeCredit = $invoice->returnTransactions->whereNull('deleted_at')->sum('account_credit');

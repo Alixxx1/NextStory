@@ -518,24 +518,24 @@
             </select>
 
             <div class="date-stepper d-none" id="primary-date-box">
-                <button type="button" class="step-arrow" id="btn-date1-next" title="اليوم التالي">
+                <button type="button" class="step-arrow" id="btn-date1-prev" title="اليوم السابق">
                     <i class="fas fa-arrow-right"></i>
                 </button>
                 <span class="day-name-badge" id="date1-day-name"></span>
                 <input type="text" class="manual-date-input" id="date1-manual-input" value="{{ now()->format('Y/m/d') }}" maxlength="10" placeholder="YYYY/MM/DD" title="اكتب التاريخ يدوياً بصيغة YYYY/MM/DD">
-                <button type="button" class="step-arrow" id="btn-date1-prev" title="اليوم السابق">
+                <button type="button" class="step-arrow" id="btn-date1-next" title="اليوم التالي">
                     <i class="fas fa-arrow-left"></i>
                 </button>
             </div>
 
             <div class="date-stepper d-none" id="secondary-date-box">
                 <span class="fw-bold small text-muted px-1">إلى:</span>
-                <button type="button" class="step-arrow" id="btn-date2-next" title="اليوم التالي">
+                <button type="button" class="step-arrow" id="btn-date2-prev" title="اليوم السابق">
                     <i class="fas fa-arrow-right"></i>
                 </button>
                 <span class="day-name-badge" id="date2-day-name"></span>
                 <input type="text" class="manual-date-input" id="date2-manual-input" value="{{ now()->format('Y/m/d') }}" maxlength="10" placeholder="YYYY/MM/DD">
-                <button type="button" class="step-arrow" id="btn-date2-prev" title="اليوم السابق">
+                <button type="button" class="step-arrow" id="btn-date2-next" title="اليوم التالي">
                     <i class="fas fa-arrow-left"></i>
                 </button>
             </div>

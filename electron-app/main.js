@@ -30,6 +30,8 @@ const env = {
     DB_DATABASE: DB,
     ...(isDev ? {} : { NEXTSTORE_STORAGE_PATH: STORAGE }),
     NEXTSTORE_DESKTOP: '1',
+    LICENSE_ENFORCE: 'true', // برنامج العميل مقفول بالترخيص دايماً ومش سيرفر مالك، مهما كانت متغيرات الجهاز
+    HQ_ENABLED: 'false',
     SESSION_EXPIRE_ON_CLOSE: 'true', // قفل البرنامج = تسجيل خروج
     // php.ini المضمّن يقرأ مساره من هنا (extension_dir و cacert)
     ...(PHP === 'php' ? {} : { PHPRC: PHP_DIR, NEXTSTORE_PHP_DIR: PHP_DIR }),
@@ -39,6 +41,7 @@ function prepareData() {
     ['app/public', 'app/backups', 'framework/cache/data', 'framework/sessions', 'framework/views', 'logs']
         .forEach(dir => fs.mkdirSync(path.join(STORAGE, dir), { recursive: true }));
 
+    fs.rmSync(path.join(STORAGE, 'app', 'heartbeat.at'), { force: true }); // مزامنة الترخيص فور فتح البرنامج
     if (!fs.existsSync(DB)) {
         const template = path.join(LARAVEL, 'database', 'database.sqlite');
         fs.existsSync(template) ? fs.copyFileSync(template, DB) : fs.writeFileSync(DB, '');
@@ -125,6 +128,7 @@ async function createWindow() {
         prepareData();
         artisan('migrate', '--force');
         port = await freePort(PREFERRED_PORT);
+        env.NS_DEVICE_FP = (await machineId()).fingerprint; // بصمة الجهاز تمر للسيرفر المحلي بدون واجهة
         startPhp();
         await waitForServer();
         win.loadURL(`${origin()}/login`);
@@ -189,11 +193,13 @@ function run(cmd, args) {
     return new Promise(resolve => execFile(cmd, args, { windowsHide: true }, (err, out) => resolve(err ? '' : String(out).trim())));
 }
 
-ipcMain.handle('ns:machine-id', async () => {
+async function machineId() {
     const uuid = await run('powershell', ['-NoProfile', '-Command', '(Get-CimInstance Win32_ComputerSystemProduct).UUID']);
-    const guid = ((await run('reg', ['query', 'HKLM\\SOFTWARE\\Microsoft\\Cryptography', '/v', 'MachineGuid'])).match(/MachineGuid\s+REG_SZ\s+(\S+)/) || [])[1] || '';
+    const guid = ((await run('reg', ['query', 'HKLM\SOFTWARE\Microsoft\Cryptography', '/v', 'MachineGuid'])).match(/MachineGuid\s+REG_SZ\s+(\S+)/) || [])[1] || '';
     return { uuid, machineGuid: guid, fingerprint: crypto.createHash('sha256').update(`${uuid}|${guid}`).digest('hex') };
-});
+}
+
+ipcMain.handle('ns:machine-id', machineId);
 
 ipcMain.handle('ns:quit', () => { forceClose = true; win && win.close(); });
 ipcMain.handle('ns:app-info', () => {

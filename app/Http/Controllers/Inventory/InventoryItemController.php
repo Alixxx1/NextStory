@@ -181,7 +181,7 @@ class InventoryItemController extends Controller
                 'is_published_online' => $data['isPublishedOnline'] ?? false,
                 'online_price' => $data['onlinePrice'] ?? null,
                 'online_compare_at_price' => $data['onlineCompareAtPrice'] ?? null,
-                'sub_units' => $data['subUnits'] ?? [],
+                'sub_units' => $this->cleanUnits($data['subUnits'] ?? [], $isUpdate ? (int) $item->id : null, (string) ($data['barcode'] ?? '')),
                 'tax_included' => $data['taxIncluded'] ?? true,
                 'tax_mode' => $data['taxMode'] ?? 'default',
                 'tax_rate' => $data['taxRate'] ?? 0,
@@ -223,6 +223,48 @@ class InventoryItemController extends Controller
                 'status' => 'success',
                 'item' => $this->formatItemForFrontend($item),
             ]);
+        });
+    }
+
+    /** عبوات الصنف (علبة/كرتونة/باركود إضافي): تنضيف الصفوف والتأكد إن الباركود مش مستخدم في صنف أو عبوة تانية */
+    private function cleanUnits(array $units, ?int $itemId, string $ownBarcode = ''): array
+    {
+        $clean = [];
+        $seen = array_filter([$ownBarcode]);
+        foreach ($units as $u) {
+            $name = trim((string) ($u['name'] ?? ''));
+            $factor = round((float) ($u['factor'] ?? 0), 3);
+            $barcode = trim((string) ($u['barcode'] ?? ''));
+            if ($name === '' || $factor <= 0) {
+                continue;
+            }
+            if ($barcode !== '') {
+                $like = '%"barcode":"' . addcslashes($barcode, '%_\\') . '"%';
+                $taken = in_array($barcode, $seen, true) || DB::table('items')->whereNull('deleted_at')->when($itemId, fn ($q) => $q->where('id', '!=', $itemId))
+                    ->where(fn ($q) => $q->where('barcode', $barcode)->orWhere('sub_units', 'like', $like))->exists();
+                abort_if($taken, 422, "الباركود {$barcode} مسجل على صنف أو عبوة تانية.");
+                $seen[] = $barcode;
+            }
+            $clean[] = ['name' => $name, 'factor' => $factor, 'barcode' => $barcode, 'price' => round((float) ($u['price'] ?? 0), 2)];
+        }
+        return $clean;
+    }
+
+    /** إضافة عبوة لصنف موجود من شاشة البيع (باركود علبة/كرتونة جديد) */
+    public function addUnit(Request $request, $id)
+    {
+        abort_unless(\App\Support\PosAuth::can('inventory.items'), 403, 'لا تملك صلاحية تعديل أصناف المخزن');
+        $data = $request->validate([
+            'name' => 'required|string|max:50',
+            'factor' => 'required|numeric|gt:0',
+            'barcode' => 'required|string|max:100',
+            'price' => 'required|numeric|min:0',
+        ]);
+
+        return DB::transaction(function () use ($data, $id) {
+            $item = Item::whereKey($id)->lockForUpdate()->firstOrFail();
+            $item->update(['sub_units' => $this->cleanUnits(array_merge((array) $item->sub_units, [$data]), (int) $item->id, (string) $item->barcode)]);
+            return response()->json(['status' => 'success', 'subUnits' => $item->sub_units]);
         });
     }
 

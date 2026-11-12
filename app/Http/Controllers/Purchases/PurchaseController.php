@@ -94,6 +94,7 @@ class PurchaseController extends Controller
                 'lastPurchasePrice' => (float) $item->last_buy_price,
                 'salePrice' => (float) $item->retail_price,
                 'description' => $item->description ?? '',
+                'packs' => array_values(array_filter(json_decode($item->sub_units ?: '[]', true) ?: [], fn ($u) => (float) ($u['factor'] ?? 0) > 1)),
             ])
             ->values()
             ->all();
@@ -216,6 +217,10 @@ class PurchaseController extends Controller
             'items.*.cost' => 'required|numeric|min:0',
             'items.*.discount' => 'nullable|numeric|min:0',
             'items.*.sell' => 'required|numeric|min:0',
+            'items.*.packs' => 'nullable|array',
+            'items.*.packs.*.name' => 'required|string|max:50',
+            'items.*.packs.*.factor' => 'required|numeric|gt:0',
+            'items.*.packs.*.price' => 'required|numeric|gt:0',
         ]);
 
         return DB::transaction(function () use ($data) {
@@ -339,7 +344,10 @@ class PurchaseController extends Controller
                         'retail_price' => $sell > 0 ? $sell : $itemModel->retail_price,
                         'supplier_name' => $supplierName !== 'مورد نقدي عام' ? $supplierName : $itemModel->supplier_name,
                         'has_purchase_invoice' => true,
-                    ]);
+                    ] + (empty($row['packs']) ? [] : ['sub_units' => array_map(function ($u) use ($row) { // أسعار العبوات اللي اتراجعت مع تغيّر السعر
+                        $new = collect($row['packs'])->first(fn ($p) => $p['name'] === ($u['name'] ?? '') && (float) $p['factor'] === (float) ($u['factor'] ?? 0));
+                        return $new ? ['price' => round((float) $new['price'], 2)] + $u : $u;
+                    }, (array) $itemModel->sub_units)]));
                     Stock::move($itemModel, $qty, $editingId ? 'تعديل فاتورة مشتريات' : 'فاتورة مشتريات', $paperNumber, $supplierName, $netUnitCost);
                 }
             }

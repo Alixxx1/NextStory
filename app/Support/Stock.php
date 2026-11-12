@@ -50,7 +50,8 @@ class Stock
     {
         $item = $itemId ? Item::with('category')->find($itemId) : null;
         if (!$item && $barcode) {
-            $item = Item::with('category')->where('barcode', $barcode)->first();
+            $item = Item::with('category')->where('barcode', $barcode)->first()
+                ?: Item::with('category')->where('sub_units', 'like', '%"barcode":"' . addcslashes($barcode, '%_\\') . '"%')->first(); // باركود عبوة
         }
         return $item;
     }

@@ -332,15 +332,26 @@ class PosSalesController extends Controller
                     $price = (float) $row['price'];
                     $item = $isExternal ? null : Stock::find($row['itemId'] ?? null, $row['barcode'] ?? null);
 
+                    // بيع بعبوة (علبة/كرتونة): الباركود باركود العبوة، والمخزون والتكلفة بمعامل التحويل
+                    $pack = $item ? $item->packByBarcode($row['barcode'] ?? null) : null;
+                    $factor = $pack ? (float) $pack['factor'] : 1;
+
                     if ($item) {
-                        $expected = $this->tierPrice($item, $data['priceTier']);
-                        if (abs($price - $expected) > 0.009 && !$item->allow_price_edit && !PosAuth::can('pos.edit_price')) {
-                            return $fail("سعر الصنف ({$item->name}) تم تعديله من {$expected} إلى {$price} بدون تصريح مدير.", 403);
+                        $expected = $pack && (float) ($pack['price'] ?? 0) > 0 ? (float) $pack['price'] : $this->tierPrice($item, $data['priceTier']) * $factor;
+                        if (abs($price - $expected) > 0.009) {
+                            if (!PosAuth::can('pos.edit_price')) {
+                                return $fail("سعر الصنف ({$item->name}) تم تعديله من {$expected} إلى {$price} بدون تصريح مدير.", 403);
+                            }
+                            // سعر حر مسموح فقط للصنف المفعّل له "إتاحة تعديل السعر"، غير كده لازم يكون سعر فئة معتمدة
+                            $tiers = array_map(fn ($t) => (float) $t * $factor, array_filter([$item->retail_price, $item->semi_wholesale_price, $item->wholesale_price]));
+                            if (!$item->allow_price_edit && !collect($tiers)->contains(fn ($t) => abs($t - $price) < 0.01)) {
+                                return $fail("الصنف ({$item->name}) غير متاح تعديل سعره أثناء البيع. فعّل الخيار من بيانات الصنف أولاً.", 403);
+                            }
                         }
                     }
 
                     $lineP = Money::line($qty, $price);
-                    $unitCost = $item ? Stock::unitCost($item) : ($isExternal ? $price : (float) $row['buyPrice']);
+                    $unitCost = $item ? Stock::unitCost($item) * $factor : ($isExternal ? $price : (float) $row['buyPrice']);
                     $lineCostP = $isExternal ? 0 : Money::line($qty, $unitCost);
                     if ($isExternal) {
                         $externalSubP += $lineP;
@@ -349,7 +360,7 @@ class PosSalesController extends Controller
                     }
                     $costP += $lineCostP;
                     $totalQty += $qty;
-                    $lines[] = compact('row', 'item', 'qty', 'price', 'lineP', 'unitCost', 'isExternal');
+                    $lines[] = compact('row', 'item', 'qty', 'price', 'lineP', 'unitCost', 'isExternal', 'factor', 'pack');
                 }
 
                 // 2) الخصم (على أصناف المحل فقط) والتوصيل والتقريب
@@ -432,7 +443,7 @@ class PosSalesController extends Controller
                 foreach ($lines as $i => $l) {
                     $item = $l['item'];
                     if ($item) {
-                        Stock::move($item, -$l['qty'], 'فاتورة مبيعات', 'SAL-' . $orderNo, $invoice->customer_name, $l['price'], $actor);
+                        Stock::move($item, -$l['qty'] * $l['factor'], 'فاتورة مبيعات', 'SAL-' . $orderNo, $invoice->customer_name, $l['price'], $actor);
                     }
                     SalesInvoiceItem::create([
                         'sales_invoice_id' => $invoice->id,
@@ -441,9 +452,10 @@ class PosSalesController extends Controller
                         'barcode'          => $l['row']['barcode'] ?? '',
                         'category_name'    => $item && $item->category ? $item->category->name : 'عام',
                         'qty'              => $l['qty'],
+                        'unit_factor'      => $l['factor'],
                         'returned_qty'     => 0,
                         'quantity_type'    => $l['row']['quantityType'],
-                        'unit'             => $l['row']['quantityType'] === 'weight' ? 'كيلو' : 'قطعة',
+                        'unit'             => $l['pack']['name'] ?? ($l['row']['quantityType'] === 'weight' ? 'كيلو' : 'قطعة'),
                         'cost'             => $l['isExternal'] ? $l['price'] : round($l['unitCost'], 2),
                         'price'            => $l['price'],
                         'total'            => Money::egp($l['lineP']),

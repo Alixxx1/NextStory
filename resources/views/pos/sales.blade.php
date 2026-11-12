@@ -631,12 +631,15 @@
         .pd-head-meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 4px; font-size: 12px; color: #cbd5e1; font-weight: 600; }
         .pd-chip { background: rgba(255,255,255,.14); color: #fff; border-radius: 999px; padding: 1px 10px; font-weight: 700; }
         .pd-body { padding: 16px; }
-        .pd-info { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 8px; }
+        .pd-info { display: grid; grid-template-columns: 1.7fr 1fr 1fr; gap: 8px; }
         .pd-info-cell { display: flex; flex-direction: column; gap: 3px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; margin: 0; font-size: 12px; font-weight: 700; color: #64748b; }
         .pd-info-cell b { font-size: 15px; font-weight: 800; color: #0f172a; }
         .pd-price { background: #fff; border-color: #cbd5e1; }
         .pd-price-input { display: flex; align-items: center; gap: 6px; }
-        .pd-price-input input { width: 100%; border: 0; outline: none; font-size: 17px; font-weight: 800; color: #0f172a; padding: 0; background: transparent; }
+        .pd-price-input input { width: 100%; border: 0; outline: none; font-size: 30px; line-height: 1.2; font-weight: 800; color: #0d7a36; padding: 0; background: transparent; }
+        .pd-price.locked { background: #f8fafc; }
+        .pd-price.locked input { cursor: default; }
+        .pd-price-note { font-size: 11.5px; font-weight: 700; color: #94a3b8; }
         .pd-price-input small { color: #94a3b8; font-weight: 700; white-space: nowrap; }
         .pd-price:focus-within { border-color: #119744; box-shadow: 0 0 0 3px rgba(17,151,68,.12); }
         .pd-tiers { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 14px; }
@@ -657,9 +660,9 @@
         .pd-notes input:focus { border-color: #119744; box-shadow: 0 0 0 3px rgba(17,151,68,.12); }
         .pd-notes input::placeholder { color: #94a3b8; font-weight: 500; }
         .pd-foot { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-top: 1px solid #e2e8f0; background: #f8fafc; }
-        .pd-total { margin-left: auto; display: flex; flex-direction: column; }
-        .pd-total span { font-size: 12px; font-weight: 700; color: #64748b; }
-        .pd-total b { font-size: 22px; font-weight: 800; color: #0d7a36; }
+        .pd-total { margin-left: auto; display: flex; flex-direction: column; background: #ecfdf3; border: 1px solid #86d6a5; border-radius: 8px; padding: 4px 14px; min-width: 190px; }
+        .pd-total > span { font-size: 12.5px; font-weight: 800; color: #0d7a36; }
+        .pd-total b { font-size: 32px; line-height: 1.15; font-weight: 800; color: #0d7a36; }
         .pd-cancel { height: 42px; border: 1px solid #cbd5e1; background: #fff; color: #334155; border-radius: 8px; font-weight: 700; padding: 0 14px; }
         .pd-add { height: 42px; border: 0; background: #119744; color: #fff; border-radius: 8px; font-weight: 800; padding: 0 18px; }
         .pd-add:hover { background: #0d7a36; }
@@ -890,9 +893,10 @@
             padding: 14px;
         }
         .ns-modal-backdrop.open { display: flex; }
+        .swal2-container { z-index: 5000 !important; } /* رسائل الخطأ فوق نافذة الصنف مش وراها */
         .ns-modal-window {
             background: #f4f6f9;
-            width: 830px;
+            width: 900px;
             max-width: 96vw;
             max-height: 94vh;
             border-radius: 10px;
@@ -992,28 +996,50 @@
             flex: 1;
             direction: ltr;
         }
-        .ns-tabs-header { display: flex; border-bottom: 2px solid var(--ns-navy); gap: 4px; }
-        .ns-tab-btn {
-            padding: 7px 16px;
-            background: #e2e8f0;
-            border: 1.5px solid var(--ns-border);
-            border-bottom: none;
-            border-radius: 7px 7px 0 0;
-            font-size: 13px;
-            font-weight: 800;
-            color: var(--ns-navy);
-            cursor: pointer;
-        }
-        .ns-tab-btn.active { background: var(--ns-navy); color: #fff; border-color: var(--ns-navy); }
-        .ns-tab-pane {
-            display: none;
-            background: #fff;
-            border: 1.5px solid var(--ns-border);
-            border-top: none;
-            border-radius: 0 0 8px 8px;
-            padding: 14px;
-        }
+        .ns-tabs-header { display: flex; gap: 2px; border-bottom: 1px solid var(--ns-border); margin: -4px -6px 0; }
+        .ns-tab-btn { padding: 7px 14px; background: none; border: 0; border-bottom: 3px solid transparent; font-size: 13px; font-weight: 800; color: #64748b; cursor: pointer; }
+        .ns-tab-btn.active { color: var(--ns-navy); border-bottom-color: var(--ns-green); }
+        .ns-tab-pane { display: none; padding-top: 10px; min-height: 150px; }
         .ns-tab-pane.active { display: block; }
+        /* شبكة حقول نافذة الصنف والعبوات */
+        .f-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px 12px; align-items: end; }
+        .f-grid2 { grid-template-columns: repeat(2, minmax(0, 1fr)); flex: 1; }
+        .f-span2 { grid-column: span 2; }
+        .f-field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+        .f-field label { font-size: 12px; font-weight: 800; color: #475569; margin: 0; }
+        .f-field label b { color: var(--ns-danger); }
+        .f-field .ns-control, .f-inline .ns-control { width: 100%; height: 36px; font-size: 13.5px; min-width: 0; }
+        .f-field input.en-digit { text-align: center; font-weight: 800; }
+        .f-inline { display: flex; gap: 6px; }
+        .f-inline .ns-action-btn { height: 36px; flex-shrink: 0; }
+        .f-barcode { letter-spacing: 1px; direction: ltr; }
+        .f-main-price { border-color: var(--ns-green) !important; color: var(--ns-green-hover) !important; font-size: 16px !important; }
+        .f-badge { float: left; font-size: 12px; color: var(--ns-green-hover); background: var(--ns-green-soft); border: 1px solid #bfe5cd; border-radius: 6px; padding: 0 8px; }
+        .f-check { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--ns-navy); cursor: pointer; margin: 0; }
+        .f-check input { width: 16px; height: 16px; }
+        .f-options { display: flex; gap: 16px; align-items: flex-start; }
+        .f-hint { color: #64748b; font-weight: 700; font-size: 12px; }
+        .pk-table { width: 100%; border-collapse: collapse; }
+        .pk-table th { background: #e9edf2; color: #334155; font-size: 12px; font-weight: 800; padding: 6px; border: 1px solid #cbd5e1; white-space: nowrap; }
+        .pk-table th:first-child { width: 112px; }
+        .pk-table th:nth-child(2) { width: 84px; }
+        .pk-table td { padding: 4px; border: 1px solid var(--ns-border); text-align: center; font-weight: 800; }
+        .pk-table .ns-control { width: 100%; height: 32px; text-align: center; min-width: 0; }
+        .pk-table td.pk-auto { background: #f8fafc; color: #334155; font-family: Arial, sans-serif; width: 92px; }
+        .pk-table .pk-del { border: 0; background: none; color: var(--ns-danger); cursor: pointer; width: 26px; }
+        .pk-foot { display: flex; align-items: center; gap: 10px; margin-top: 8px; color: #64748b; font-size: 12px; font-weight: 700; }
+        .pk-foot .ns-action-btn { flex-shrink: 0; }
+        .pk-results { position: absolute; top: 100%; inset-inline: 0; z-index: 5; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; max-height: 230px; overflow: auto; display: none; }
+        .pk-results div { padding: 7px 10px; cursor: pointer; font-weight: 700; display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid #f1f5f9; }
+        .pk-results div.on, .pk-results div:hover { background: #dcfce7; }
+        .pk-chosen { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 7px 10px; font-weight: 700; color: #64748b; }
+        .pk-chosen.ok { background: var(--ns-green-soft); border: 1px solid #bfe5cd; color: var(--ns-navy); }
+        .pk-calc { background: #f8fafc; }
+        .pk-line { display: flex; justify-content: space-between; align-items: center; font-weight: 700; color: #334155; }
+        .pk-line b { font-size: 16px; color: var(--ns-navy); }
+        .pk-result { border-top: 1px solid var(--ns-border); padding-top: 8px; }
+        .pk-result b { font-size: 19px; color: var(--ns-green-hover); }
+        .pk-hint { font-size: 12.5px; font-weight: 700; color: #64748b; min-height: 18px; }
         .readonly-qty-box { background: #e2e8f0 !important; color: var(--ns-navy) !important; font-weight: 900 !important; text-align: center; }
         .image-uploader-card {
             border: 1.5px solid var(--ns-border);
@@ -1430,243 +1456,125 @@
             </div>
             <div class="ns-modal-body">
                 <div class="fieldset-box">
-                    <div class="fieldset-title">بيانات أساسية</div>
-                    <div class="modal-form-row">
-                        <label>النوع:</label>
-                        <div class="radio-group-inline">
-                            <label><input type="radio" name="itemTypeRadio" value="صنف مخزني" checked> صنف مخزني</label>
-                            <label><input type="radio" name="itemTypeRadio" value="صنف خدمي"> صنف خدمي</label>
-                            <label><input type="radio" name="itemTypeRadio" value="خامات"> خامات</label>
-                            <label><input type="radio" name="itemTypeRadio" value="صنف مجمع"> صنف مجمع</label>
+                    <div class="f-grid">
+                        <div class="f-field f-span2">
+                            <label>اسم الصنف <b>*</b></label>
+                            <input type="text" id="formItemName" class="ns-control" placeholder="اكتب اسم الصنف بالكامل...">
                         </div>
-                    </div>
-                    <div class="modal-form-row">
-                        <label>التصنيف: <span style="color:var(--ns-danger)">*</span></label>
-                        <div style="display:flex; gap:6px;">
-                            <select id="formCategorySelect" class="ns-control" style="flex:1;"></select>
-                            <button type="button" class="ns-action-btn" id="btnQuickAddCategory" style="height:32px; padding:0 10px;" title="إضافة تصنيف جديد سريع">
-                                <i class="fa-solid fa-folder-plus" style="color:var(--ns-green);"></i>
-                            </button>
+                        <div class="f-field">
+                            <label>الباركود</label>
+                            <input type="text" id="formBarcode" class="ns-control en-digit f-barcode" value="1000000">
                         </div>
-                    </div>
-                    <div class="modal-form-row">
-                        <label>اسم الصنف: <span style="color:var(--ns-danger)">*</span></label>
-                        <input type="text" id="formItemName" class="ns-control" placeholder="اكتب اسم الصنف بالكامل...">
-                    </div>
-                    <div class="modal-form-row">
-                        <label>الوصف:</label>
-                        <input type="text" id="formItemDesc" class="ns-control" placeholder="وصف إضافي للصنف (اختياري)...">
-                    </div>
-                    <div class="modal-form-row">
-                        <label>وحدة القياس:</label>
-                        <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
-                            <select id="formMainUnit" class="ns-control" style="width:160px;">
-                                <option value="قطعة">قطعة</option>
-                                <option value="علبة">علبة</option>
-                                <option value="كرتونة">كرتونة</option>
-                                <option value="كيلو">كيلو</option>
-                                <option value="لتر">لتر</option>
-                                <option value="باكت">باكت</option>
-                            </select>
-                            <label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
-                                <input type="radio" name="defaultPurchaseUnitRadio" value="main" checked> وحدة شراء افتراضية
-                            </label>
-                            <div style="display:flex; align-items:center; gap:6px; margin-right:auto; background:#fef9c3; padding:2px 10px; border-radius:6px; border:1px solid #fde047;">
-                                <span style="font-weight:800; font-size:12px; color:#854d0e;">الكمية بالفاتورة الآن:</span>
-                                <input type="text" id="formInitialCartQty" class="ns-control numeric-input" value="1" style="width:70px; height:26px; text-align:center; font-weight:900;">
+                        <div class="f-field">
+                            <label>التصنيف <b>*</b></label>
+                            <div class="f-inline">
+                                <select id="formCategorySelect" class="ns-control"></select>
+                                <button type="button" class="ns-action-btn" id="btnQuickAddCategory" title="إضافة تصنيف جديد سريع"><i class="fa-solid fa-plus"></i></button>
                             </div>
                         </div>
-                    </div>
-                    <div class="modal-form-row">
-                        <label>باركود:</label>
-                        <div style="display:flex; gap:6px; align-items:center;">
-                            <input type="text" id="formBarcode" class="barcode-navy-bar" value="1000000">
+                        <div class="f-field">
+                            <label>النوع</label>
+                            <select id="formItemType" class="ns-control">
+                                <option value="صنف مخزني">صنف مخزني</option>
+                                <option value="صنف خدمي">صنف خدمي</option>
+                                <option value="خامات">خامات</option>
+                                <option value="صنف مجمع">صنف مجمع</option>
+                            </select>
+                        </div>
+                        <div class="f-field">
+                            <label>وحدة القياس (أصغر وحدة بيع)</label>
+                            <select id="formMainUnit" class="ns-control">
+                                @foreach (['قطعة', 'كيس', 'علبة', 'كرتونة', 'كيلو', 'لتر', 'باكت'] as $u)<option value="{{ $u }}">{{ $u }}</option>@endforeach
+                            </select>
+                        </div>
+                        <div class="f-field">
+                            <label>الكمية بالفاتورة الآن</label>
+                            <input type="text" id="formInitialCartQty" class="ns-control numeric-input en-digit" value="1">
+                        </div>
+                        <div class="f-field">
+                            <label>الوصف</label>
+                            <input type="text" id="formItemDesc" class="ns-control" placeholder="اختياري">
                         </div>
                     </div>
                 </div>
-                <div>
+
+                <div class="fieldset-box">
+                    <div class="fieldset-title">الأسعار <span id="formProfitMarginPreview" class="f-badge">هامش ربح القطاعي: 0%</span></div>
+                    <div class="f-grid">
+                        <div class="f-field">
+                            <label>آخر سعر شراء <b>*</b></label>
+                            <input type="text" id="formLastBuyPrice" class="ns-control numeric-input en-digit" value="0">
+                        </div>
+                        <div class="f-field">
+                            <label>سعر البيع (قطاعي) <b>*</b></label>
+                            <input type="text" id="formRetailPrice" class="ns-control numeric-input en-digit f-main-price" value="0">
+                        </div>
+                        <div class="f-field">
+                            <label>سعر نص جملة</label>
+                            <input type="text" id="formSemiWholesalePrice" class="ns-control numeric-input en-digit" placeholder="اختياري">
+                        </div>
+                        <div class="f-field">
+                            <label>سعر جملة</label>
+                            <input type="text" id="formWholesalePrice" class="ns-control numeric-input en-digit" placeholder="اختياري">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fieldset-box f-tabs-box">
                     <div class="ns-tabs-header">
-                        <button type="button" class="ns-tab-btn active" data-tab="tabStockAndPricing">المخزون والتسعير</button>
-                        <button type="button" class="ns-tab-btn" data-tab="tabSubUnits">وحدات القياس الفرعية</button>
-                        <button type="button" class="ns-tab-btn" data-tab="tabTaxSettings">إعدادات ضريبية</button>
+                        <button type="button" class="ns-tab-btn active" data-tab="tabSubUnits">العبوات والباركودات</button>
+                        <button type="button" class="ns-tab-btn" data-tab="tabStockAndPricing">المخزون</button>
+                        <button type="button" class="ns-tab-btn" data-tab="tabTaxSettings">الضريبة</button>
                         <button type="button" class="ns-tab-btn" data-tab="tabItemOptions">خيارات والموقع</button>
                     </div>
-                    <div class="ns-tab-pane active" id="tabStockAndPricing">
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                            <div class="modal-form-row">
-                                <label>الكمية الحالية:</label>
-                                <input type="text" id="formQtyReadonly" class="ns-control readonly-qty-box" value="0" readonly>
-                            </div>
-                            <div class="modal-form-row">
-                                <label>آخر سعر شراء: <span style="color:var(--ns-danger)">*</span></label>
-                                <input type="text" id="formLastBuyPrice" class="ns-control numeric-input" value="0" style="text-align:center; font-weight:900;">
-                            </div>
-                            <div class="modal-form-row">
-                                <label>آخر تاريخ شراء:</label>
-                                <input type="text" id="formLastBuyDate" class="ns-control en-digit" value="{{ now()->format('Y/m/d') }}" style="text-align:center;">
-                            </div>
-                            <div class="modal-form-row">
-                                <label>الحد الأدنى للمخزون:</label>
-                                <input type="text" id="formMinStock" class="ns-control numeric-input" value="0" style="text-align:center;">
-                            </div>
-                            <div class="modal-form-row">
-                                <label>الحد الأقصى للمخزون:</label>
-                                <input type="text" id="formMaxStock" class="ns-control numeric-input" value="0" style="text-align:center;">
-                            </div>
-                            <div class="modal-form-row">
-                                <label>آخر مورد:</label>
-                                <input type="text" id="formSupplierName" class="ns-control" placeholder="اسم المورد (اختياري)...">
-                            </div>
-                        </div>
-                        <div style="margin-top:12px; padding:12px 14px; background:var(--ns-green-soft); border:1.5px solid var(--ns-green); border-radius:8px;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px dashed #86efac; padding-bottom:6px;">
-                                <span style="font-weight:900; color:var(--ns-navy); font-size:13px;">
-                                    <i class="fa-solid fa-tags" style="color:var(--ns-green);"></i> التسعير وأسعار متعددة (القطاعي أساسي، والجملة اختياري)
-                                </span>
-                                <span id="formProfitMarginPreview" style="font-size:12px; font-weight:900; color:var(--ns-green-hover); background:#fff; padding:2px 10px; border-radius:999px; border:1px solid #86efac;">
-                                    هامش ربح القطاعي: 0%
-                                </span>
-                            </div>
-                            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; align-items:end;">
-                                <div style="display:flex; flex-direction:column; gap:4px;">
-                                    <label style="font-weight:900; color:var(--ns-green-hover); font-size:12.5px;">
-                                        سعر البيع (قطاعي): <span style="color:var(--ns-danger)">*</span>
-                                    </label>
-                                    <div style="display:flex; align-items:center; gap:6px;">
-                                        <input type="text" id="formRetailPrice" class="ns-control numeric-input" value="0" style="height:36px; font-size:16px; font-weight:900; text-align:center; color:var(--ns-green-hover); border:2px solid var(--ns-green); flex:1; background:#fff;">
-                                        <span style="font-weight:800; font-size:11.5px; color:var(--ns-muted);">ج.م</span>
-                                    </div>
-                                </div>
-                                <div style="display:flex; flex-direction:column; gap:4px;">
-                                    <label style="font-weight:800; color:var(--ns-navy); font-size:12px;">
-                                        سعر نص جملة <small style="color:var(--ns-muted);">(اختياري)</small>:
-                                    </label>
-                                    <div style="display:flex; align-items:center; gap:6px;">
-                                        <input type="text" id="formSemiWholesalePrice" class="ns-control numeric-input" value="" placeholder="اختياري..." style="height:36px; font-size:14.5px; font-weight:800; text-align:center; color:#0284c7; border-color:#93c5fd; flex:1; background:#fff;">
-                                        <span style="font-weight:800; font-size:11.5px; color:var(--ns-muted);">ج.م</span>
-                                    </div>
-                                </div>
-                                <div style="display:flex; flex-direction:column; gap:4px;">
-                                    <label style="font-weight:800; color:var(--ns-navy); font-size:12px;">
-                                        سعر جملة <small style="color:var(--ns-muted);">(اختياري)</small>:
-                                    </label>
-                                    <div style="display:flex; align-items:center; gap:6px;">
-                                        <input type="text" id="formWholesalePrice" class="ns-control numeric-input" value="" placeholder="اختياري..." style="height:36px; font-size:14.5px; font-weight:800; text-align:center; color:#7c3aed; border-color:#c4b5fd; flex:1; background:#fff;">
-                                        <span style="font-weight:800; font-size:11.5px; color:var(--ns-muted);">ج.م</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div style="margin-top:10px; padding:10px 14px; background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:8px;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                                <label style="display:flex; align-items:center; gap:8px; font-weight:900; color:var(--ns-navy); font-size:12.5px; cursor:pointer;">
-                                    <input type="checkbox" id="formPublishedOnline" style="width:16px; height:16px; accent-color:var(--ns-info);">
-                                    <i class="fa-solid fa-globe" style="color:var(--ns-info);"></i>
-                                    <span>عرض هذا الصنف في الموقع الإلكتروني (اختياري)</span>
-                                </label>
-                            </div>
-                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                                <div style="display:flex; flex-direction:column; gap:4px;">
-                                    <label style="font-weight:800; color:var(--ns-navy); font-size:12px;">سعر البيع على الموقع:</label>
-                                    <input type="text" id="formOnlinePrice" class="ns-control numeric-input" value="" placeholder="اتركه فارغاً لاعتماد السعر القطاعي" style="text-align:center;">
-                                </div>
-                                <div style="display:flex; flex-direction:column; gap:4px;">
-                                    <label style="font-weight:800; color:var(--ns-navy); font-size:12px;">السعر قبل الخصم بالموقع (اختياري):</label>
-                                    <input type="text" id="formOnlineComparePrice" class="ns-control numeric-input" value="" placeholder="يظهر مشطوباً في العروض" style="text-align:center;">
-                                </div>
-                            </div>
+                    <div class="ns-tab-pane active" id="tabSubUnits">
+                        <table class="pk-table">
+                            <thead><tr><th>العبوة</th><th>فيها كام</th><th>باركود العبوة</th><th>تكلفتها عليك</th><th>سعر بيعها</th><th>ربح %</th><th>القطعة بكام</th><th></th></tr></thead>
+                            <tbody id="packRows"></tbody>
+                        </table>
+                        <div class="pk-foot">
+                            <button type="button" class="ns-action-btn" id="btnAddPackRow"><i class="fa-solid fa-plus"></i> إضافة عبوة / باركود</button>
+                            <span>العلبة أو الكرتونة بتتباع بباركودها وسعرها وبتخصم عدد القطع من نفس المخزون. اكتب سعر البيع أو نسبة الربح والتاني يتحسب.</span>
                         </div>
                     </div>
-                    <div class="ns-tab-pane" id="tabSubUnits">
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:18px;">
-                            <div style="border-left:1px dashed var(--ns-border); padding-left:14px; display:flex; flex-direction:column; gap:8px;">
-                                <div class="modal-form-row">
-                                    <label>الوحدة 2:</label>
-                                    <select id="formUnit2Name" class="ns-control">
-                                        <option value="">-- غير محدد --</option>
-                                        <option value="علبة">علبة</option>
-                                        <option value="كرتونة">كرتونة</option>
-                                        <option value="باكت">باكت</option>
-                                        <option value="دستة">دستة</option>
-                                    </select>
-                                </div>
-                                <div class="modal-form-row">
-                                    <label>معامل التحويل:</label>
-                                    <input type="text" id="formUnit2Factor" class="ns-control numeric-input" value="0" style="text-align:center;">
-                                </div>
-                                <div class="modal-form-row">
-                                    <label>باركود 2:</label>
-                                    <input type="text" id="formUnit2Barcode" class="ns-control en-digit" style="text-align:center;">
-                                </div>
-                                <div class="modal-form-row">
-                                    <label>سعر البيع:</label>
-                                    <input type="text" id="formUnit2Price" class="ns-control numeric-input" value="0" style="text-align:center;">
-                                </div>
-                            </div>
-                            <div style="display:flex; flex-direction:column; gap:8px;">
-                                <div class="modal-form-row">
-                                    <label>الوحدة 3:</label>
-                                    <select id="formUnit3Name" class="ns-control">
-                                        <option value="">-- غير محدد --</option>
-                                        <option value="كرتونة">كرتونة</option>
-                                        <option value="بالتة">بالتة</option>
-                                        <option value="شيكارة">شيكارة</option>
-                                    </select>
-                                </div>
-                                <div class="modal-form-row">
-                                    <label>معامل التحويل:</label>
-                                    <input type="text" id="formUnit3Factor" class="ns-control numeric-input" value="0" style="text-align:center;">
-                                </div>
-                                <div class="modal-form-row">
-                                    <label>باركود 3:</label>
-                                    <input type="text" id="formUnit3Barcode" class="ns-control en-digit" style="text-align:center;">
-                                </div>
-                                <div class="modal-form-row">
-                                    <label>سعر البيع:</label>
-                                    <input type="text" id="formUnit3Price" class="ns-control numeric-input" value="0" style="text-align:center;">
-                                </div>
-                            </div>
+                    <div class="ns-tab-pane" id="tabStockAndPricing">
+                        <div class="f-grid">
+                            <div class="f-field"><label>الكمية الحالية</label><input type="text" id="formQtyReadonly" class="ns-control readonly-qty-box en-digit" value="0" readonly></div>
+                            <div class="f-field"><label>آخر تاريخ شراء</label><input type="text" id="formLastBuyDate" class="ns-control en-digit" value="{{ now()->format('Y/m/d') }}"></div>
+                            <div class="f-field"><label>الحد الأدنى للمخزون</label><input type="text" id="formMinStock" class="ns-control numeric-input en-digit" value="0"></div>
+                            <div class="f-field"><label>الحد الأقصى للمخزون</label><input type="text" id="formMaxStock" class="ns-control numeric-input en-digit" value="0"></div>
+                            <div class="f-field f-span2"><label>آخر مورد</label><input type="text" id="formSupplierName" class="ns-control" placeholder="اختياري"></div>
                         </div>
                     </div>
                     <div class="ns-tab-pane" id="tabTaxSettings">
-                        <div style="display:flex; flex-direction:column; gap:14px; padding:8px 0;">
-                            <label style="display:flex; align-items:center; gap:8px; font-weight:800; color:var(--ns-navy); cursor:pointer;">
-                                <input type="checkbox" id="formTaxIncluded" checked style="width:16px; height:16px;">
-                                <span>الضريبة متضمنة في السعر</span>
-                            </label>
-                            <div class="modal-form-row" style="grid-template-columns: 140px 200px 100px;">
-                                <label>ضريبة القيمة المضافة:</label>
+                        <div class="f-grid">
+                            <label class="f-check f-span2"><input type="checkbox" id="formTaxIncluded" checked> الضريبة متضمنة في السعر</label>
+                            <div class="f-field">
+                                <label>ضريبة القيمة المضافة</label>
                                 <select id="formTaxMode" class="ns-control">
                                     <option value="default">الإعدادات الافتراضية</option>
                                     <option value="exempt">معفى من الضريبة</option>
                                     <option value="custom">نسبة مخصصة (%)</option>
                                 </select>
-                                <input type="text" id="formTaxRate" class="ns-control numeric-input" value="0" style="text-align:center;">
                             </div>
+                            <div class="f-field"><label>النسبة %</label><input type="text" id="formTaxRate" class="ns-control numeric-input en-digit" value="0"></div>
                         </div>
                     </div>
                     <div class="ns-tab-pane" id="tabItemOptions">
-                        <div style="display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap;">
-                            <div style="display:flex; flex-direction:column; gap:11px; flex:1;">
-                                <label style="display:flex; align-items:center; gap:8px; font-weight:800; color:var(--ns-navy); cursor:pointer;">
-                                    <input type="checkbox" id="formOptAllowPriceEdit" style="width:16px; height:16px;">
-                                    <span>إتاحة تعديل السعر أثناء البيع بالكاشير</span>
-                                </label>
-                                <label style="display:flex; align-items:center; gap:8px; font-weight:800; color:var(--ns-green-hover); cursor:pointer;">
-                                    <input type="checkbox" id="formOptPinned" style="width:16px; height:16px;">
-                                    <i class="fa-solid fa-thumbtack" style="color:var(--ns-danger);"></i>
-                                    <span>إضافة إلى القائمة المثبتة في أول المخزن وشاشة البيع</span>
-                                </label>
+                        <div class="f-options">
+                            <div class="f-grid f-grid2">
+                                <label class="f-check f-span2"><input type="checkbox" id="formOptAllowPriceEdit"> إتاحة تعديل السعر أثناء البيع بالكاشير</label>
+                                <label class="f-check f-span2"><input type="checkbox" id="formOptPinned"> تثبيت الصنف في أول المخزن وشاشة البيع</label>
+                                <label class="f-check f-span2"><input type="checkbox" id="formPublishedOnline"> عرض الصنف في الموقع الإلكتروني</label>
+                                <div class="f-field"><label>سعر البيع على الموقع</label><input type="text" id="formOnlinePrice" class="ns-control numeric-input en-digit" placeholder="فارغ = سعر القطاعي"></div>
+                                <div class="f-field"><label>السعر قبل الخصم بالموقع</label><input type="text" id="formOnlineComparePrice" class="ns-control numeric-input en-digit" placeholder="اختياري"></div>
                             </div>
                             <div class="image-uploader-card">
-                                <div style="font-weight:800; font-size:12px; margin-bottom:6px; color:var(--ns-navy);">صورة الصنف:</div>
-                                <div class="image-preview-box" id="itemImagePreviewBox">
-                                    <i class="fa-regular fa-image" style="font-size:32px; color:#60a5fa;"></i>
-                                </div>
+                                <div class="image-preview-box" id="itemImagePreviewBox"><i class="fa-regular fa-image" style="font-size:32px; color:#94a3b8;"></i></div>
                                 <input type="file" id="itemImageFileInput" accept="image/*" style="display:none;">
-                                <div style="display:flex; gap:6px; justify-content:center;">
-                                    <button type="button" class="ns-action-btn" id="btnTriggerImageUpload" style="height:28px; font-size:11.5px;">تغيير</button>
-                                    <button type="button" class="ns-action-btn" id="btnResetItemImage" style="height:28px; font-size:11.5px;">مسح</button>
+                                <div class="f-inline" style="justify-content:center;">
+                                    <button type="button" class="ns-action-btn" id="btnTriggerImageUpload">صورة الصنف</button>
+                                    <button type="button" class="ns-action-btn" id="btnResetItemImage">مسح</button>
                                 </div>
                             </div>
                         </div>
@@ -1674,14 +1582,61 @@
                 </div>
             </div>
             <div class="ns-modal-footer">
-                <span style="color:var(--ns-danger); font-weight:800; font-size:12px;">* الحقول المطلوبة: اسم الصنف، آخر سعر شراء، وسعر البيع (قطاعي)</span>
+                <span class="f-hint">Enter يتنقل: الاسم ← سعر البيع ← سعر الشراء ← حفظ</span>
                 <div style="display:flex; gap:8px;">
                     <button type="button" class="ns-action-btn primary-green" id="btnSaveItemForm">
-                        <i class="fa-solid fa-floppy-disk"></i> <span>حفظ في المخزن وإضافة للفاتورة</span>
+                        <i class="fa-solid fa-floppy-disk"></i> <span>حفظ وإضافة للفاتورة</span>
                     </button>
-                    <button type="button" class="ns-action-btn" id="btnCancelItemForm">
-                        <i class="fa-solid fa-circle-xmark" style="color:var(--ns-danger);"></i> <span>إلغاء (Esc)</span>
-                    </button>
+                    <button type="button" class="ns-action-btn" id="btnCancelItemForm">إلغاء (Esc)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ================= نافذة: باركود جديد ← عبوة (علبة/كرتونة) لصنف موجود ================= --}}
+    <div class="ns-modal-backdrop" id="packModal">
+        <div class="ns-modal-window" style="width:620px;">
+            <div class="ns-modal-header">
+                <span><i class="fa-solid fa-boxes-stacked"></i> عبوة لصنف موجود — باركود <span class="en-digit" id="packBarcodeLabel"></span></span>
+                <button type="button" class="btn-close-modal" data-pack-close><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="ns-modal-body">
+                <div class="fieldset-box">
+                    <div class="f-field" style="position:relative;">
+                        <label>العبوة دي فيها إيه؟ ابحث عن الصنف (الوحدة الصغيرة)</label>
+                        <input type="text" id="packItemSearch" class="ns-control" placeholder="اسم الصنف أو باركوده..." autocomplete="off">
+                        <div class="pk-results" id="packItemResults"></div>
+                    </div>
+                    <div class="pk-chosen" id="packItemInfo">لسه ما اخترتش صنف</div>
+                    <div class="f-grid f-grid2">
+                        <div class="f-field">
+                            <label>نوع العبوة</label>
+                            <select class="ns-control pk-name" id="packName">
+                                @foreach (['علبة', 'كرتونة', 'باكت', 'دستة', 'شريط', 'شيكارة'] as $u)<option value="{{ $u }}">{{ $u }}</option>@endforeach
+                            </select>
+                        </div>
+                        <div class="f-field">
+                            <label>فيها كام <span id="packUnitWord">قطعة</span>؟</label>
+                            <input type="text" class="ns-control numeric-input en-digit pk-factor" id="packFactor" placeholder="مثلاً 24">
+                        </div>
+                    </div>
+                </div>
+                <div class="fieldset-box pk-calc">
+                    <div class="pk-line"><span>تكلفتها عليك (جملة)</span><b class="en-digit pk-cost">0</b></div>
+                    <div class="pk-line"><span>لو اتباعت قطاعي قطعة قطعة</span><b class="en-digit pk-retail">0</b></div>
+                    <div class="f-grid f-grid2">
+                        <div class="f-field"><label>سعر بيع العبوة</label><input type="text" class="ns-control numeric-input en-digit f-main-price pk-price" id="packPrice"></div>
+                        <div class="f-field"><label>أو نسبة الربح %</label><input type="text" class="ns-control numeric-input en-digit pk-margin" id="packMargin"></div>
+                    </div>
+                    <div class="pk-line pk-result"><span>القطعة جوه العبوة هتبقى بـ</span><b class="en-digit pk-piece">0</b></div>
+                    <div class="pk-hint"></div>
+                </div>
+            </div>
+            <div class="ns-modal-footer">
+                <span class="f-hint">Enter يتنقل بين الخانات ويحفظ</span>
+                <div style="display:flex; gap:8px;">
+                    <button type="button" class="ns-action-btn primary-green" id="btnSavePack"><i class="fa-solid fa-floppy-disk"></i> حفظ وإضافة للفاتورة</button>
+                    <button type="button" class="ns-action-btn" data-pack-close>إلغاء (Esc)</button>
                 </div>
             </div>
         </div>
@@ -2014,6 +1969,7 @@
                                 <input type="text" inputmode="decimal" class="numeric-input en-digit" id="product-detail-sale-price">
                                 <small class="product-detail-price-unit"></small>
                             </span>
+                            <span class="pd-price-note" id="product-detail-price-note"></span>
                         </label>
                         <div class="pd-info-cell"><span>آخر سعر شراء</span><b class="en-digit" id="product-detail-buy-price"></b></div>
                         <div class="pd-info-cell"><span>المخزون</span><b class="en-digit" id="product-detail-stock"></b></div>
@@ -2504,13 +2460,7 @@
                 const matchedSubUnit = catalogSubUnitBarcodeIndex.get(code);
                 if (matchedSubUnit) {
                     const { product, unit } = matchedSubUnit;
-                    addProductToCart({
-                        ...product,
-                        name: `${product.name} (${unit.name})`,
-                        barcode: unit.barcode,
-                        salePrice: Number(unit.price) || getEffectiveProductPrice(product),
-                        quantityType: 'piece'
-                    }, 1, '');
+                    addProductToCart(packProduct(product, unit), 1, '');
                     clearProductSearch();
                     return true;
                 }
@@ -3637,9 +3587,13 @@
                     returnFocus: false, // المؤشر يروح لخانة الاسم مش يرجع للبحث
                     confirmButtonText: '<i class="fas fa-plus"></i> تسجيل صنف جديد',
                     confirmButtonColor: '#119744',
+                    showDenyButton: !info.scale,
+                    denyButtonText: '<i class="fas fa-boxes-stacked"></i> علبة / كرتونة لصنف موجود',
+                    denyButtonColor: '#17283d',
                     focusConfirm: true
                 }).then(r => {
                     if (r.isConfirmed) openNewProductModal(info);
+                    else if (r.isDenied) openPackModal(info.barcode);
                     else $('#item-search-input').trigger('focus');
                 });
             }
@@ -3668,14 +3622,8 @@
                     $('#formPublishedOnline').prop('checked', false);
                     $('#formOnlinePrice').val('');
                     $('#formOnlineComparePrice').val('');
-                    $('#formUnit2Name').val('');
-                    $('#formUnit2Factor').val('0');
-                    $('#formUnit2Barcode').val('');
-                    $('#formUnit2Price').val('0');
-                    $('#formUnit3Name').val('');
-                    $('#formUnit3Factor').val('0');
-                    $('#formUnit3Barcode').val('');
-                    $('#formUnit3Price').val('0');
+                    $('#packRows').empty();
+                    $('#formItemType').val('صنف مخزني');
                     $('#formOptAllowPriceEdit').prop('checked', false);
                     $('#formOptPinned').prop('checked', false);
                     currentUploadedImageBase64 = '';
@@ -3705,6 +3653,144 @@
                 let margin = 0;
                 if (sale > 0) margin = buy > 0 ? (((sale - buy) / buy) * 100) : 100;
                 $('#formProfitMarginPreview').text(`هامش ربح القطاعي: ${margin.toFixed(1)}%`);
+                $('#packRows tr').each(function() { calcPack($(this), buy, sale); });
+            });
+
+            // ===== العبوات (علبة/كرتونة): نفس الصنف والمخزون، بباركود وسعر ومعامل تحويل =====
+            const numVal = el => parseFloat(toEnglishDigits($(el).val())) || 0;
+            const money2 = v => String(Math.round(v * 100) / 100);
+            const PACK_NAMES = ['علبة', 'كرتونة', 'باكت', 'دستة', 'شريط', 'شيكارة', 'قطعة'];
+
+            function packProduct(product, unit) {
+                const f = Number(unit.factor) || 1;
+                return {
+                    ...product,
+                    name: f === 1 ? product.name : `${product.name} (${unit.name} ×${qtyLabel(f)})`,
+                    barcode: unit.barcode,
+                    unit: unit.name,
+                    buyPrice: (Number(product.buyPrice) || 0) * f,
+                    stock: Math.floor((Number(product.stock) || 0) / f),
+                    salePrice: Number(unit.price) || getEffectiveProductPrice(product) * f,
+                    quantityType: 'piece'
+                };
+            }
+
+            // حاسبة العبوة: تكلفة = تكلفة القطعة × العدد، وسعر البيع ↔ نسبة الربح، وسعر القطعة جوه العبوة
+            function calcPack($s, unitCost, retail, src) {
+                const n = numVal($s.find('.pk-factor')), cost = unitCost * n;
+                if (src === 'margin' && cost > 0) $s.find('.pk-price').val(money2(cost * (1 + numVal($s.find('.pk-margin')) / 100)));
+                const price = numVal($s.find('.pk-price'));
+                if (src !== 'margin') $s.find('.pk-margin').val(price > 0 && cost > 0 ? money2((price - cost) / cost * 100) : '');
+                const piece = n > 0 ? price / n : 0;
+                $s.find('.pk-cost').text(money2(cost));
+                $s.find('.pk-retail').text(money2(retail * n));
+                $s.find('.pk-piece').text(money2(piece));
+                $s.find('.pk-hint').text(price > 0 && n > 0
+                    ? `ربحك في العبوة ${money2(price - cost)} ج.م` + (retail > 0 ? ` — القطعة ${piece <= retail ? 'أرخص' : 'أغلى'} من القطاعي بـ ${money2(Math.abs(retail - piece))} ج.م` : '')
+                    : '');
+            }
+
+            function addPackRow(u = {}) {
+                $('#packRows').append(`<tr>
+                    <td><select class="ns-control pk-name">${PACK_NAMES.map(n => `<option${n === u.name ? ' selected' : ''}>${n}</option>`).join('')}</select></td>
+                    <td><input type="text" class="ns-control numeric-input en-digit pk-factor" value="${u.factor || ''}" placeholder="24"></td>
+                    <td><input type="text" class="ns-control en-digit pk-barcode" value="${escapeHtml(u.barcode || '')}" placeholder="اضرب الباركود"></td>
+                    <td class="pk-auto pk-cost">0</td>
+                    <td><input type="text" class="ns-control numeric-input en-digit pk-price" value="${u.price || ''}"></td>
+                    <td><input type="text" class="ns-control numeric-input en-digit pk-margin"></td>
+                    <td class="pk-auto pk-piece">0</td>
+                    <td><button type="button" class="pk-del" title="حذف"><i class="fa-solid fa-xmark"></i></button></td>
+                </tr>`);
+                $('#packRows tr:last .pk-factor').trigger('focus');
+            }
+            $('#btnAddPackRow').on('click', () => addPackRow());
+            $('#packRows').on('click', '.pk-del', function() { $(this).closest('tr').remove(); })
+                .on('input', 'input', function() { calcPack($(this).closest('tr'), numVal('#formLastBuyPrice'), numVal('#formRetailPrice'), $(this).hasClass('pk-margin') ? 'margin' : ''); });
+            const collectPackRows = () => $('#packRows tr').map(function() {
+                const r = $(this);
+                return { name: r.find('.pk-name').val(), factor: numVal(r.find('.pk-factor')), barcode: toEnglishDigits(r.find('.pk-barcode').val()).trim(), price: numVal(r.find('.pk-price')) };
+            }).get().filter(u => u.factor > 0);
+
+            // نافذة "عبوة لصنف موجود": باركود جديد اتضرب وهو علبة/كرتونة لصنف متسجل
+            let packItem = null, packBarcode = '';
+            const packCalc = src => calcPack($('#packModal'), packItem ? Number(packItem.buyPrice) || 0 : 0, packItem ? getEffectiveProductPrice(packItem) : 0, src);
+            const closePackModal = () => { $('#packModal').removeClass('open'); $('#item-search-input').trigger('focus'); };
+
+            function openPackModal(barcode) {
+                requirePermissionOrManager('inventory.items', 'إضافة عبوة (علبة/كرتونة) لصنف في المخزن', function() {
+                    packItem = null; packBarcode = String(barcode);
+                    $('#packBarcodeLabel').text(packBarcode);
+                    $('#packItemSearch, #packFactor, #packPrice, #packMargin').val('');
+                    $('#packItemResults').hide().empty();
+                    $('#packItemInfo').removeClass('ok').text('لسه ما اخترتش صنف');
+                    packCalc();
+                    $('#packModal').addClass('open');
+                    setTimeout(() => $('#packItemSearch').trigger('focus'), 100);
+                });
+            }
+
+            function pickPackItem(p) {
+                packItem = p;
+                $('#packItemResults').hide();
+                $('#packItemSearch').val(p.name);
+                $('#packUnitWord').text(p.unit || 'قطعة');
+                $('#packItemInfo').addClass('ok').html(`<b>${escapeHtml(p.name)}</b> — تكلفة ال${escapeHtml(p.unit || 'قطعة')} <b class="en-digit">${money2(Number(p.buyPrice) || 0)}</b> · قطاعي <b class="en-digit">${money2(getEffectiveProductPrice(p))}</b> · الرصيد <b class="en-digit">${qtyLabel(p.stock || 0)}</b>`);
+                packCalc();
+                $('#packFactor').trigger('focus');
+            }
+
+            $('#packItemSearch').on('input', function() {
+                const words = normalizeSearchText($(this).val()).split(' ').filter(Boolean), code = toEnglishDigits($(this).val()).trim();
+                const hits = catalogBarcodeIndex.has(code) ? [catalogBarcodeIndex.get(code)]
+                    : (words.length ? catalogSearchIndex.filter(e => words.every(w => e.text.includes(w))).slice(0, 8).map(e => e.product) : []);
+                $('#packItemResults').data('hits', hits).html(hits.map((p, i) => `<div data-i="${i}" class="${i ? '' : 'on'}"><span>${escapeHtml(p.name)}</span><span class="en-digit">${money2(getEffectiveProductPrice(p))}</span></div>`).join('')).toggle(hits.length > 0);
+            });
+            $('#packItemResults').on('mousedown', 'div', function() { pickPackItem($('#packItemResults').data('hits')[$(this).data('i')]); });
+            $('#packFactor, #packPrice').on('input', () => packCalc());
+            $('#packMargin').on('input', () => packCalc('margin'));
+            $('#packModal').on('click', '[data-pack-close]', closePackModal);
+
+            function packModalKey(e) {
+                if (e.key === 'Escape') { e.preventDefault(); return closePackModal(); }
+                const $res = $('#packItemResults'), hits = $res.data('hits') || [], $on = $res.find('.on');
+                if (e.target.id === 'packItemSearch' && $res.is(':visible')) {
+                    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        const $next = e.key === 'ArrowDown' ? $on.next() : $on.prev();
+                        if ($next.length) { $on.removeClass('on'); $next.addClass('on'); }
+                    } else if (e.key === 'Enter') { e.preventDefault(); pickPackItem(hits[$on.data('i') || 0]); }
+                    return;
+                }
+                if (e.key !== 'Enter') return;
+                e.preventDefault();
+                const order = ['packFactor', 'packPrice'], i = order.indexOf(e.target.id);
+                if (i > -1 && i < order.length - 1) $('#' + order[i + 1]).trigger('focus').trigger('select');
+                else $('#btnSavePack').trigger('click');
+            }
+
+            $('#btnSavePack').on('click', async function() {
+                const unit = { name: $('#packName').val(), factor: numVal('#packFactor'), barcode: packBarcode, price: numVal('#packPrice') };
+                const warn = t => Swal.fire({ icon: 'warning', title: 'بيانات ناقصة', text: t, confirmButtonColor: '#119744' });
+                if (!packItem) return warn('اختار الصنف اللي جوه العبوة الأول.');
+                if (unit.factor <= 0) return warn('اكتب العبوة فيها كام.');
+                if (unit.price <= 0) return warn('اكتب سعر بيع العبوة أو نسبة الربح.');
+                try {
+                    const res = await fetch(`/api/inventory/items/${packItem.id}/units`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                        body: JSON.stringify(unit)
+                    });
+                    const out = await res.json().catch(() => ({}));
+                    if (!res.ok) throw new Error(out.message || 'تعذر حفظ العبوة');
+                    packItem.subUnits = out.subUnits;
+                    buildCatalogIndexes();
+                    $('#packModal').removeClass('open');
+                    addProductToCart(packProduct(packItem, unit), 1, '');
+                    clearProductSearch();
+                    Swal.fire({ toast: true, position: 'bottom-start', icon: 'success', title: `تم تسجيل ${unit.name} (${qtyLabel(unit.factor)}) وإضافتها للفاتورة`, showConfirmButton: false, timer: 2000 });
+                } catch (err) {
+                    Swal.fire('خطأ', err.message, 'error');
+                }
             });
 
             $('#btnQuickAddCategory').on('click', function() {
@@ -3781,12 +3867,12 @@
                 const buyPrice = parseFloat(buyPriceStr) || 0;
 
                 const payload = {
-                    itemType: $('input[name="itemTypeRadio"]:checked').val() || 'صنف مخزني',
+                    itemType: $('#formItemType').val() || 'صنف مخزني',
                     categoryId: $('#formCategorySelect').val() || null,
                     name: name,
                     description: toEnglishDigits($('#formItemDesc').val()).trim(),
                     unit: unit,
-                    defaultPurchaseUnit: $('input[name="defaultPurchaseUnitRadio"]:checked').val() || 'main',
+                    defaultPurchaseUnit: 'main',
                     barcode: barcode,
                     lastBuyPrice: buyPrice,
                     lastBuyDate: toEnglishDigits($('#formLastBuyDate').val()).trim(),
@@ -3799,10 +3885,7 @@
                     isPublishedOnline: $('#formPublishedOnline').is(':checked'),
                     onlinePrice: parseOptionalFloat($('#formOnlinePrice').val()),
                     onlineCompareAtPrice: parseOptionalFloat($('#formOnlineComparePrice').val()),
-                    subUnits: [
-                        { name: $('#formUnit2Name').val(), factor: parseFloat(toEnglishDigits($('#formUnit2Factor').val())) || 0, barcode: toEnglishDigits($('#formUnit2Barcode').val()).trim(), price: parseFloat(toEnglishDigits($('#formUnit2Price').val())) || 0 },
-                        { name: $('#formUnit3Name').val(), factor: parseFloat(toEnglishDigits($('#formUnit3Factor').val())) || 0, barcode: toEnglishDigits($('#formUnit3Barcode').val()).trim(), price: parseFloat(toEnglishDigits($('#formUnit3Price').val())) || 0 }
-                    ],
+                    subUnits: collectPackRows(),
                     taxIncluded: $('#formTaxIncluded').is(':checked'),
                     taxMode: $('#formTaxMode').val(),
                     taxRate: parseFloat(toEnglishDigits($('#formTaxRate').val())) || 0,
@@ -3824,8 +3907,8 @@
                         },
                         body: JSON.stringify(payload)
                     });
-                    if (!res.ok) throw new Error('تعذر حفظ الصنف في قاعدة البيانات');
-                    const out = await res.json();
+                    const out = await res.json().catch(() => ({}));
+                    if (!res.ok) throw new Error(out.message || 'تعذر حفظ الصنف في قاعدة البيانات');
                     const saved = out.item;
                     const posProduct = {
                         id: saved.id,
@@ -4064,6 +4147,10 @@
                 $('#product-detail-barcode').text(product.barcode);
                 $('#product-detail-sale-price').val(effectivePrice.toFixed(2));
                 $('.product-detail-price-unit').text(`ج.م / ${unitName}`);
+                const canEditPrice = Boolean(product.allowPriceEdit ?? product.allow_price_edit); // من خيارات الصنف: إتاحة تعديل السعر أثناء البيع
+                $('#product-detail-sale-price').prop('readonly', !canEditPrice).attr('tabindex', canEditPrice ? 0 : -1);
+                $('.pd-price').toggleClass('locked', !canEditPrice);
+                $('#product-detail-price-note').html(canEditPrice ? '<i class="fas fa-pen"></i> تعديل السعر متاح بتصريح مدير' : '<i class="fas fa-lock"></i> السعر ثابت');
                 $('#product-detail-buy-price').text(`${Number(product.buyPrice).toFixed(2)} ج.م`);
                 $('#product-detail-stock').text(`${product.stock} ${unitName}`);
                 $('#product-detail-quantity').val(cartRow ? parseFloat(cartRow.find('.item-qty').text()) || 1 : '1');
@@ -4150,10 +4237,9 @@
 
                 let notes = $('#product-detail-notes').val().trim();
                 const priceChanged = Math.abs(price - initialProductModalPrice) > 0.009;
-                const itemAllowsPriceEdit = Boolean(activeProductForAdd.allowPriceEdit ?? activeProductForAdd.allow_price_edit);
 
-                // إذا قام الكاشير بتغيير سعر البيع عن السعر المعتمد ولم يكن الصنف مسموحاً بتعديل سعره، يطلب باسورد المدير
-                if (priceChanged && !itemAllowsPriceEdit && !hasDirectPermission('pos.edit_price')) {
+                // أي تغيير في السعر (صنف متاح تعديله أو فئة جملة/نص جملة) محتاج صلاحية تعديل السعر أو باسورد المدير
+                if (priceChanged && !hasDirectPermission('pos.edit_price')) {
                     requirePermissionOrManager(
                         'pos.edit_price',
                         `تعديل سعر البيع للصنف (${activeProductForAdd.name}) من ${initialProductModalPrice.toFixed(2)} إلى ${price.toFixed(2)} ج.م`,
@@ -4934,6 +5020,9 @@ function handleExitPos() {
             $(document).on('keydown', function(e) {
                 if ($('#managerAuthModal').hasClass('show')) {
                     return;
+                }
+                if ($('#packModal').hasClass('open')) {
+                    return packModalKey(e);
                 }
                 if ($('#itemFormModal').hasClass('open')) {
                     if (e.key === 'Escape') {

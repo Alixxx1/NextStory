@@ -1237,7 +1237,7 @@
                 <div>
                     <div class="ns-tabs-header">
                         <button type="button" class="ns-tab-btn active" data-tab="tabStockAndPricing">المخزون والتسعير</button>
-                        <button type="button" class="ns-tab-btn" data-tab="tabSubUnits">وحدات القياس الفرعية</button>
+                        <button type="button" class="ns-tab-btn" data-tab="tabSubUnits">العبوات والباركودات</button>
                         <button type="button" class="ns-tab-btn" data-tab="tabTaxSettings">إعدادات ضريبية</button>
                         <button type="button" class="ns-tab-btn" data-tab="tabItemOptions">خيارات والموقع</button>
                     </div>
@@ -1364,62 +1364,12 @@
 
                     <!-- تبويب 2: وحدات القياس الفرعية -->
                     <div class="ns-tab-pane" id="tabSubUnits">
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:18px;">
-                            <div style="border-left:1px dashed var(--ns-border); padding-left:14px; display:flex; flex-direction:column; gap:8px;">
-                                <div class="modal-form-row">
-                                    <label>الوحدة 2:</label>
-                                    <div style="display:flex; align-items:center; gap:6px;">
-                                        <select id="formUnit2Name" class="ns-control" style="flex:1;">
-                                            <option value="">-- غير محدد --</option>
-                                            <option value="علبة">علبة</option>
-                                            <option value="كرتونة">كرتونة</option>
-                                            <option value="باكت">باكت</option>
-                                            <option value="دستة">دستة</option>
-                                        </select>
-                                        <label style="font-size:11px; white-space:nowrap;"><input type="radio" name="defaultPurchaseUnitRadio" value="unit2"> وحدة شراء افتراضية</label>
-                                    </div>
-                                </div>
-                                <div class="modal-form-row">
-                                    <label>معامل التحويل:</label>
-                                    <input type="text" id="formUnit2Factor" class="ns-control" value="0" style="text-align:center;">
-                                </div>
-                                <div class="modal-form-row">
-                                    <label>باركود 2:</label>
-                                    <input type="text" id="formUnit2Barcode" class="ns-control" style="direction:ltr; text-align:center;">
-                                </div>
-                                <div class="modal-form-row">
-                                    <label>سعر البيع:</label>
-                                    <input type="text" id="formUnit2Price" class="ns-control" value="0" style="text-align:center;">
-                                </div>
-                            </div>
-
-                            <div style="display:flex; flex-direction:column; gap:8px;">
-                                <div class="modal-form-row">
-                                    <label>الوحدة 3:</label>
-                                    <div style="display:flex; align-items:center; gap:6px;">
-                                        <select id="formUnit3Name" class="ns-control" style="flex:1;">
-                                            <option value="">-- غير محدد --</option>
-                                            <option value="كرتونة">كرتونة</option>
-                                            <option value="بالتة">بالتة</option>
-                                            <option value="شيكارة">شيكارة</option>
-                                        </select>
-                                        <label style="font-size:11px; white-space:nowrap;"><input type="radio" name="defaultPurchaseUnitRadio" value="unit3"> وحدة شراء افتراضية</label>
-                                    </div>
-                                </div>
-                                <div class="modal-form-row">
-                                    <label>معامل التحويل:</label>
-                                    <input type="text" id="formUnit3Factor" class="ns-control" value="0" style="text-align:center;">
-                                </div>
-                                <div class="modal-form-row">
-                                    <label>باركود 3:</label>
-                                    <input type="text" id="formUnit3Barcode" class="ns-control" style="direction:ltr; text-align:center;">
-                                </div>
-                                <div class="modal-form-row">
-                                    <label>سعر البيع:</label>
-                                    <input type="text" id="formUnit3Price" class="ns-control" value="0" style="text-align:center;">
-                                </div>
-                            </div>
-                        </div>
+                        <table class="table table-sm table-bordered align-middle text-center mb-2">
+                            <thead><tr><th style="width:130px">العبوة</th><th style="width:100px">فيها كام</th><th>باركود العبوة</th><th style="width:110px">تكلفتها عليك</th><th style="width:120px">سعر بيعها</th><th style="width:110px">القطعة بكام</th><th style="width:40px"></th></tr></thead>
+                            <tbody id="packRows"></tbody>
+                        </table>
+                        <button type="button" class="ns-action-btn" id="btnAddPackRow"><i class="fa-solid fa-plus"></i> إضافة عبوة / باركود</button>
+                        <small class="text-muted fw-bold me-2">العلبة أو الكرتونة بتتباع بباركودها وسعرها وبتخصم عدد القطع من نفس مخزون الصنف.</small>
                     </div>
 
                     <!-- تبويب 3: إعدادات ضريبية -->
@@ -2065,18 +2015,9 @@
             document.getElementById('formOnlinePrice').value = (isEdit && item.onlinePrice !== null && item.onlinePrice !== undefined) ? formatNum(item.onlinePrice) : '';
             document.getElementById('formOnlineComparePrice').value = (isEdit && item.onlineCompareAtPrice !== null && item.onlineCompareAtPrice !== undefined) ? formatNum(item.onlineCompareAtPrice) : '';
 
-            // وحدات القياس الفرعية
-            const u2 = (isEdit && item.subUnits && item.subUnits[0]) ? item.subUnits[0] : {};
-            const u3 = (isEdit && item.subUnits && item.subUnits[1]) ? item.subUnits[1] : {};
-            document.getElementById('formUnit2Name').value = u2.name || '';
-            document.getElementById('formUnit2Factor').value = u2.factor || '0';
-            document.getElementById('formUnit2Barcode').value = u2.barcode || '';
-            document.getElementById('formUnit2Price').value = u2.price || '0';
-
-            document.getElementById('formUnit3Name').value = u3.name || '';
-            document.getElementById('formUnit3Factor').value = u3.factor || '0';
-            document.getElementById('formUnit3Barcode').value = u3.barcode || '';
-            document.getElementById('formUnit3Price').value = u3.price || '0';
+            // العبوات (علبة/كرتونة...): صفوف براحتك، كل صف بباركود وسعر ومعامل
+            document.getElementById('packRows').innerHTML = '';
+            (isEdit && item.subUnits || []).forEach(addPackRow);
 
             // الضرائب والخيارات
             document.getElementById('formTaxIncluded').checked = isEdit ? Boolean(item.taxIncluded ?? true) : true;
@@ -2145,20 +2086,12 @@
                 return;
             }
 
-            const subUnits = [
-                {
-                    name: document.getElementById('formUnit2Name').value,
-                    factor: parseFloat(toEnglishDigits(document.getElementById('formUnit2Factor').value)) || 0,
-                    barcode: toEnglishDigits(document.getElementById('formUnit2Barcode').value).trim(),
-                    price: parseFloat(toEnglishDigits(document.getElementById('formUnit2Price').value)) || 0
-                },
-                {
-                    name: document.getElementById('formUnit3Name').value,
-                    factor: parseFloat(toEnglishDigits(document.getElementById('formUnit3Factor').value)) || 0,
-                    barcode: toEnglishDigits(document.getElementById('formUnit3Barcode').value).trim(),
-                    price: parseFloat(toEnglishDigits(document.getElementById('formUnit3Price').value)) || 0
-                }
-            ];
+            const subUnits = [...document.querySelectorAll('#packRows tr')].map(tr => ({
+                name: tr.querySelector('.pk-name').value,
+                factor: parseFloat(toEnglishDigits(tr.querySelector('.pk-factor').value)) || 0,
+                barcode: toEnglishDigits(tr.querySelector('.pk-barcode').value).trim(),
+                price: parseFloat(toEnglishDigits(tr.querySelector('.pk-price').value)) || 0
+            })).filter(u => u.factor > 0);
 
             const payload = {
                 id: id || null,
@@ -2743,6 +2676,35 @@
         document.getElementById('btnCloseItemModal').addEventListener('click', () => document.getElementById('itemFormModal').classList.remove('open'));
         document.getElementById('btnCancelItemForm').addEventListener('click', () => document.getElementById('itemFormModal').classList.remove('open'));
         document.getElementById('btnSaveItemForm').addEventListener('click', saveItemFromModal);
+
+        // صف عبوة: تكلفتها = سعر الشراء × العدد، وسعر القطعة = سعر العبوة ÷ العدد
+        function addPackRow(u) {
+            u = u && u.name ? u : {};
+            const names = ['علبة', 'كرتونة', 'باكت', 'دستة', 'شريط', 'شيكارة', 'بالتة', 'قطعة'], tr = document.createElement('tr');
+            if (u.name && !names.includes(u.name)) names.push(u.name);
+            tr.innerHTML = `<td><select class="ns-control pk-name w-100">${names.map(n => `<option${n === u.name ? ' selected' : ''}>${n}</option>`).join('')}</select></td>
+                <td><input class="ns-control pk-factor w-100 text-center" value="${u.factor || ''}" placeholder="24"></td>
+                <td><input class="ns-control pk-barcode w-100 text-center" style="direction:ltr" placeholder="اضرب الباركود"></td>
+                <td class="pk-cost fw-bold en-digit">0</td>
+                <td><input class="ns-control pk-price w-100 text-center" value="${u.price || ''}"></td>
+                <td class="pk-piece fw-bold en-digit">0</td>
+                <td><button type="button" class="btn btn-sm text-danger pk-del"><i class="fa-solid fa-xmark"></i></button></td>`;
+            tr.querySelector('.pk-barcode').value = u.barcode || '';
+            document.getElementById('packRows').appendChild(tr);
+            calcPackRows();
+        }
+        function calcPackRows() {
+            const n = el => parseFloat(toEnglishDigits(el.value)) || 0, buy = n(document.getElementById('formLastBuyPrice')), r2 = v => Math.round(v * 100) / 100;
+            document.querySelectorAll('#packRows tr').forEach(tr => {
+                const f = n(tr.querySelector('.pk-factor'));
+                tr.querySelector('.pk-cost').textContent = r2(buy * f);
+                tr.querySelector('.pk-piece').textContent = f > 0 ? r2(n(tr.querySelector('.pk-price')) / f) : 0;
+            });
+        }
+        document.getElementById('btnAddPackRow').addEventListener('click', () => addPackRow());
+        document.getElementById('packRows').addEventListener('input', calcPackRows);
+        document.getElementById('packRows').addEventListener('click', e => e.target.closest('.pk-del') && e.target.closest('tr').remove());
+        document.getElementById('formLastBuyPrice').addEventListener('input', calcPackRows);
 
         document.getElementById('btnRecalcAvgCost').addEventListener('click', function () {
             let sumAvg = 0;

@@ -32,7 +32,6 @@ class WorkReportController extends Controller
         $periodMode = $request->query('period', 'all'); // all | today | month | custom
         $dateFrom = $request->query('from');
         $dateTo = $request->query('to');
-        $includeSuspended = $request->boolean('include_suspended', true);
 
         if ($periodMode === 'today') {
             $dateFrom = now()->toDateString();
@@ -58,6 +57,7 @@ class WorkReportController extends Controller
         $grossSales = 0.0;
         $salesPaidInInvoices = 0.0;
         $costOfGoodsSold = 0.0;
+        $itemsProfit = $deliveryIncome = $externalSales = $netCogs = $salesReturnsCost = 0.0;
 
         if (Schema::hasTable('sales_invoices')) {
             $salesQuery = DB::table('sales_invoices')->whereNull('deleted_at');
@@ -66,12 +66,24 @@ class WorkReportController extends Controller
             $salesRow = $salesQuery->selectRaw('
                 COALESCE(SUM(net_value), 0) as total_sales,
                 COALESCE(SUM(paid_amount), 0) as total_paid,
-                COALESCE(SUM(cost_total), 0) as total_cost
+                COALESCE(SUM(cost_total), 0) as total_cost,
+                COALESCE(SUM(profit_total), 0) as total_profit,
+                COALESCE(SUM(service_fee), 0) as total_fee,
+                COALESCE(SUM(external_sub_total), 0) as total_external
             ')->first();
 
             $grossSales = (float) ($salesRow->total_sales ?? 0);
             $salesPaidInInvoices = (float) ($salesRow->total_paid ?? 0);
             $costOfGoodsSold = (float) ($salesRow->total_cost ?? 0);
+            // ربح أصناف المحل بعد المرتجعات (profit_total محدّث مع كل مرتجع)؛ الخوارج بتتباع بتكلفتها والتوصيل إيراد مستقل
+            $itemsProfit = (float) ($salesRow->total_profit ?? 0);
+            $deliveryIncome = (float) ($salesRow->total_fee ?? 0);
+            $externalSales = (float) ($salesRow->total_external ?? 0);
+            // تكلفة الأصناف المتبقية عند العملاء (بعد خصم المرتجع)
+            $itemsQuery = DB::table('sales_invoice_items as i')->join('sales_invoices as s', 's.id', '=', 'i.sales_invoice_id')
+                ->whereNull('s.deleted_at')->where('i.is_external', false);
+            $applyDateFilter($itemsQuery, 's.invoice_date');
+            $netCogs = (float) $itemsQuery->selectRaw('COALESCE(SUM(i.cost * (i.qty - i.returned_qty)), 0) as c')->value('c');
         }
 
         // مرتجعات العملاء[cite: 8]
@@ -84,9 +96,11 @@ class WorkReportController extends Controller
 
             $sRetRow = $sRetQuery->selectRaw('
                 COALESCE(SUM(total), 0) as total_returns,
+                COALESCE(SUM(cost_total), 0) as total_cost,
                 COALESCE(SUM(cash_refund), 0) as total_cash_refund
             ')->first();
 
+            $salesReturnsCost = (float) ($sRetRow->total_cost ?? 0);
             $salesReturnsTotal = (float) ($sRetRow->total_returns ?? 0);
             $salesReturnsCashRefund = (float) ($sRetRow->total_cash_refund ?? 0);
         }
@@ -242,12 +256,12 @@ class WorkReportController extends Controller
         }
 
         $netInventoryMovements = round(
-            $grossPurchases - $purchaseReturnsTotal - $costOfGoodsSold + $salesReturnsTotal + $adjustmentsNetValue,
+            $grossPurchases - $purchaseReturnsTotal - $costOfGoodsSold + $salesReturnsCost + $adjustmentsNetValue,
             3
         );
 
-        // 5) حساب الأرباح (Profits)[cite: 3]
-        $grossProfit = round($netSales - $costOfGoodsSold, 3);
+        // 5) حساب الأرباح: ربح الأصناف (بعد المرتجعات، بدون الخوارج) + إيراد التوصيل − مصروفات التشغيل
+        $grossProfit = round($itemsProfit + $deliveryIncome, 3);
         $netProfit = round($grossProfit - $operatingExpenses, 3);
 
         // 6) إجمالي النقد والمركز المالي الصافي (أسفل الشاشة)[cite: 1, 2, 3, 4, 5, 8, 9]
@@ -256,7 +270,6 @@ class WorkReportController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'includeSuspended' => $includeSuspended,
             'sales' => [
                 'grossSales' => round($grossSales, 3),
                 'returns' => round($salesReturnsTotal, 3),
@@ -279,7 +292,7 @@ class WorkReportController extends Controller
                 'incomingValue' => round($grossPurchases, 3),
                 'returnedPurchasesValue' => round(-$purchaseReturnsTotal, 3),
                 'soldItemsCost' => round(-$costOfGoodsSold, 3),
-                'salesReturnsValue' => round($salesReturnsTotal, 3),
+                'salesReturnsValue' => round($salesReturnsCost, 3),
                 'reservedValue' => round($reservationsTotal, 3),
                 'remainingReservedValue' => 0,
                 'adjustmentsValue' => round($adjustmentsNetValue, 3),
@@ -294,7 +307,11 @@ class WorkReportController extends Controller
             ],
             'profits' => [
                 'netSales' => $netSales,
-                'cogs' => round($costOfGoodsSold, 3),
+                'externalSales' => round($externalSales, 3),
+                'storeSales' => round($itemsProfit + $netCogs, 3),
+                'cogs' => round($netCogs, 3),
+                'itemsProfit' => round($itemsProfit, 3),
+                'deliveryIncome' => round($deliveryIncome, 3),
                 'grossProfit' => $grossProfit,
                 'nonCapitalExpenses' => round($operatingExpenses, 3),
                 'netProfit' => $netProfit,
@@ -337,6 +354,17 @@ class WorkReportController extends Controller
         $window = $shift ? [$shift->started_at, $shift->ended_at ?: now()] : null;
         $byDay = fn ($q, string $dateColumn) => $shift ? $q->whereBetween('created_at', $window) : $q->whereDate($dateColumn, $date);
 
+        // تجميع لكل كاشير/مدير: مبيعاته ومرتجعاته ومصروفاته والمطلوب تسليمه (يتحسب قبل فلتر المستخدم)
+        $cashiers = [];
+        $add = function (?string $by, array $v) use (&$cashiers) {
+            $by = trim((string) $by) ?: 'غير معروف';
+            $cashiers[$by] ??= ['name' => $by, 'salesCount' => 0, 'salesTotal' => 0, 'cash' => 0, 'bank' => 0, 'custPay' => 0, 'returns' => 0, 'returnsCount' => 0, 'returnsTotal' => 0, 'cancelled' => 0, 'cancelledCount' => 0, 'out' => 0, 'suspendedCount' => 0, 'suspendedTotal' => 0];
+            foreach ($v as $k => $x) {
+                $cashiers[$by][$k] += $x;
+            }
+        };
+        $mine = fn (?string $by) => $user === 'all' || trim((string) $by) === $user;
+
         // 1) المبيعات في تاريخ الوردية
         $salesList = [];
         $salesDrawer = 0.0;
@@ -351,6 +379,11 @@ class WorkReportController extends Controller
             foreach ($salesRows as $row) {
                 $paid = (float) $row->paid_amount;
                 $method = (string) ($row->payment_method ?? 'cash');
+                $gone = !is_null($row->deleted_at);
+                $add($row->created_by, ['salesCount' => $gone ? 0 : 1, 'salesTotal' => $gone ? 0 : (float) $row->net_value, $method === 'cash' ? 'cash' : 'bank' => $paid]);
+                if (!$mine($row->created_by)) {
+                    continue;
+                }
                 if ($method === 'cash') {
                     $salesDrawer += $paid;
                 } else {
@@ -363,6 +396,8 @@ class WorkReportController extends Controller
                     'total' => (float) $row->net_value,
                     'paid' => $paid,
                     'method' => $method === 'cash' ? 'الدرج (كاش)' : 'حساب بنكي / محفظة',
+                    'by' => $row->created_by,
+                    'time' => substr((string) $row->created_at, 11, 5),
                     'cancelled' => !is_null($row->deleted_at),
                 ];
             }
@@ -372,13 +407,25 @@ class WorkReportController extends Controller
         $custPaymentsList = [];
         $custPayDrawer = 0.0;
         $custPayBank = 0.0;
+        $custRefundTotal = 0.0;
 
         if (Schema::hasTable('customer_transactions')) {
-            $cTxRows = $byDay(DB::table('customer_transactions')->whereNull('deleted_at')->where('type', 'payment'), 'transaction_date')->get();
+            $cTxRows = $byDay(DB::table('customer_transactions')->whereNull('deleted_at')->whereIn('type', ['payment', 'refund']), 'transaction_date')->get();
 
             foreach ($cTxRows as $tx) {
                 $amt = (float) $tx->amount;
-                $isBank = str_contains((string) ($tx->safe_name ?? ''), 'بنك') || str_contains((string) ($tx->safe_name ?? ''), 'تحويل');
+                $isBank = ($tx->payment_method ?? 'cash') !== 'cash' || str_contains((string) ($tx->safe_name ?? ''), 'بنك') || str_contains((string) ($tx->safe_name ?? ''), 'تحويل');
+                if ($tx->type === 'refund') { // رد مبلغ لعميل نقداً: خارج من الدرج
+                    if (!$isBank) {
+                        $add($tx->user_name, ['out' => $amt]);
+                        $mine($tx->user_name) && $custRefundTotal += $amt;
+                    }
+                    continue;
+                }
+                $isBank || $add($tx->user_name, ['custPay' => $amt]);
+                if (!$mine($tx->user_name)) {
+                    continue;
+                }
                 if ($isBank) {
                     $custPayBank += $amt;
                 } else {
@@ -403,6 +450,10 @@ class WorkReportController extends Controller
 
             foreach ($expRows as $e) {
                 $amt = (float) $e->amount;
+                $e->source === 'الدرج' && $add($e->created_by, ['out' => $amt]);
+                if (!$mine($e->created_by)) {
+                    continue;
+                }
                 $expensesTotal += $amt;
                 $expensesList[] = [
                     'item' => $e->item_name,
@@ -423,6 +474,10 @@ class WorkReportController extends Controller
 
             foreach ($pRows as $p) {
                 $paid = (float) $p->paid;
+                $p->source === 'drawer' && $add($p->user_name, ['out' => $paid]);
+                if (!$mine($p->user_name)) {
+                    continue;
+                }
                 $purchasesPaidTotal += $paid;
                 $purchasesList[] = [
                     'code' => $p->paper_number ?: ('PUR-' . $p->code),
@@ -444,6 +499,10 @@ class WorkReportController extends Controller
 
             foreach ($sRows as $st) {
                 $amt = (float) $st->amount;
+                ($st->source ?? '') === 'drawer' && $add($st->user_name, ['out' => $st->type === 'payment' ? $amt : -$amt]);
+                if (!$mine($st->user_name)) {
+                    continue;
+                }
                 if ($st->type === 'payment') {
                     $supplierPaidTotal += $amt;
                 } else {
@@ -463,11 +522,15 @@ class WorkReportController extends Controller
         // 6) مرتجعات المبيعات النقدية في تاريخ الوردية
         $salesReturnsRefund = 0.0;
         if (Schema::hasTable('sales_returns')) {
-            $salesReturnsRefund = (float) DB::table('sales_returns')->whereNull('deleted_at')
+            $retRows = DB::table('sales_returns')->whereNull('deleted_at')
                 ->when($shift,
                     fn ($q) => $q->where(fn ($w) => $w->where('shift_id', $shift->id)->orWhere(fn ($o) => $o->whereNull('shift_id')->whereBetween('created_at', $window))),
                     fn ($q) => $q->whereDate('return_date', $date))
-                ->sum('cash_refund');
+                ->get(['user_name', 'cash_refund', 'total']);
+            foreach ($retRows as $r) {
+                $add($r->user_name, ['returns' => (float) $r->cash_refund, 'returnsCount' => 1, 'returnsTotal' => (float) $r->total]);
+                $mine($r->user_name) && $salesReturnsRefund += (float) $r->cash_refund;
+            }
         }
 
         // 7) فواتير أُلغيت خلال الوردية/اليوم: ما دُفع فيها (ناقص ما رُد سابقاً) يخرج من الدرج
@@ -478,13 +541,38 @@ class WorkReportController extends Controller
         foreach ($cancelled as $c) {
             $refunded = (float) DB::table('sales_returns')->where('sales_invoice_id', $c->id)->whereNull('deleted_at')->sum('cash_refund');
             $out = $c->payment_method === 'cash' ? max(0, (float) $c->paid_amount - $refunded) : 0;
+            $add($c->cancelled_by, ['cancelled' => $out, 'cancelledCount' => 1]);
+            if (!$mine($c->cancelled_by)) {
+                continue;
+            }
             $cancelledTotal += $out;
             $cancelledList[] = ['orderNo' => $c->order_no, 'customer' => $c->customer_name, 'amount' => $out, 'reason' => $c->cancel_reason, 'by' => $c->cancelled_by];
+        }
+
+        // 8) الأصناف المباعة (مجمعة) والفواتير المعلقة باسم كل كاشير
+        $inScope = fn ($q, string $p = '') => $shift ? $q->where($p . 'shift_id', $shift->id) : $q->whereDate($p . ($p ? 'invoice_date' : 'created_at'), $date);
+        $itemsList = $inScope(DB::table('sales_invoice_items as i')->join('sales_invoices as s', 's.id', '=', 'i.sales_invoice_id')->whereNull('s.deleted_at'), 's.')
+            ->when($user !== 'all', fn ($q) => $q->where('s.created_by', $user))
+            ->groupBy('i.name')->orderByDesc('total')->limit(500)
+            ->selectRaw('i.name, SUM(i.qty) as qty, SUM(i.returned_qty) as returned, SUM(COALESCE(i.net_total, i.total)) as total')->get()
+            ->map(fn ($r) => ['name' => $r->name, 'qty' => round((float) $r->qty, 3), 'returned' => round((float) $r->returned, 3), 'total' => round((float) $r->total, 2)])->all();
+
+        $suspendedList = [];
+        foreach ($inScope(DB::table('suspended_invoices'))->orderByDesc('id')->get(['invoice_number', 'customer_name', 'total', 'created_by', 'created_at']) as $sp) {
+            $add($sp->created_by, ['suspendedCount' => 1, 'suspendedTotal' => (float) $sp->total]);
+            $mine($sp->created_by) && $suspendedList[] = ['no' => $sp->invoice_number, 'customer' => $sp->customer_name ?: 'عميل نقدي', 'total' => (float) $sp->total, 'by' => $sp->created_by, 'time' => substr((string) $sp->created_at, 11, 5)];
         }
 
         $shiftsOfDay = DB::table('pos_shifts')->whereDate('shift_date', $date)
             ->orWhere(fn ($q) => $q->where('status', 'open'))->orderByDesc('id')->get()
             ->map(fn ($s) => ['id' => $s->id, 'label' => "وردية {$s->shift_no} — {$s->started_by_name} — " . ($s->status === 'open' ? 'مفتوحة' : 'مقفولة')]);
+
+        $cashiers = collect($cashiers)->map(function ($c) {
+            $c['netSales'] = round($c['salesTotal'] - $c['returnsTotal'], 2);
+            $c['due'] = round($c['cash'] + $c['custPay'] - $c['returns'] - $c['cancelled'] - $c['out'], 2);
+            return $c;
+        })->sortByDesc('salesTotal')->values()->all();
+        $userNames = DB::table('pos_users')->whereNull('deleted_at')->pluck('full_name')->merge(collect($cashiers)->pluck('name'))->filter()->unique()->values()->all();
 
         $inflowDrawer = round($salesDrawer + $custPayDrawer + $supplierCollectedTotal, 3);
         $inflowBank = round($salesBank + $custPayBank, 3);
@@ -496,15 +584,19 @@ class WorkReportController extends Controller
         }
 
         $totalInflow = round($inflowDrawer + $inflowBank, 3);
-        $totalOutflow = round($expensesTotal + $purchasesPaidTotal + $supplierPaidTotal + $salesReturnsRefund + $cancelledTotal, 3);
+        $totalOutflow = round($expensesTotal + $purchasesPaidTotal + $supplierPaidTotal + $salesReturnsRefund + $cancelledTotal + $custRefundTotal, 3);
         $netShift = round($totalInflow - $totalOutflow, 3);
 
         return response()->json([
             'status' => 'success',
             'date' => $date,
-            'shift' => $shift ? ['id' => $shift->id, 'no' => $shift->shift_no, 'status' => $shift->status] : null,
+            'shift' => $shift ? ['id' => $shift->id, 'no' => $shift->shift_no, 'status' => $shift->status, 'by' => $shift->started_by_name, 'from' => substr((string) $shift->started_at, 0, 16), 'to' => $shift->ended_at ? substr((string) $shift->ended_at, 0, 16) : null] : null,
             'shifts' => $shiftsOfDay,
+            'items' => $itemsList,
+            'suspended' => $suspendedList,
             'cancelled' => $cancelledList,
+            'cashiers' => $cashiers,
+            'users' => $userNames,
             'expectedDrawer' => $shift ? \App\Support\Drawer::expected($shift) : null,
             'totals' => [
                 'totalInflow' => $totalInflow,

@@ -626,15 +626,15 @@
                 </select>
 
                 <div class="date-stepper">
-                    <button type="button" class="step-btn" id="from-next"><i class="fas fa-arrow-right"></i></button>
+                    <button type="button" class="step-btn" id="from-prev"><i class="fas fa-arrow-right"></i></button>
                     <span class="date-text-box" id="from-date-label"></span>
-                    <button type="button" class="step-btn" id="from-prev"><i class="fas fa-arrow-left"></i></button>
+                    <button type="button" class="step-btn" id="from-next"><i class="fas fa-arrow-left"></i></button>
                 </div>
 
                 <div class="date-stepper">
-                    <button type="button" class="step-btn" id="to-next"><i class="fas fa-arrow-right"></i></button>
+                    <button type="button" class="step-btn" id="to-prev"><i class="fas fa-arrow-right"></i></button>
                     <span class="date-text-box" id="to-date-label"></span>
-                    <button type="button" class="step-btn" id="to-prev"><i class="fas fa-arrow-left"></i></button>
+                    <button type="button" class="step-btn" id="to-next"><i class="fas fa-arrow-left"></i></button>
                 </div>
 
                 <button type="button" class="btn btn-sm btn-secondary fw-bold px-3" id="btn-search-by-date">

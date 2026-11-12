@@ -110,6 +110,7 @@ Route::prefix('api/inventory')->group(function () {
     Route::post('/import-items/process', [InventorySubController::class, 'importItemsProcessApi']);
     Route::post('/items/{id}/quick-update-pos', [InventoryItemController::class, 'quickUpdateFromPos']);
     Route::post('/items/save', [InventoryItemController::class, 'saveItem']);
+    Route::post('/items/{id}/units', [InventoryItemController::class, 'addUnit']);
     Route::post('/categories/quick', [InventoryItemController::class, 'quickCategory']);
     Route::post('/items/batch', [InventoryItemController::class, 'batchAction']);
     Route::get('/pos-items', [InventoryItemController::class, 'posItemsApi']);
@@ -356,3 +357,51 @@ Route::prefix('api/tools')->group(function () {
 
 
 }); // نهاية مجموعة pos.auth
+
+// ================= الترخيص والتفعيل (مفتوحة دائماً) =================
+Route::prefix('license')->group(function () {
+    Route::get('/activate', [\App\Http\Controllers\LicenseController::class, 'activate']);
+    Route::get('/expired', [\App\Http\Controllers\LicenseController::class, 'expired']);
+    Route::get('/device', [\App\Http\Controllers\LicenseController::class, 'device']);
+    Route::post('/reapply', [\App\Http\Controllers\LicenseController::class, 'reapply'])->middleware('throttle:10,1');
+    Route::get('/status', [\App\Http\Controllers\LicenseController::class, 'status']);
+    Route::post('/request', [\App\Http\Controllers\LicenseController::class, 'request'])->middleware('throttle:10,1');
+    Route::post('/check', [\App\Http\Controllers\LicenseController::class, 'check']);
+    Route::post('/reset', [\App\Http\Controllers\LicenseController::class, 'reset']);
+    Route::post('/heartbeat', [\App\Http\Controllers\LicenseController::class, 'heartbeat']);
+});
+
+// ================= سندات الموبايل المعلقة (اعتماد الكاشير) =================
+Route::middleware('pos.auth')->group(function () {
+    Route::get('/admin/remote-vouchers', [\App\Http\Controllers\RemoteVoucherController::class, 'index']);
+    Route::post('/admin/remote-vouchers/sync', [\App\Http\Controllers\RemoteVoucherController::class, 'sync']);
+    Route::post('/admin/remote-vouchers/{id}', [\App\Http\Controllers\RemoteVoucherController::class, 'decide']);
+});
+
+// ================= موبايل Cloud Pro وسيرفر المالك (HQ_ENABLED=true فقط) =================
+Route::middleware('hq')->group(function () {
+    Route::get('/cloud-mobile', [\App\Http\Controllers\CloudMobileController::class, 'index']);
+    Route::post('/cloud-mobile/login', [\App\Http\Controllers\CloudMobileController::class, 'login'])->middleware('throttle:10,1');
+    Route::post('/cloud-mobile/logout', [\App\Http\Controllers\CloudMobileController::class, 'logout']);
+    Route::get('/cloud-mobile/data', [\App\Http\Controllers\CloudMobileController::class, 'data']);
+    Route::post('/cloud-mobile/voucher', [\App\Http\Controllers\CloudMobileController::class, 'voucher']);
+});
+
+// لوحة المالك السرية (المسار من HQ_PORTAL_PATH)
+Route::prefix(config('license.portal'))->middleware('hq')->group(function () {
+    $c = \App\Http\Controllers\Admin\HqPortalController::class;
+    Route::get('/', [$c, 'login']);
+    Route::post('/login', [$c, 'loginSubmit'])->middleware('throttle:10,1');
+    Route::middleware('hq:auth')->group(function () use ($c) {
+        Route::post('/logout', [$c, 'logout']);
+        Route::get('/requests', [$c, 'requests']);
+        Route::post('/requests/{id}/approve', [$c, 'approve']);
+        Route::post('/requests/{id}/reject', [$c, 'reject']);
+        Route::get('/plans', [$c, 'plans']);
+        Route::post('/plans', [$c, 'savePlans']);
+        Route::get('/stores', [$c, 'stores']);
+        Route::post('/stores/{id}', [$c, 'storeAction']);
+        Route::get('/account', [$c, 'accountPage']);
+        Route::post('/account', [$c, 'account']);
+    });
+});

@@ -377,7 +377,7 @@ class SalesReturnController extends Controller
                 ]);
 
                 if (!$invItem->is_external) {
-                    Stock::move(Stock::find($invItem->item_id, $invItem->barcode), $qty, 'مرتجع مبيعات', $salesReturn->return_number, $invoice->customer_name ?: 'عميل نقدي', $entry['price']);
+                    Stock::move(Stock::find($invItem->item_id, $invItem->barcode), $qty * ((float) $invItem->unit_factor ?: 1), 'مرتجع مبيعات', $salesReturn->return_number, $invoice->customer_name ?: 'عميل نقدي', $entry['price']);
                 }
             }
 
@@ -402,7 +402,7 @@ class SalesReturnController extends Controller
             if ($invItem && $invItem->is_external) {
                 continue;
             }
-            Stock::move(Stock::find($rItem->item_id, $rItem->barcode), -(float) $rItem->quantity, 'حذف/تعديل مرتجع مبيعات', $returnRecord->return_number, $invoice->customer_name ?: 'عميل نقدي', (float) $rItem->price);
+            Stock::move(Stock::find($rItem->item_id, $rItem->barcode), -(float) $rItem->quantity * ((float) ($invItem->unit_factor ?? 1) ?: 1), 'حذف/تعديل مرتجع مبيعات', $returnRecord->return_number, $invoice->customer_name ?: 'عميل نقدي', (float) $rItem->price);
         }
         Balance::customer($invoice->customer_id, (float) $returnRecord->account_credit);
     }

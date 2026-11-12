@@ -239,11 +239,11 @@
             </select>
 
             <div class="date-stepper d-none" id="single-day-stepper">
-                <button type="button" class="step-arrow" id="btn-next-day" title="اليوم التالي">
+                <button type="button" class="step-arrow" id="btn-prev-day" title="اليوم السابق">
                     <i class="fas fa-arrow-right"></i>
                 </button>
                 <div class="date-label-box en-digit" id="date-display">—</div>
-                <button type="button" class="step-arrow" id="btn-prev-day" title="اليوم السابق">
+                <button type="button" class="step-arrow" id="btn-next-day" title="اليوم التالي">
                     <i class="fas fa-arrow-left"></i>
                 </button>
             </div>

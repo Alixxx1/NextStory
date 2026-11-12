@@ -318,7 +318,7 @@ class ShowController extends Controller
                 'shift' => now()->hour < 16 ? 'الوردية الصباحية' : 'الوردية المسائية',
                 'ref_no' => $refNo,
                 'note' => trim($data['note'] ?? ''),
-                'user_name' => 'مدير الفرع',
+                'user_name' => \App\Support\PosAuth::name(),
                 'is_deferred_customer' => $balBefore > 0,
                 'is_synced' => false,
             ]);
@@ -492,7 +492,7 @@ class ShowController extends Controller
                     'shift' => $data['shift'] ?? 'الوردية الصباحية',
                     'ref_no' => $refNo,
                     'note' => trim($data['notes'] ?? ''),
-                    'user_name' => 'مدير الفرع',
+                    'user_name' => \App\Support\PosAuth::name(),
                     'is_deferred_customer' => $baseBalance > 0,
                     'is_synced' => false,
                 ]);

@@ -135,9 +135,9 @@
         <h4 class="m-0 fw-bold text-warning" style="color: #d4ac0d !important;"><i class="fas fa-truck-loading me-2"></i> مرتجعات الموردين</h4>
 
         <div class="date-navigation">
-            <button class="nav-arrow" id="btn-next-day" title="اليوم التالي"><i class="fas fa-chevron-right"></i></button>
+            <button class="nav-arrow" id="btn-prev-day" title="اليوم السابق"><i class="fas fa-chevron-right"></i></button>
             <span class="current-date-display" id="display-date">2026-10-14</span>
-            <button class="nav-arrow" id="btn-prev-day" title="اليوم السابق"><i class="fas fa-chevron-left"></i></button>
+            <button class="nav-arrow" id="btn-next-day" title="اليوم التالي"><i class="fas fa-chevron-left"></i></button>
             <select class="date-type-select">
                 <option value="day">تاريخ محدد</option>
                 <option value="period">في فترة (من-إلى)</option>

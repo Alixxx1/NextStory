@@ -21,6 +21,9 @@ class Clock
         if ($last && $now < $last - self::TOLERANCE) {
             return 'ساعة الجهاز متأخرة عن آخر عملية مسجلة (' . date('Y-m-d H:i', $last) . '). صحّح التاريخ والوقت ثم أعد المحاولة.';
         }
+        if ($last && $now - $last < 60) {
+            return null;
+        }
         DB::table('sequences')->upsert(
             [['key' => self::KEY, 'value' => max($now, $last), 'created_at' => now(), 'updated_at' => now()]],
             ['key'], ['value', 'updated_at']

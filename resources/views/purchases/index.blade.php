@@ -121,9 +121,9 @@
         <h4 class="m-0 fw-bold text-warning" style="color: #d4ac0d !important;"><i class="fas fa-truck-loading me-2"></i> مرتجعات الموردين</h4>
 
         <div class="date-navigation">
-            <button class="nav-arrow" id="btn-next-day" title="اليوم التالي"><i class="fas fa-chevron-right"></i></button>
+            <button class="nav-arrow" id="btn-prev-day" title="اليوم السابق"><i class="fas fa-chevron-right"></i></button>
             <span class="current-date-display" id="display-date">--</span>
-            <button class="nav-arrow" id="btn-prev-day" title="اليوم السابق"><i class="fas fa-chevron-left"></i></button>
+            <button class="nav-arrow" id="btn-next-day" title="اليوم التالي"><i class="fas fa-chevron-left"></i></button>
             <select class="date-type-select" id="filter-date-mode">
                 <option value="all" selected>كل التواريخ</option>
                 <option value="day">تاريخ محدد</option>

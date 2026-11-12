@@ -595,10 +595,10 @@
                         <div class="exp-control-wrap">
                             <div class="date-nav-box">
                                 <span class="date-display-text" id="entry-date-display"></span>
-                                <button type="button" class="date-arrow-btn" id="btn-date-next" title="اليوم التالي">
+                                <button type="button" class="date-arrow-btn" id="btn-date-prev" title="اليوم السابق">
                                     <i class="fas fa-arrow-right"></i>
                                 </button>
-                                <button type="button" class="date-arrow-btn" id="btn-date-prev" title="اليوم السابق">
+                                <button type="button" class="date-arrow-btn" id="btn-date-next" title="اليوم التالي">
                                     <i class="fas fa-arrow-left"></i>
                                 </button>
                             </div>

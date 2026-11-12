@@ -147,3 +147,6 @@ body.ns-erp kbd { background: #fff; color: #334155; border: 1px solid #cbd5e1; b
 body.ns-erp .btn-exit-screen, body.ns-erp .btn-log.btn-danger, body.ns-erp [class*="btn-exit"] { background: #fff !important; background-image: none !important; color: var(--erp-red) !important; border: 1px solid #fecaca !important; box-shadow: none !important; }
 body.ns-erp .date-control-bar h5, body.ns-erp .date-control-bar h5 i, body.ns-erp .page-header h5 i { color: var(--erp-navy) !important; }
 body.ns-erp .date-control-bar h5 i, body.ns-erp .page-header h5 i { color: var(--erp-green) !important; }
+
+/* تنبيهات SweetAlert فوق أي نافذة مفتوحة (نوافذ الأصناف z-index 2000+) عشان رسائل الخطأ ما تستخباش وراها */
+.swal2-container { z-index: 5000 !important; }

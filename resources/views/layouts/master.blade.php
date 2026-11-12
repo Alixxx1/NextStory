@@ -610,6 +610,8 @@
                 <li><a class="custom-dropdown-item fw-bold" href="/admin/users" data-require-manager="1" data-perm-title="إدارة المستخدمين والصلاحيات"><i class="fas fa-user-gear text-primary"></i> المستخدمين</a></li>
                 <li><a class="custom-dropdown-item fw-bold" href="/admin/shifts-log" data-perm="admin.shifts" data-perm-title="سجل الورديات"><i class="fas fa-business-time text-warning"></i> سجل الورديات</a></li>
                 <li><a class="custom-dropdown-item fw-bold" href="/admin/security-alerts"><i class="fas fa-shield-halved text-danger"></i> التنبيهات الأمنية</a></li>
+                <li><a class="custom-dropdown-item fw-bold" href="/license/status"><i class="fas fa-key"></i> الاشتراك والتفعيل</a></li>
+                <li><a class="custom-dropdown-item fw-bold" href="/admin/remote-vouchers"><i class="fas fa-mobile-screen"></i> سندات الموبايل المعلقة</a></li>
                 <li><a class="custom-dropdown-item fw-bold" href="/admin/login-log" data-perm="admin.login_log" data-perm-title="سجل دخول المستخدمين"><i class="fas fa-clock-rotate-left text-info"></i> سجل دخول المستخدمين</a></li>
                 <div class="custom-dropdown-divider"></div>
                 <li><a class="custom-dropdown-item fw-bold" href="/admin/safes" data-perm="admin.safes" data-perm-title="إدارة الخزائن"><i class="fas fa-vault text-success"></i> إدارة الخزائن</a></li>
