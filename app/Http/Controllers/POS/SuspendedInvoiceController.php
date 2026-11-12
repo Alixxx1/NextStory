@@ -47,11 +47,19 @@ class SuspendedInvoiceController extends Controller
     }
 
     /** الحذف: لصاحب الفاتورة المعلقة أو لمن لديه صلاحية حذف أصناف/فواتير معلقة */
-    public function destroy(string $clientId)
+    public function destroy(Request $request, string $clientId)
     {
         $row = DB::table('suspended_invoices')->where('client_id', $clientId)->first();
         if (!$row) {
             return response()->json(['ok' => true]);
+        }
+        // اتحفظت كفاتورة: اللي حفظها (حتى لو مش صاحبها) بيشيلها من المعلقة عشان ما تتباعش مرتين، وبتتسجل "اتحفظت" مش "اتحذفت"
+        $saved = (string) $request->query('saved', '');
+        if ($saved !== '' && DB::table('sales_invoices')->where('order_no', $saved)->where('created_by_id', PosAuth::id())->where('created_at', '>=', now()->subMinutes(30))->exists()) {
+            DB::table('suspended_invoices')->where('id', $row->id)->delete();
+            \App\Http\Controllers\Admin\AdminAuthController::logActivity(PosAuth::name(), 'حفظ فاتورة معلقة', 'نجحت',
+                "الفاتورة المعلقة #{$row->invoice_number} (علّقها {$row->created_by}) اتحفظت فاتورة #{$saved} باسم " . PosAuth::name(), '', PosAuth::id());
+            return response()->json(['ok' => true, 'saved' => $saved]);
         }
         if ((int) $row->created_by_id !== (int) PosAuth::id() && !PosAuth::can('pos.delete_item')) {
             return response()->json(['ok' => false, 'message' => 'حذف فاتورة معلقة لمستخدم آخر يحتاج تصريح المدير.', 'permission' => 'pos.delete_item'], 403);

@@ -12,6 +12,8 @@ class SecurityAlertController extends Controller
 {
     private const CLIENT_TYPES = [
         'cart_item_removed' => ['حذف صنف من الفاتورة المفتوحة', 'warning'],
+        'cart_qty_edit' => ['تعديل كمية صنف بعد ما اتضرب في الفاتورة', 'warning'],
+        'cart_price_edit' => ['تعديل سعر صنف بعد ما اتضرب في الفاتورة', 'warning'],
         'cart_cleared' => ['مسح الفاتورة المفتوحة بالكامل', 'danger'],
         'cart_abandoned' => ['خروج من شاشة البيع وفي الفاتورة أصناف لم تُحفظ', 'danger'],
     ];

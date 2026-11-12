@@ -137,6 +137,8 @@
                 passInput.value = ''; errBox.style.display = 'none'; passInput.focus();
             };
             tiles.forEach(t => t.addEventListener('click', () => pick(t)));
+            // آخر مستخدم دخل من الجهاز ده بيبقى متحدد تلقائياً (لكل جهاز لوحده)
+            try { const last = tiles.find(t => t.dataset.user === localStorage.getItem('ns.lastUser')); if (last) pick(last); } catch (e) {}
             // الأسهم بتغير المستخدم من غير ماوس
             document.addEventListener('keydown', e => {
                 if (!['ArrowDown', 'ArrowUp'].includes(e.key) || !tiles.length) return;
@@ -169,6 +171,7 @@
                     });
                     const data = await res.json();
                     if (!res.ok || !data.ok) throw new Error(data.message || 'بيانات الدخول غير صحيحة');
+                    try { localStorage.setItem('ns.lastUser', select.value); } catch (e) {}
                     window.location.href = data.redirect || '/pos/sales';
                 } catch (err) {
                     errBox.textContent = err.message === 'Failed to fetch' ? 'تعذر الاتصال بالسيرفر المحلي.' : err.message;

@@ -301,9 +301,8 @@ Route::prefix('api/employees')->name('api.employees.')->middleware('pos.auth:emp
 // ================= 12. قسم الأدوات والإدارة والأمان والخزائن (Tools & Admin) =================
 Route::prefix('tools')->name('tools.')->group(function () {
     Route::get('/stocktaking', [InventorySubController::class, 'stocktakingView'])->name('stocktaking');
-    Route::get('/barcode-print', fn () => view('tools.barcode_print'))->name('barcode');
-    Route::get('/scale-barcode-print', fn () => view('tools.scale_barcode_print'))->name('scale_barcode');
-    Route::get('/printers-status', fn () => view('tools.printers_status'))->name('printers');
+    Route::get('/barcode-print', [\App\Http\Controllers\ToolsController::class, 'barcodePrint'])->name('barcode');
+    Route::get('/scale-barcode-print', [\App\Http\Controllers\ToolsController::class, 'scaleBarcodePrint'])->name('scale_barcode');
         Route::get('/import-items', [InventorySubController::class, 'importItemsView'])->name('import_items');
         Route::get('/import-customers', [InventorySubController::class, 'importCustomersView'])->name('import_customers');
 Route::get('/import-suppliers', [InventorySubController::class, 'importSuppliersView'])->name('import_suppliers');
@@ -320,8 +319,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/safes', [AdminAuthController::class, 'safesView'])->name('safes');
 
     Route::get('/riders', [DeliveryRunController::class, 'ridersPage'])->middleware('pos.auth:delivery.riders')->name('riders');
-    Route::get('/prep-printers', fn () => view('admin.prep_printers'))->name('prep_printers');
-    Route::get('/manager-tools', fn () => view('admin.manager_tools'))->name('manager_tools');
 });
 
 // مسارات الـ API الخاصة بقسم الإدارة (المستخدمين، الورديات، سجل الدخول، الخزائن)

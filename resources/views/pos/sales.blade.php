@@ -3248,9 +3248,10 @@
                 await loadSuspendedFromStorage();
             }
 
-            async function removeSuspended(id) {
+            // savedNo: الفاتورة المعلقة اتحفظت (مش اتحذفت) ← السيرفر بيتأكد ويسجلها "اتحفظت" باسم اللي حفظها
+            async function removeSuspended(id, savedNo = '') {
                 try {
-                    await suspendedApi('DELETE', `/${encodeURIComponent(id)}`);
+                    await suspendedApi('DELETE', `/${encodeURIComponent(id)}${savedNo ? `?saved=${encodeURIComponent(savedNo)}` : ''}`);
                 } catch (e) {
                     if (e.status === 403) Swal.fire('غير مسموح', e.message, 'warning');
                     else Swal.fire('تعذر الحذف', e.message, 'error');
@@ -4008,6 +4009,8 @@
                 if (!noteTitle || !Number.isFinite(priceVal) || priceVal <= 0) return;
 
                 if (activeExternalRowForEdit && activeExternalRowForEdit.length) {
+                    const oldPrice = parseFloat(activeExternalRowForEdit.find('.item-price').text()) || 0;
+                    if (Math.abs(priceVal - oldPrice) > 0.004) { logCart('price', noteTitle, 1, priceVal, oldPrice); liveAlert('cart_price_edit', noteTitle, { 'السعر': `${oldPrice} ← ${priceVal}`, 'النوع': 'خوارج' }, oldPrice - priceVal); }
                     activeExternalRowForEdit.attr('data-raw-name', noteTitle);
                     activeExternalRowForEdit.find('.item-name-text').text(noteTitle);
                     activeExternalRowForEdit.find('.item-price').text(priceVal.toFixed(2));
@@ -4240,8 +4243,10 @@
             function commitProductDetailsToCart(qty, price, isWeight, notes) {
                 if (activeCartRowForProductDetails && activeCartRowForProductDetails.length) {
                     let r = activeCartRowForProductDetails;
-                    const diff = qty - rowQty(r); // تقليل الكمية = حذف جزئي
-                    diff && logCart(diff > 0 ? 'add' : 'remove', r.attr('data-raw-name'), Math.abs(diff), price);
+                    // تعديل بعد الضرب بيتسجل للمراجعة: الكمية بالسعر القديم ثم السعر بالكمية الجديدة (مجموع النقص = القديم − الجديد بالظبط)
+                    const oldQty = rowQty(r), oldPrice = parseFloat(r.find('.item-price').text()) || 0, nm = r.attr('data-raw-name');
+                    if (Math.abs(qty - oldQty) > 1e-9) { logCart('qty', nm, qty, oldPrice, oldQty); liveAlert('cart_qty_edit', nm, { 'الكمية': `${oldQty} ← ${qty}`, 'السعر': oldPrice }, (oldQty - qty) * oldPrice); }
+                    if (Math.abs(price - oldPrice) > 0.004) { logCart('price', nm, qty, price, oldPrice); liveAlert('cart_price_edit', nm, { 'السعر': `${oldPrice} ← ${price}`, 'الكمية': qty }, (oldPrice - price) * qty); }
                     r.find('.item-qty').text(isWeight ? `${qty.toFixed(3)} كجم` : `${qty} ${activeProductForAdd.unit || 'قطعة'}`);
                     r.find('.item-price').text(price.toFixed(2));
                     r.attr('data-item-notes', notes);
@@ -4426,8 +4431,10 @@
             var cartLog = []; // var: ممكن أصناف تتضاف (استرجاع فاتورة) قبل ما السطر ده يتنفذ
             const freeDelete = () => systemSettings.cart_delete_mode === 'log';
             const rowQty = r => parseFloat(r.find('.item-qty').text()) || 0;
-            function logCart(act, name, qty, price) {
-                (cartLog = cartLog || []).push({ t: new Date().toLocaleTimeString('en-GB'), act, name: String(name || '').slice(0, 190), qty: Math.round((Number(qty) || 0) * 1000) / 1000, price: Number(price) || 0 });
+            function logCart(act, name, qty, price, from) {
+                const e = { t: new Date().toLocaleTimeString('en-GB'), act, name: String(name || '').slice(0, 190), qty: Math.round((Number(qty) || 0) * 1000) / 1000, price: Number(price) || 0 };
+                if (from != null) e.from = Math.round((Number(from) || 0) * 1000) / 1000; // قبل التعديل (سعر أو كمية)
+                (cartLog = cartLog || []).push(e);
             }
             function sendCartAudit(status, requestId) {
                 const events = cartLog;
@@ -4436,13 +4443,16 @@
                 try { fetch('/api/security/cart-audit', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrfToken },
                     body: JSON.stringify({ status, requestId, events, finalTotal: status === 'saved' ? currentGrandTotal : 0 }) }); } catch (e) {}
             }
+            // تنبيه لحظي للمدير (على أي جهاز) مع كل تعديل/حذف بعد الضرب، غير سجل المراجعة اللي بيتبعت آخر الفاتورة
+            function liveAlert(type, name, details, cut) {
+                NSSecurity.report(type, { 'الصنف': name, ...details, 'الفاتورة قبل التعديل': cartSnapshot().total + ' ج.م' }, cut > 0 ? Math.round(cut * 100) / 100 : null, String($('#current-order-number').text() || ''));
+            }
             // حذف صنف/مسح الفاتورة: باسورد مدير، أو في وضع "log" بيتنفذ على طول ويتسجل للمراجعة
             const guardDelete = (label, cb) => freeDelete() ? cb() : requirePermissionOrManager('pos.delete_item', label, cb);
 
             window.nsReportCartLoss = (type) => {
                 const s = cartSnapshot();
                 if (type === 'cart_abandoned') { $('#cart-items .cart-item-row').each(function () { logCart('remove', $(this).attr('data-raw-name'), rowQty($(this)), $(this).find('.item-price').text()); }); sendCartAudit('abandoned'); }
-                if (freeDelete()) return; // في وضع السجل المراجعة بتغني عن التنبيه الفوري
                 if (s.items.length) NSSecurity.report(type, { 'عدد الأصناف': s.items.length, 'الأصناف': s.items.slice(0, 15).join(' | '), 'العميل': (typeof selectedCustomer !== 'undefined' && selectedCustomer && selectedCustomer.name) || '' }, s.total, String($('#current-order-number').text() || ''));
             };
 
@@ -4456,7 +4466,7 @@
                 guardDelete(`حذف الصنف (${itemName}) من الفاتورة الحالية`, function() {
                     const sn = cartSnapshot(rows.eq(idx));
                     logCart('remove', itemName, rowQty(rows.eq(idx)), rows.eq(idx).find('.item-price').text());
-                    if (!freeDelete()) NSSecurity.report('cart_item_removed', { 'الصنف': sn.items[0], 'مصرّح بواسطة': lastAuthorizedManagerName || 'صلاحية المستخدم', 'الفاتورة المفتوحة': cartSnapshot().total + ' ج.م' }, sn.total, String($('#current-order-number').text() || ''));
+                    NSSecurity.report('cart_item_removed', { 'الصنف': sn.items[0], 'مصرّح بواسطة': lastAuthorizedManagerName || 'صلاحية المستخدم', 'الفاتورة المفتوحة': cartSnapshot().total + ' ج.م' }, sn.total, String($('#current-order-number').text() || ''));
                     rows.eq(idx).remove();
                     let rem = $('#cart-items .cart-item-row');
                     if (rem.length) rem.eq(Math.min(idx, rem.length - 1)).addClass('active-row');
@@ -4803,7 +4813,7 @@
                 sendCartAudit('saved', invoicePayload.requestId);
 
                 if (editingSuspendedInvoiceId) {
-                    removeSuspended(editingSuspendedInvoiceId);
+                    removeSuspended(editingSuspendedInvoiceId, invoicePayload.number);
                     editingSuspendedInvoiceId = null;
                 }
 

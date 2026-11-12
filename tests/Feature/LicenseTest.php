@@ -238,7 +238,7 @@ class LicenseTest extends TestCase
         $this->get('/license/activate')->assertSee('جاري مراجعة الطلب')->assertDontSee('name="store_name"')->assertDontSee(License::fingerprint());
         $this->postJson('/license/check')->assertJson(['ok' => false, 'state' => 'pending']);
         // المالك يرى الطلب وبصمته ويتميز كجديد
-        $this->hqLogin()->get(self::PORTAL . '/requests')->assertSee('1 جديد')->assertSee(License::fingerprint());
+        $this->hqLogin()->get(self::PORTAL . '/requests')->assertSee('<span class="lc-badge">1</span>', false)->assertSee(License::fingerprint());
         // رفض
         $this->hqLogin()->post(self::PORTAL . '/requests/1/reject');
         $this->postJson('/license/check')->assertJson(['state' => 'rejected']);

@@ -5,6 +5,8 @@
 
     // height بالملّي: لورق الرسيت نقيس طول المحتوى بعد الرسم حتى يخرج PDF بطول الفاتورة فقط
     function printCss(options, height) {
+        // استيكر باركود: كل استيكر صفحة بمقاسه بالظبط ومن غير هوامش
+        if (options.label) return `@page { size: ${options.label.w}mm ${options.label.h}mm; margin: 0; } html, body { margin: 0; padding: 0; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; } * { box-sizing: border-box; }`;
         const sheet = { a4: 'A4', a5: 'A5' }[options.paper];
         const m = options.margins || {};
         const [top, right, bottom, left] = [m.top, m.right, m.bottom, m.left].map(v => Number(v) || 0);
@@ -47,7 +49,8 @@
                     useBackupOnFailure: Boolean(options.useBackupOnFailure),
                     comPort: options.comPort || '',
                     pageWidth: options.pageWidth || 576,
-                    savePrintImages: Boolean(options.savePrintImages)
+                    savePrintImages: Boolean(options.savePrintImages),
+                    label: options.label || null
                 };
                 try {
                     return await api.silentPrint(payload);
@@ -67,7 +70,7 @@
             doc.close();
             // صورة تالفة (لوجو/QR) لا يجب أن توقف الطباعة
             await Promise.all(Array.from(doc.images, img => (img.decode ? img.decode() : Promise.resolve()).catch(() => img.remove())));
-            if (!['a4', 'a5'].includes(options.paper)) {
+            if (!options.label && !['a4', 'a5'].includes(options.paper)) {
                 doc.getElementById('ns-page').textContent = printCss(options, doc.body.scrollHeight * 25.4 / 96);
             }
             frame.contentWindow.onafterprint = () => setTimeout(() => frame.remove(), 500);

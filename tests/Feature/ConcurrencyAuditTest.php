@@ -128,6 +128,28 @@ class ConcurrencyAuditTest extends TestCase
         $admin()->getJson('/api/security/cart-audits?unread=1')->assertJsonCount(0, 'rows');
         $admin()->postJson('/api/security/cart-audits/delete', [])->assertJson(['deleted' => 1]); // مسح المقروء
         $this->assertDatabaseCount('cart_audits', 0);
+
+        // تعديل سعر أو كمية بعد الضرب بيتسجل حتى من غير حذف، والنقص = (من − لـ)
+        $edits = [$ev('add', 'سكر', 2, 25), $ev('add', 'شاي', 3, 10), ['t' => '10:05:00', 'act' => 'price', 'name' => 'سكر', 'qty' => 2, 'price' => 20, 'from' => 25], ['t' => '10:06:00', 'act' => 'qty', 'name' => 'شاي', 'qty' => 1, 'price' => 10, 'from' => 3]];
+        $this->as(['pos.sales'])->postJson('/api/security/cart-audit', ['status' => 'saved', 'events' => $edits, 'finalTotal' => 50])->assertOk()->assertJsonMissing(['skipped' => true]);
+        $row = $admin()->getJson('/api/security/cart-audits')->json('rows.0');
+        $this->assertSame([0, 2, 30.0], [$row['removed'], $row['edited'], (float) $row['removedValue']]);
+
+        // تنبيه لحظي: تعديل سعر من الكاشير يظهر للمدير في التنبيهات اللي ما اتشافتش على طول
+        $this->as(['pos.sales'])->postJson('/api/security/event', ['type' => 'cart_price_edit', 'details' => ['الصنف' => 'سكر', 'السعر' => '25 ← 20'], 'amount' => 10, 'ref' => '7'])->assertOk();
+        $this->assertSame('cart_price_edit', collect($admin()->getJson('/api/security/pending')->json('alerts'))->last()['type']);
+    }
+
+    public function test_resumed_suspended_invoice_is_saved_under_the_saver_and_not_logged_as_deleted(): void
+    {
+        $this->as(['pos.sales'], 9, 'كاشير 1')->postJson('/api/pos/suspended', ['snapshot' => ['id' => 'susp-1', 'invoiceNumber' => 5, 'total' => 50]])->assertOk();
+        // كاشير تاني من غير صلاحية حذف: يحاول يحذفها بحجة إنها اتحفظت من غير ما يحفظ ← مرفوض
+        $this->as(['pos.sales'], 8, 'كاشير 2')->deleteJson('/api/pos/suspended/susp-1?saved=999')->assertForbidden();
+        $out = $this->as(['pos.sales'], 8, 'كاشير 2')->postJson('/api/pos/invoices/store', $this->sale())->assertOk()->json();
+        $this->as(['pos.sales'], 8, 'كاشير 2')->deleteJson('/api/pos/suspended/susp-1?saved=' . $out['invoiceNumber'])->assertOk()->assertJson(['saved' => (string) $out['invoiceNumber']]);
+        $this->assertDatabaseCount('suspended_invoices', 0);
+        $this->assertDatabaseHas('sales_invoices', ['order_no' => $out['invoiceNumber'], 'created_by' => 'كاشير 2', 'created_by_id' => 8]);
+        $this->assertDatabaseMissing('security_alerts', ['type' => 'suspended_deleted']);
     }
 
     public function test_cashier_cannot_reach_management_apis_directly(): void

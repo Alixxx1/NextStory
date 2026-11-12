@@ -120,8 +120,10 @@ let forceClose = false;
 async function createWindow() {
     win = new BrowserWindow({
         width: 1366, height: 800, show: false, autoHideMenuBar: true, title: 'NextStore POS', backgroundColor: '#f8fafc',
-        webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false },
+        // backgroundThrottling:false + autoplay: تنبيهات المدير (فحص كل ثانيتين + صوت) تشتغل حتى والبرنامج متصغر
+        webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false, autoplayPolicy: 'no-user-gesture-required' },
     });
+    win.on('focus', () => win.flashFrame(false));
     win.maximize();
     // زرار X: الصفحة هي اللي تقرر (تقفل نافذة / تخرج من الصفحة / تسأل عن إغلاق البرنامج)
     win.on('close', e => {
@@ -217,15 +219,16 @@ function getPrintWin() {
 async function silentPrint(p) {
     const paper = String(p.paper || '80mm').toLowerCase();
     const sheet = { a4: 'A4', a5: 'A5' }[paper];
+    const label = p.label && Number(p.label.w) > 0 && Number(p.label.h) > 0 ? p.label : null; // استيكر باركود بمقاس ثابت
     const mm = paper === '58mm' ? 48 : 72; // المنطقة المطبوعة فعلياً في رول 80/58
     const t0 = Date.now();
     fs.writeFileSync(printFile, `<!doctype html><html><head><meta charset="utf-8"><style>${p.css || ''}</style></head><body>${localImages(p.html || '')}</body></html>`);
     const pw = getPrintWin();
-    pw.setContentSize(sheet ? 900 : Math.round(mm * 96 / 25.4), 1200);
+    pw.setContentSize(sheet ? 900 : Math.round((label ? label.w : mm) * 96 / 25.4), 1200);
     await pw.loadFile(printFile);
     const heightPx = await pw.webContents.executeJavaScript(
         'Promise.all([...document.images].map(i => (i.decode ? i.decode() : Promise.resolve()).catch(() => i.remove()))).then(() => document.body.scrollHeight)');
-    const pageSize = sheet || { width: mm * 1000, height: Math.max(40000, Math.ceil(heightPx * 25400 / 96) + FEED_MM * 1000) };
+    const pageSize = label ? { width: Math.round(label.w * 1000), height: Math.round(label.h * 1000) } : sheet || { width: mm * 1000, height: Math.max(40000, Math.ceil(heightPx * 25400 / 96) + FEED_MM * 1000) };
     await new Promise((resolve, reject) => pw.webContents.print(
         { silent: true, deviceName: p.printerName || '', printBackground: true, margins: { marginType: 'none' }, pageSize },
         (ok, reason) => (ok ? resolve() : reject(new Error(reason || 'print failed')))));
@@ -263,6 +266,7 @@ async function machineId() {
 ipcMain.handle('ns:machine-id', machineId);
 
 ipcMain.handle('ns:quit', () => { forceClose = true; win && win.close(); });
+ipcMain.handle('ns:attention', () => { if (win && !win.isFocused()) win.flashFrame(true); });
 ipcMain.handle('ns:app-info', () => {
     let code = {};
     try { code = JSON.parse(fs.readFileSync(path.join(LARAVEL, 'version.json'), 'utf8')); } catch (_) { /* ignore */ }

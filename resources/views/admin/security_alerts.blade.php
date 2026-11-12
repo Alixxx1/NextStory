@@ -22,6 +22,7 @@
         .tl .en-digit { color: #64748b; min-width: 58px; }
         .tl .rm { color: #b91c1c; font-weight: 800; }
         .tl .ad { color: #0d7a36; }
+        .tl .ed { color: #b45309; font-weight: 800; }
         .mini { border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; height: 28px; padding: 0 10px; font-weight: 800; font-size: 12px; cursor: pointer; }
         .mini:hover { background: #f8fafc; }
     </style>
@@ -62,6 +63,15 @@
     const post = (url, body) => fetch(url, { method: 'POST', headers: H, body: JSON.stringify(body || {}) });
     const STATUS = { saved: ['اتحفظت', 'green'], cleared: ['اتمسحت كلها', 'red'], abandoned: ['خرج من البيع', 'red'], suspended: ['اتعلقت', ''] };
     let tab = 'audits', audits = [], alerts = [];
+    // سطر في التايملاين: إضافة / حذف / تعديل سعر أو كمية (من ← لـ) / مسح
+    const ev = e => {
+        const d = { add: ['ad', '+'], remove: ['rm', '−'], price: ['ed', '✎ سعر'], qty: ['ed', '✎ كمية'] }[e.act];
+        const body = !d ? '<span class="rm">مسح الفاتورة كلها</span>'
+            : e.act === 'price' ? `<span class="ed">${d[1]} ${esc(e.name)}</span><span class="en-digit">${num(e.from)} ← ${num(e.price)}${e.qty !== 1 ? ` × ${e.qty}` : ''}</span>`
+            : e.act === 'qty' ? `<span class="ed">${d[1]} ${esc(e.name)}</span><span class="en-digit">${e.from} ← ${e.qty} × ${num(e.price)}</span>`
+            : `<span class="${d[0]}">${d[1]} ${esc(e.name)}</span>${e.qty ? `<span class="en-digit">× ${e.qty}</span>` : ''}${e.price ? `<span class="en-digit">${num(e.price)}</span>` : ''}`;
+        return `<li><span class="en-digit">${esc(e.t)}</span>${body}</li>`;
+    };
 
     async function load() {
         const q = new URLSearchParams({ from: $('from').value, to: $('to').value, user: $('user').value, unread: $('onlyUnread').checked ? 1 : 0, suspicious: $('onlySusp').checked ? 1 : 0 });
@@ -78,17 +88,17 @@
         document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
         ['userWrap', 'suspWrap'].forEach(id => $(id).style.display = tab === 'audits' ? '' : 'none');
         const unread = audits.filter(a => !a.seenAt).length;
-        $('kpis').innerHTML = [['فواتير فيها حذف', audits.length], ['ما اتقراش', unread, unread ? 'red' : ''], ['مشبوهة', audits.filter(a => a.suspicious).length, 'red'], ['قيمة المحذوف', num(audits.reduce((s, a) => s + a.removedValue, 0)), 'red']]
+        $('kpis').innerHTML = [['فواتير فيها حذف/تعديل', audits.length], ['ما اتقراش', unread, unread ? 'red' : ''], ['مشبوهة', audits.filter(a => a.suspicious).length, 'red'], ['النقص في القيمة', num(audits.reduce((s, a) => s + a.removedValue, 0)), 'red']]
             .map(([t, v, c]) => `<div class="rp-kpi ${c || ''}"><span>${t}</span><b class="en-digit">${v}</b><small>&nbsp;</small></div>`).join('');
         if (tab === 'audits') {
-            $('body').innerHTML = `<table class="rp-table"><thead><tr><th>الوقت</th><th>الكاشير</th><th>الفاتورة</th><th>اتضاف</th><th>اتحذف</th><th>قيمة المحذوف</th><th>إجمالي الفاتورة</th><th style="min-width:340px">اللي حصل بالترتيب</th><th></th></tr></thead><tbody>
+            $('body').innerHTML = `<table class="rp-table"><thead><tr><th>الوقت</th><th>الكاشير</th><th>الفاتورة</th><th>اتضاف</th><th>اتحذف</th><th>اتعدل</th><th>النقص في القيمة</th><th>إجمالي الفاتورة</th><th style="min-width:340px">اللي حصل بالترتيب</th><th></th></tr></thead><tbody>
                 ${audits.map(a => `<tr class="${a.seenAt ? '' : 'unread'}"><td class="en-digit">${esc(String(a.at).slice(0, 16))}</td><td><b>${esc(a.user)}</b></td>
                     <td>${a.orderNo ? `<b class="en-digit">#${esc(a.orderNo)}</b> ` : ''}<span class="tag ${STATUS[a.status][1]}">${STATUS[a.status][0]}</span>${a.suspicious ? ' <span class="tag red">مشبوه</span>' : ''}</td>
-                    <td class="en-digit">${a.added}</td><td class="en-digit" style="color:#b91c1c;font-weight:800">${a.removed}</td><td class="en-digit">${num(a.removedValue)}</td><td class="en-digit">${a.status === 'saved' ? num(a.finalTotal) : '—'}</td>
-                    <td><ul class="tl">${(a.events || []).map(e => `<li><span class="en-digit">${esc(e.t)}</span>${e.act === 'add' ? `<span class="ad">+ ${esc(e.name)}</span>` : e.act === 'remove' ? `<span class="rm">− ${esc(e.name)}</span>` : '<span class="rm">مسح الفاتورة كلها</span>'}${e.qty ? `<span class="en-digit">× ${e.qty}</span>` : ''}${e.price ? `<span class="en-digit">${num(e.price)}</span>` : ''}</li>`).join('')}</ul></td>
+                    <td class="en-digit">${a.added}</td><td class="en-digit" style="color:#b91c1c;font-weight:800">${a.removed}</td><td class="en-digit" style="color:#b45309;font-weight:800">${a.edited || 0}</td><td class="en-digit">${num(a.removedValue)}</td><td class="en-digit">${a.status === 'saved' ? num(a.finalTotal) : '—'}</td>
+                    <td><ul class="tl">${(a.events || []).map(ev).join('')}</ul></td>
                     <td>${a.seenAt ? `<small class="text-muted">قراها ${esc(a.seenBy || '')}</small>` : `<button class="mini" data-seen="${a.id}">تم</button>`} <button class="mini" data-del="${a.id}" title="مسح"><i class="fa-solid fa-trash" style="color:#dc2626"></i></button></td></tr>`).join('')
-                || '<tr><td colspan="9" class="rp-empty">مفيش فواتير اتحذف منها حاجة في الفترة دي</td></tr>'}</tbody></table>`;
-            $('note').textContent = 'بيتسجل هنا أي فاتورة اتحذف منها صنف أو اتقللت كميته أو اتمسحت. المشبوه: حذف 3 أصناف أو أكتر، أو نص قيمة الفاتورة، أو مسح الفاتورة كلها.';
+                || '<tr><td colspan="10" class="rp-empty">مفيش فواتير اتحذف منها أو اتعدل فيها حاجة في الفترة دي</td></tr>'}</tbody></table>`;
+            $('note').textContent = 'بيتسجل هنا أي فاتورة اتحذف منها صنف، أو اتعدل سعر أو كمية صنف بعد ما اتضرب، أو اتمسحت. المشبوه: 3 حذف/تقليل أو أكتر، أو نقص نص قيمة الفاتورة، أو مسح الفاتورة كلها.';
         } else {
             $('body').innerHTML = `<table class="rp-table"><thead><tr><th>الوقت</th><th>المستخدم</th><th>الحدث</th><th>التفاصيل</th><th>القيمة</th><th>الرقم</th><th>الحالة</th></tr></thead><tbody>
                 ${alerts.map(a => `<tr class="${a.seenAt ? '' : 'unread'}"><td class="en-digit">${esc(String(a.at).slice(0, 16))}</td><td>${esc(a.user || '—')}</td>

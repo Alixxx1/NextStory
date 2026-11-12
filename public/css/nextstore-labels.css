@@ -1,0 +1,26 @@
+/* NextStore - صفحات طباعة الباركود والموازين (فوق nextstore-reports.css) */
+.lb-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: 360px minmax(0, 1fr) 320px; gap: 8px; margin: 0 12px 10px; }
+.lb-grid .rp-card { margin: 0; }
+.lb-pad { padding: 10px 12px; }
+.lb-input { height: 38px; width: 100%; border: 1px solid #cbd5e1; border-radius: 7px; padding: 0 10px; font: inherit; font-weight: 700; background: #fff; }
+.lb-input:focus { outline: none; border-color: #119744; box-shadow: 0 0 0 3px rgba(17, 151, 68, .12); }
+.lb-hit { padding: 8px 12px; border-bottom: 1px solid #edf1f5; cursor: pointer; }
+.lb-hit:hover { background: #f0faf4; }
+.lb-hit.on { background: #dcfce7; }
+.lb-hit small { color: #0d7a36; font-weight: 800; }
+.lb-hit-meta { display: flex; gap: 12px; color: #64748b; font-size: 12.5px; font-weight: 700; margin-top: 2px; }
+.lb-copies { width: 90px; height: 32px; text-align: center; }
+.lb-del { border: 0; background: none; color: #dc2626; cursor: pointer; font-size: 15px; }
+.lb-settings { display: flex; flex-direction: column; gap: 10px; }
+.lb-settings > label { display: flex; flex-direction: column; gap: 4px; font-weight: 800; color: #475569; font-size: 12.5px; }
+.lb-checks { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.lb-checks label { display: flex; align-items: center; gap: 6px; font-weight: 700; color: #334155; cursor: pointer; }
+.lb-checks input { width: 16px; height: 16px; }
+.lb-preview-wrap { border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; padding: 8px; }
+.lb-preview-title { font-size: 12px; font-weight: 800; color: #64748b; margin-bottom: 6px; }
+.lb-preview { display: flex; justify-content: center; min-height: 70px; overflow: hidden; }
+.lb-print { flex: 1; height: 44px; border: 0; border-radius: 8px; background: #119744; color: #fff; font: inherit; font-weight: 800; font-size: 15px; cursor: pointer; }
+.lb-print:hover { background: #0d7a36; }
+.lb-print:disabled { opacity: .6; }
+.lb-warn { color: #b45309; font-size: 12px; font-weight: 700; }
+@media (max-width: 1100px) { .lb-grid { grid-template-columns: 1fr; overflow: auto; } body.rp-page { height: auto; overflow: auto; } }

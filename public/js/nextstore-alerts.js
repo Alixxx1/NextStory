@@ -11,8 +11,15 @@
     const shown = new Set();
     let box = null, timer = null;
 
+    // 3 نغمات واضحة + وميض البرنامج في شريط المهام (Electron) عشان المدير يلاحظ حتى لو البرنامج متصغر
     function beep() {
-        try { const c = new (window.AudioContext || window.webkitAudioContext)(), o = c.createOscillator(); o.frequency.value = 880; o.connect(c.destination); o.start(); setTimeout(() => { o.stop(); c.close(); }, 250); } catch (e) {}
+        try {
+            const c = new (window.AudioContext || window.webkitAudioContext)(), g = c.createGain();
+            g.gain.value = 0.35; g.connect(c.destination);
+            [0, 0.3, 0.6].forEach((t, i) => { const o = c.createOscillator(); o.type = 'square'; o.frequency.value = i === 2 ? 1175 : 880; o.connect(g); o.start(c.currentTime + t); o.stop(c.currentTime + t + 0.2); });
+            setTimeout(() => c.close(), 1200);
+        } catch (e) {}
+        try { window.electronAPI?.attention?.(); } catch (e) {}
     }
 
     function render(list) {
@@ -36,8 +43,10 @@
         };
     }
 
+    let busy = false;
     async function poll() {
-        if (document.hidden) return;
+        if (busy) return;
+        busy = true;
         try {
             const r = await fetch('/api/security/pending', { headers: { Accept: 'application/json' } });
             if (!r.ok) return;
@@ -47,8 +56,9 @@
             if (!fresh.length) return;
             fresh.forEach(a => shown.add(a.id));
             render(j.alerts); beep();
-        } catch (e) {}
+        } catch (e) {} finally { busy = false; }
     }
 
-    if (!location.pathname.startsWith('/login')) { poll(); timer = setInterval(poll, 10000); }
+    // كل ثانيتين (حتى والبرنامج متصغر): أي حذف/تعديل من الكاشير يوصل للمدير في نفس اللحظة تقريباً
+    if (!location.pathname.startsWith('/login')) { poll(); timer = setInterval(poll, 2000); }
 })();

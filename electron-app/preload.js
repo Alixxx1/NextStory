@@ -10,4 +10,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getAppInfo: () => ipcRenderer.invoke('ns:app-info'),
     getNetwork: () => ipcRenderer.invoke('ns:network-get'),
     setNetwork: (n) => ipcRenderer.invoke('ns:network-set', n),
+    attention: () => ipcRenderer.invoke('ns:attention'), // تنبيه أمني: وميض في شريط المهام
 });

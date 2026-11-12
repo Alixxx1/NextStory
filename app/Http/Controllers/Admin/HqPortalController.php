@@ -18,7 +18,36 @@ class HqPortalController extends Controller
 
     private function page(string $tab, array $data = [])
     {
-        return view('hq.portal', ['tab' => $tab, 'base' => $this->url(), 'newCount' => DB::table('hq_requests')->where('status', 'pending')->count(), 'plans' => DB::table('hq_plans')->get(), 'admin' => DB::table('hq_admins')->find(session('hq_admin'))] + $data);
+        $plans = DB::table('hq_plans')->get();
+        $newCount = DB::table('hq_requests')->where('status', 'pending')->count();
+        return view('hq.portal', ['tab' => $tab, 'base' => $this->url(), 'newCount' => $newCount, 'plans' => $plans, 'stats' => $this->stats($plans, $newCount),
+            'admin' => DB::table('hq_admins')->find(session('hq_admin'))] + $data);
+    }
+
+    /** حالة المتجر للعرض والفلترة: active | soon (ينتهي خلال 7 أيام) | expired | suspended */
+    public static function state(object $s): string
+    {
+        if ($s->status === 'suspended') return 'suspended';
+        if (!$s->expires_at) return 'active';
+        $left = strtotime($s->expires_at) - time();
+        return $left <= 0 ? 'expired' : ($left <= 7 * 86400 ? 'soon' : 'active');
+    }
+
+    /** أرقام اللوحة: المتاجر بحالاتها + Cloud Pro + الطلبات الجديدة + الدخل الشهري المتوقع من الاشتراكات السارية */
+    private function stats($plans, int $newCount): array
+    {
+        $price = $plans->pluck('price', 'key');
+        $st = ['total' => 0, 'active' => 0, 'soon' => 0, 'expired' => 0, 'suspended' => 0, 'cloud' => 0, 'pending' => $newCount, 'mrr' => 0.0];
+        foreach (DB::table('hq_stores')->get(['plan', 'tier', 'status', 'expires_at']) as $s) {
+            $k = self::state($s);
+            $st['total']++;
+            $st[$k]++;
+            $st['cloud'] += $s->tier === 'cloud_pro' ? 1 : 0;
+            if (in_array($k, ['active', 'soon'], true)) {
+                $st['mrr'] += ['monthly' => (float) ($price['monthly'] ?? 0), 'yearly' => (float) ($price['yearly'] ?? 0) / 12][$s->plan] ?? 0;
+            }
+        }
+        return $st;
     }
 
     public function login()

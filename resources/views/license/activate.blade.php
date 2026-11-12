@@ -2,7 +2,7 @@
 @section('title', $pending ? (empty($pending['rejected']) ? 'طلب التفعيل' : 'تم رفض الطلب') : 'طلب تفعيل النسخة')
 @section('body')
 @if ($pending && empty($pending['rejected']))
-    <div id="st" class="lc-msg ok" style="text-align:center">جاري مراجعة الطلب… في انتظار الرد</div>
+    <div id="st" class="lc-msg ok c">جاري مراجعة الطلب… في انتظار الرد</div>
     <small style="text-align:center">المتجر: {{ $pending['name'] }} — هتتفعل النسخة تلقائياً بمجرد موافقة المالك، ولو قفلت البرنامج الطلب هيفضل محفوظ.</small>
 @elseif ($pending)
     <div class="lc-msg err">رفض المالك طلب التفعيل. تواصل معنا أو أعد إرسال الطلب.</div>
@@ -27,7 +27,7 @@ async function poll() {
         const r = await (await fetch('/license/check', { method: 'POST', headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', Accept: 'application/json' } })).json();
         if (r.state === 'approved') { done = true; st.textContent = 'تم التفعيل ✔'; return setTimeout(() => location.href = '/login', 1500); }
         if (r.state === 'rejected') { done = true; return location.reload(); }
-        st.className = 'lc-msg ' + (r.state === 'offline' ? 'err' : 'ok'); st.textContent = r.state === 'offline' ? 'مفيش اتصال بالإنترنت… بنعاود المحاولة' : r.message;
+        st.className = 'lc-msg c ' + (r.state === 'offline' ? 'err' : 'ok'); st.textContent = r.state === 'offline' ? 'مفيش اتصال بالإنترنت… بنعاود المحاولة' : r.message;
     } catch (e) {}
     setTimeout(poll, 4000);
 }
